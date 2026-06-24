@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Contractors', href: '/contractors', icon: Users },
+  { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Billing', href: '/billing', icon: ReceiptText },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Payment', href: '/payment', icon: BarChart3 },
 ];
 
 export default function Header() {

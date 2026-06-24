@@ -4,8 +4,8 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Contractors from './pages/Contractors';
 import Billing from './pages/Billing';
-import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Payment from './pages/Payment';
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/contractors" element={<Contractors />} />
             <Route path="/billing" element={<Billing />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/payment" element={<Payment />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

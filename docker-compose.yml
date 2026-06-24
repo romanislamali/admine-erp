@@ -21,6 +21,9 @@ services:
       DB_PASSWORD: password
       DB_NAME: erp_db
       DB_PORT: "5432"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     depends_on:
       - db
 
@@ -28,6 +31,9 @@ services:
     build: ./frontend
     ports:
       - "5180:5180"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 
