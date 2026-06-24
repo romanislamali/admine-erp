@@ -1,0 +1,44 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker
+.docker/
+# Optional: If you want to ignore the data volume backups
+# pgdata/ 
+
+# Vite specific
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

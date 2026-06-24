@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: erp_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3000"
+    environment:
+      DB_HOST: db
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: erp_db
+      DB_PORT: "5432"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5180:5180"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
