@@ -14,7 +14,7 @@ export default function Header() {
   const location = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-bg-dark/80 backdrop-blur-md border-b border-white/5">
+    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo & Brand */}
@@ -23,7 +23,7 @@ export default function Header() {
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                 <Rocket size={20} className="text-white" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
                 Admine
               </span>
             </Link>
@@ -37,7 +37,7 @@ export default function Header() {
                     key={item.name}
                     to={item.href}
                     className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive ? 'text-white bg-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      isActive ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -58,26 +58,26 @@ export default function Header() {
 
           {/* Right Section: Actions & Profile */}
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center bg-white/5 border border-white/5 rounded-full px-3 py-1.5 focus-within:ring-2 ring-primary/20 transition-all">
+            <div className="hidden sm:flex items-center bg-slate-100 border border-slate-200 rounded-full px-3 py-1.5 focus-within:ring-2 ring-primary/20 transition-all">
               <Search size={16} className="text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Search resources..." 
-                className="bg-transparent border-none outline-none text-sm px-2 text-white w-32 md:w-48 placeholder:text-slate-500"
+                placeholder="Search..." 
+                className="bg-transparent border-none outline-none text-sm px-2 text-slate-900 w-32 md:w-48 placeholder:text-slate-400"
               />
             </div>
             
-            <button className="relative p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-colors">
+            <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors">
               <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full ring-2 ring-bg-dark" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
 
-            <Link to="/settings" className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-colors">
+            <Link to="/settings" className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors">
               <Settings size={20} />
             </Link>
 
-            <div className="h-8 w-8 rounded-full border border-white/10 bg-slate-800 flex items-center justify-center text-xs font-bold text-primary">
-              JS
+            <div className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+              RA
             </div>
           </div>
         </div>

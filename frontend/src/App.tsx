@@ -10,7 +10,7 @@ import Payment from './pages/Payment';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-bg-darker text-white">
+      <div className="min-h-screen bg-bg-page text-text-main">
         {/* Navigation Header */}
         <Header />
 
