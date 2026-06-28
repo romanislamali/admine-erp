@@ -15,8 +15,16 @@ app.get('/api/health', (req, res) => {
 
 // Import routes
 const contractorRoutes = require('./routes/contractorRoutes');
+const projectRoutes = require('./routes/projectRoutes');
+const billRoutes = require('./routes/billRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+
 app.use('/api/contractors', contractorRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/bills', billRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
