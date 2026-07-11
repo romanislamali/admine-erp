@@ -20,8 +20,8 @@ const Payment = {
       await client.query('BEGIN');
       
       const insertQuery = `
-        INSERT INTO payments (contractor_id, bill_id, amount, payment_date)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO payments (contractor_id, bill_id, amount, payment_date, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
         RETURNING *
       `;
       const { rows } = await client.query(insertQuery, [

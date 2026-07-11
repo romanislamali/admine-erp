@@ -19,8 +19,8 @@ const Project = {
   create: async (projectData) => {
     const { name, description, contractor_id, start_date, end_date, status } = projectData;
     const { rows } = await db.query(
-      `INSERT INTO projects (name, description, contractor_id, start_date, end_date, status) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO projects (name, description, contractor_id, start_date, end_date, status, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
        RETURNING *`,
       [name, description, contractor_id, start_date, end_date, status || 'Planned']
     );

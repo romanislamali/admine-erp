@@ -152,7 +152,7 @@ export default function Billing() {
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           <ReceiptText size={18} />
-          Log Invoice Bill
+          Create Bill
         </button>
       </div>
 
@@ -246,7 +246,7 @@ export default function Billing() {
               className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">Log Invoice Bill</h3>
+                <h3 className="text-xl font-bold text-slate-900">Create Bill</h3>
                 <button 
                   onClick={() => setIsModalOpen(false)}
                   className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
@@ -341,7 +341,7 @@ export default function Billing() {
                     disabled={submitting}
                     className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                   >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Log Bill'}
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit'}
                   </button>
                 </div>
               </form>

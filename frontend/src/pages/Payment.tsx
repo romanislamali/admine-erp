@@ -337,7 +337,7 @@ export default function Payment() {
                     disabled={submitting}
                     className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                   >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Log Payment'}
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit'}
                   </button>
                 </div>
               </form>

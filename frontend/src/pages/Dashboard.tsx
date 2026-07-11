@@ -88,9 +88,9 @@ export default function Dashboard() {
   const totalProjectsCount = data.projects.length;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -141,14 +141,23 @@ export default function Dashboard() {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((item) => (
-          <div key={item.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
-              <div className="text-2xl font-black text-slate-800">{item.value}</div>
+          <div key={item.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+
+            {/* Top Section: Icon and Name in a Row */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+                <item.icon size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
+              </div>
             </div>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${item.color}`}>
-              <item.icon size={22} />
+
+            {/* Bottom Section: Value */}
+            <div>
+              <div className="text-xl font-black text-slate-800">{item.value}</div>
             </div>
+
           </div>
         ))}
       </div>

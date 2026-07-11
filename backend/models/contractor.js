@@ -12,7 +12,7 @@ const Contractor = {
   create: async (contractor) => {
     const { name, phone, email, address } = contractor;
     const { rows } = await db.query(
-      'INSERT INTO contractors (name, phone, email, address) VALUES ($1, $2, $3, $4) RETURNING *',
+      'INSERT INTO contractors (name, phone, email, address, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING *',
       [name, phone, email, address]
     );
     return rows[0];

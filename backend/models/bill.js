@@ -20,8 +20,8 @@ const Bill = {
       await client.query('BEGIN');
       
       const insertQuery = `
-        INSERT INTO bills (contractor_id, project_id, amount, invoice_number, bill_date)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO bills (contractor_id, project_id, amount, invoice_number, bill_date, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
         RETURNING *
       `;
       const { rows } = await client.query(insertQuery, [
