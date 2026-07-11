@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, FolderKanban, Calendar, Loader2, User } from 'lucide-react';
+import { X, FolderKanban, Calendar, Loader2, User } from 'lucide-react';
 
 interface Project {
   id: number;

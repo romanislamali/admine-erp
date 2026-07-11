@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, UserPlus, Phone, Mail, MapPin, X, Loader2, Users } from 'lucide-react';
+import { UserPlus, Phone, Mail, MapPin, X, Loader2, Users } from 'lucide-react';
 
 interface Contractor {
   id: number;

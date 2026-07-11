@@ -1,3 +1,19 @@
+-- Users Table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'EMPLOYEE')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Mock Users
+INSERT INTO users (name, email, role) VALUES 
+('Admine Admin', 'admine@admin.com', 'ADMIN'),
+('Admine Manager', 'admine@manager.com', 'MANAGER'),
+('Admine Employee', 'admine@employee.com', 'EMPLOYEE');
+
 -- Contractors Table
 CREATE TABLE contractors (
     id SERIAL PRIMARY KEY,
@@ -7,7 +23,11 @@ CREATE TABLE contractors (
     address TEXT,
     total_bills DECIMAL(12, 2) DEFAULT 0.00,
     total_payments DECIMAL(12, 2) DEFAULT 0.00,
-    balance DECIMAL(12, 2) DEFAULT 0.00
+    balance DECIMAL(12, 2) DEFAULT 0.00,
+    created_by VARCHAR(100) REFERENCES users(email),
+    updated_by VARCHAR(100) REFERENCES users(email),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Projects Table
@@ -18,7 +38,11 @@ CREATE TABLE projects (
     contractor_id INT REFERENCES contractors(id),
     start_date DATE,
     end_date DATE,
-    status VARCHAR(20)
+    status VARCHAR(20),
+    created_by VARCHAR(100) REFERENCES users(email),
+    updated_by VARCHAR(100) REFERENCES users(email),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Bills Table
@@ -28,7 +52,11 @@ CREATE TABLE bills (
     project_id INT REFERENCES projects(id),
     amount DECIMAL(12, 2) NOT NULL,
     invoice_number VARCHAR(50),
-    bill_date DATE
+    bill_date DATE,
+    created_by VARCHAR(100) REFERENCES users(email),
+    updated_by VARCHAR(100) REFERENCES users(email),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Payments Table
@@ -37,7 +65,11 @@ CREATE TABLE payments (
     contractor_id INT REFERENCES contractors(id),
     bill_id INT REFERENCES bills(id),
     amount DECIMAL(12, 2) NOT NULL,
-    payment_date DATE
+    payment_date DATE,
+    created_by VARCHAR(100) REFERENCES users(email),
+    updated_by VARCHAR(100) REFERENCES users(email),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- PL/pgSQL Trigger Functions for Contractors Balance Sync
