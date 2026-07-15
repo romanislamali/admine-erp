@@ -9,6 +9,10 @@ const User = {
     const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [id]);
     return rows[0];
   },
+  findByEmail: async (email) => {
+    const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    return rows[0];
+  },
   create: async (user) => {
     const { name, email, role } = user;
     const { rows } = await db.query(

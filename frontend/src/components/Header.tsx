@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '../public/logo.png';
+import { useAuth } from '../context/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -14,6 +15,16 @@ const navigation = [
 
 export default function Header() {
   const location = useLocation();
+  const { user } = useAuth();
+
+  const initials = user
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : '??';
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
@@ -28,56 +39,53 @@ export default function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <item.icon size={18} className={isActive ? 'text-primary' : ''} />
-                      {item.name}
-                    </div>
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTab"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-4"
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+            {user && (
+              <nav className="hidden md:flex items-center gap-1">
+                {navigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <item.icon size={18} className={isActive ? 'text-primary' : ''} />
+                        {item.name}
+                      </div>
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full mx-4"
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
           </div>
 
           {/* Right Section: Actions & Profile */}
           <div className="flex items-center gap-4">
-            {/* <div className="hidden sm:flex items-center bg-slate-100 border border-slate-200 rounded-full px-3 py-1.5 focus-within:ring-2 ring-primary/20 transition-all">
-              <Search size={16} className="text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="bg-transparent border-none outline-none text-sm px-2 text-slate-900 w-32 md:w-48 placeholder:text-slate-400"
-              />
-            </div> */}
-            
-            {/* <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
-            </button> */}
-
-            {/* <Link to="/settings" className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors">
-              <Settings size={20} />
-            </Link> */}
-
-            <div className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-              RA
-            </div>
+            {user ? (
+              <Link
+                to="/logout"
+                title={`Signed in as ${user.name} (${user.role}). Click to Logout.`}
+                className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                {initials}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </div>
