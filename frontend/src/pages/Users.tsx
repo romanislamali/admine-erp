@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Users as UsersIcon, 
-  ShieldAlert, 
-  Briefcase, 
-  User as UserIcon, 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  Loader2, 
-  X, 
-  Mail, 
-  AlertCircle 
+import {
+  Users as UsersIcon,
+  ShieldAlert,
+  Briefcase,
+  User as UserIcon,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Loader2,
+  X,
+  Mail,
+  AlertCircle
 } from 'lucide-react';
 import { useModal } from '../context/ModalContext';
 
@@ -30,7 +30,7 @@ export default function Users() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
-  
+
   const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
 
   // Modal control states
@@ -72,7 +72,7 @@ export default function Users() {
     if (!formData.name.trim() || !formData.email.trim() || !formData.role || !formData.password.trim()) return;
 
     const confirmed = await confirmSave(
-      'Register Staff Member?', 
+      'Register Staff Member?',
       `Are you sure you want to add ${formData.name} to the system credentials database?`
     );
     if (!confirmed) return;
@@ -85,13 +85,13 @@ export default function Users() {
         body: JSON.stringify(formData)
       });
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.message || 'Failed to create user');
       }
-      
+
       await showSuccess(
-        'Staff Registered Successfully', 
+        'Staff Registered Successfully',
         `Access configuration for ${formData.name} is complete and live.`
       );
       setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
@@ -99,7 +99,7 @@ export default function Users() {
       fetchUsers();
     } catch (err: any) {
       await showError(
-        'Registration Failed', 
+        'Registration Failed',
         err.message || 'We could not register this staff account. Please verify connectivity.'
       );
     } finally {
@@ -206,12 +206,12 @@ export default function Users() {
 
   // Filter logic
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesRole = 
-      selectedRoleFilter === 'ALL' || 
+
+    const matchesRole =
+      selectedRoleFilter === 'ALL' ||
       user.role === selectedRoleFilter;
 
     return matchesSearch && matchesRole;
@@ -245,425 +245,425 @@ export default function Users() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      {/* Top Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-            User Access Management
-          </h1>
-          <p className="text-slate-500 mt-1">Configure credentials, roles, and authorization restrictions across the ERP.</p>
-        </div>
-        <button
-          onClick={() => {
-            setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
-            setIsAddModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <Plus size={18} />
-          Create User
-        </button>
-      </div>
-
-      {/* Stats Counter Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Users card with card-hover microanimation */}
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between"
-        >
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase text-slate-400">Total Users</p>
-            <p className="text-2xl font-bold text-slate-900">{totalCount}</p>
+      <div className='bg-white shadow-sm shadow-amber-100 p-5 rounded-xl'>
+        {/* Top Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
+              User Access Management
+            </h1>
+            <p className="text-slate-500 mt-1">Configure credentials, roles, and authorization restrictions across the ERP.</p>
           </div>
-          <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
-            <UsersIcon size={20} />
-          </div>
-        </motion.div>
-
-        {/* Admin Card */}
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="bg-indigo-50/20 border border-indigo-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
-        >
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase text-indigo-500">Administrators</p>
-            <p className="text-2xl font-bold text-indigo-900">{adminCount}</p>
-          </div>
-          <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
-            <ShieldAlert size={20} />
-          </div>
-        </motion.div>
-
-        {/* Manager Card */}
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="bg-sky-50/20 border border-sky-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
-        >
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase text-sky-500">Managers</p>
-            <p className="text-2xl font-bold text-sky-900">{managerCount}</p>
-          </div>
-          <div className="h-10 w-10 bg-sky-50 rounded-xl flex items-center justify-center text-sky-500">
-            <Briefcase size={20} />
-          </div>
-        </motion.div>
-
-        {/* Employee Card */}
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="bg-emerald-50/20 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
-        >
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase text-emerald-500">Employees</p>
-            <p className="text-2xl font-bold text-emerald-900">{employeeCount}</p>
-          </div>
-          <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-            <UserIcon size={20} />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Filter and Search Bar Section */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
-        <div className="relative w-full md:w-80">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-          />
-        </div>
-        
-        <div className="flex gap-2 w-full md:w-auto items-center">
-          <span className="text-slate-400 text-xs font-medium uppercase shrink-0 whitespace-nowrap">Filter Role:</span>
-          <select
-            value={selectedRoleFilter}
-            onChange={(e) => setSelectedRoleFilter(e.target.value)}
-            className="w-full md:w-48 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+          <button
+            onClick={() => {
+              setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
+              setIsAddModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <option value="ALL">All Roles</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="MANAGER">MANAGER</option>
-            <option value="EMPLOYEE">EMPLOYEE</option>
-          </select>
+            <Plus size={18} />
+            Create User
+          </button>
         </div>
-      </div>
 
-      {/* Error State Banner */}
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm flex items-start gap-2.5">
-          <AlertCircle className="shrink-0 mt-0.5" size={16} />
-          <span>{error}</span>
+        {/* Stats Counter Cards Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Users card with card-hover microanimation */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase text-slate-400">Total Users</p>
+              <p className="text-2xl font-bold text-slate-900">{totalCount}</p>
+            </div>
+            <div className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
+              <UsersIcon size={20} />
+            </div>
+          </motion.div>
+
+          {/* Admin Card */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-indigo-50/20 border border-indigo-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase text-indigo-500">Administrators</p>
+              <p className="text-2xl font-bold text-indigo-900">{adminCount}</p>
+            </div>
+            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+              <ShieldAlert size={20} />
+            </div>
+          </motion.div>
+
+          {/* Manager Card */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-sky-50/20 border border-sky-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase text-sky-500">Managers</p>
+              <p className="text-2xl font-bold text-sky-900">{managerCount}</p>
+            </div>
+            <div className="h-10 w-10 bg-sky-50 rounded-xl flex items-center justify-center text-sky-500">
+              <Briefcase size={20} />
+            </div>
+          </motion.div>
+
+          {/* Employee Card */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-emerald-50/20 border border-emerald-100 rounded-2xl p-5 shadow-sm flex items-center justify-between"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase text-emerald-500">Employees</p>
+              <p className="text-2xl font-bold text-emerald-900">{employeeCount}</p>
+            </div>
+            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+              <UserIcon size={20} />
+            </div>
+          </motion.div>
         </div>
-      )}
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="animate-spin text-primary" size={32} />
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-          <UsersIcon size={48} className="text-slate-300 mb-3" />
-          <p className="text-lg font-medium text-slate-600">No users found</p>
-          <p className="text-sm">Try clearing your filters or create a new user profile above.</p>
-        </div>
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                  <th className="px-6 py-4">Full Name</th>
-                  <th className="px-6 py-4">Email</th>
-                  <th className="px-6 py-4">Role Permission</th>
-                  <th className="px-6 py-4">Date Joined</th>
-                  <th className="px-6 py-4 text-center">Modify</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredUsers.map((user) => (
-                  <motion.tr 
-                    key={user.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
-                    {/* User name with initials badge */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${
-                          user.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' : 
-                          user.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
-                        }`}>
-                          {user.name.substring(0, 2)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-slate-900">{user.name}</div>
-                          <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{user.id}</div>
-                        </div>
-                      </div>
-                    </td>
+        {/* Filter and Search Bar Section */}
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+          <div className="relative w-full md:w-80">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+            />
+          </div>
 
-                    {/* Email */}
-                    <td className="px-6 py-4 text-slate-600">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                        <Mail size={12} className="text-slate-400" />
-                        {user.email}
-                      </div>
-                    </td>
-
-                    {/* Role Permission Badge */}
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${getRoleBadgeStyle(user.role)}`}>
-                        {user.role}
-                      </span>
-                    </td>
-
-                    {/* Created Date */}
-                    <td className="px-6 py-4 text-slate-500 font-medium">
-                      {formatDate(user.created_at)}
-                    </td>
-
-                    {/* Action buttons (Edit & Delete) */}
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex gap-2 justify-center items-center">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          title="Edit staff details"
-                          className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteConfirm(user.id)}
-                          title="Delete staff account"
-                          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex gap-2 w-full md:w-auto items-center">
+            <span className="text-slate-400 text-xs font-medium uppercase shrink-0 whitespace-nowrap">Filter Role:</span>
+            <select
+              value={selectedRoleFilter}
+              onChange={(e) => setSelectedRoleFilter(e.target.value)}
+              className="w-full md:w-48 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="MANAGER">MANAGER</option>
+              <option value="EMPLOYEE">EMPLOYEE</option>
+            </select>
           </div>
         </div>
-      )}
 
-      {/* CREATE STAFF MODAL */}
-      <AnimatePresence>
-        {isAddModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            {/* Modal Body */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">Add Staff Account</h3>
-                <button 
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+        {/* Error State Banner */}
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm flex items-start gap-2.5">
+            <AlertCircle className="shrink-0 mt-0.5" size={16} />
+            <span>{error}</span>
+          </div>
+        )}
 
-              <form onSubmit={handleAddSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter full name"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
+        {/* Main Content Area */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
+            <UsersIcon size={48} className="text-slate-300 mb-3" />
+            <p className="text-lg font-medium text-slate-600">No users found</p>
+            <p className="text-sm">Try clearing your filters or create a new user profile above.</p>
+          </div>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-6 py-4">Full Name</th>
+                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Role Permission</th>
+                    <th className="px-6 py-4">Date Joined</th>
+                    <th className="px-6 py-4 text-center">Modify</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {filteredUsers.map((user) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
+                      {/* User name with initials badge */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${user.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' :
+                              user.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
+                            }`}>
+                            {user.name.substring(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900">{user.name}</div>
+                            <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{user.id}</div>
+                          </div>
+                        </div>
+                      </td>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="name@company.com"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
+                      {/* Email */}
+                      <td className="px-6 py-4 text-slate-600">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                          <Mail size={12} className="text-slate-400" />
+                          {user.email}
+                        </div>
+                      </td>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role *</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="MANAGER">MANAGER</option>
-                    <option value="EMPLOYEE">EMPLOYEE</option>
-                  </select>
-                </div>
+                      {/* Role Permission Badge */}
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${getRoleBadgeStyle(user.role)}`}>
+                          {user.role}
+                        </span>
+                      </td>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password *</label>
-                  <input
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Enter password (min 6 characters)"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
+                      {/* Created Date */}
+                      <td className="px-6 py-4 text-slate-500 font-medium">
+                        {formatDate(user.created_at)}
+                      </td>
 
-                <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                      {/* Action buttons (Edit & Delete) */}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex gap-2 justify-center items-center">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            title="Edit staff details"
+                            className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteConfirm(user.id)}
+                            title="Delete staff account"
+                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* CREATE STAFF MODAL */}
+        <AnimatePresence>
+          {isAddModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              />
+              {/* Modal Body */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-slate-900">Add Staff Account</h3>
                   <button
-                    type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
                   >
-                    Cancel
+                    <X size={20} />
                   </button>
+                </div>
+
+                <form onSubmit={handleAddSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter full name"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="name@company.com"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role *</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    >
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="MANAGER">MANAGER</option>
+                      <option value="EMPLOYEE">EMPLOYEE</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Enter password (min 6 characters)"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddModalOpen(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Create User'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* EDIT STAFF MODAL */}
+        <AnimatePresence>
+          {isEditModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsEditModalOpen(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              />
+              {/* Modal Body */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-slate-900">Modify User Account</h3>
                   <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
                   >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Create User'}
+                    <X size={20} />
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      {/* EDIT STAFF MODAL */}
-      <AnimatePresence>
-        {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsEditModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            {/* Modal Body */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">Modify User Account</h3>
-                <button 
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter full name"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
 
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter full name"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="name@company.com"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="name@company.com"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role *</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    >
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="MANAGER">MANAGER</option>
+                      <option value="EMPLOYEE">EMPLOYEE</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role *</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="MANAGER">MANAGER</option>
-                    <option value="EMPLOYEE">EMPLOYEE</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password (blank to keep existing)</label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Enter new password"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password (blank to keep existing)</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Enter new password"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
-                </div>
-
-                <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditModalOpen(false);
-                      setSelectedUserId(null);
-                    }}
-                    className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
-                  >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+                  <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedUserId(null);
+                      }}
+                      className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
+                    >
+                      {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

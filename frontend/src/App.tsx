@@ -35,7 +35,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
       <Header />
 
       {/* Dynamic Route Content */}
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 w-full">
+      <main className="flex-grow max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8 w-full">
         {children}
       </main>
 

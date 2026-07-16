@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Phone, Mail, MapPin, X, Loader2, Users } from 'lucide-react';
+import { UserPlus, Phone, Mail, MapPin, X, Loader2 } from 'lucide-react';
+import Table from '../components/Table';
 
 interface Contractor {
   id: number;
@@ -80,13 +81,95 @@ export default function Contractors() {
     }).format(num || 0);
   };
 
+  const columns = [
+    {
+      header: 'Contractor',
+      key: 'name',
+      sortable: true,
+      render: (c: Contractor) => (
+        <div>
+          <div className="font-semibold text-slate-900">{c.name}</div>
+          <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{c.id}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Contact Info',
+      key: 'email',
+      sortable: true,
+      render: (c: Contractor) => (
+        <div className="space-y-1">
+          {c.phone && (
+            <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+              <Phone size={12} className="text-slate-400" />
+              {c.phone}
+            </div>
+          )}
+          {c.email && (
+            <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+              <Mail size={12} className="text-slate-400" />
+              {c.email}
+            </div>
+          )}
+          {c.address && (
+            <div className="flex items-center gap-1.5 text-slate-400 text-xs truncate max-w-[200px]" title={c.address}>
+              <MapPin size={12} />
+              {c.address}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      header: 'Total Invoiced',
+      key: 'total_bills',
+      align: 'right' as const,
+      sortable: true,
+      render: (c: Contractor) => formatCurrency(c.total_bills)
+    },
+    {
+      header: 'Total Paid',
+      key: 'total_payments',
+      align: 'right' as const,
+      sortable: true,
+      render: (c: Contractor) => (
+        <span className="font-semibold text-emerald-600">
+          {formatCurrency(c.total_payments)}
+        </span>
+      )
+    },
+    {
+      header: 'Outstanding Balance',
+      key: 'balance',
+      align: 'right' as const,
+      sortable: true,
+      render: (c: Contractor) => {
+        const balanceNum = typeof c.balance === 'string' ? parseFloat(c.balance) : c.balance;
+        const isNegative = balanceNum < 0;
+        return (
+          <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${
+            isNegative 
+              ? 'bg-amber-50 text-amber-700 border border-amber-200/50' 
+              : balanceNum > 0 
+              ? 'bg-rose-50 text-rose-700 border border-rose-200/50'
+              : 'bg-slate-50 text-slate-600 border border-slate-200/50'
+          }`}>
+            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">Advance</span>}
+            {formatCurrency(Math.abs(balanceNum))}
+          </div>
+        );
+      }
+    }
+  ];
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className='bg-white shadow-sm shadow-amber-100 p-5 rounded-xl'>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
             Contractor Directory
@@ -112,87 +195,15 @@ export default function Contractors() {
         <div className="flex justify-center items-center py-20">
           <Loader2 className="animate-spin text-primary" size={32} />
         </div>
-      ) : contractors.length === 0 ? (
-        <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-          <Users size={48} className="text-slate-300 mb-3" />
-          <p className="text-lg font-medium text-slate-600">No contractors found</p>
-          <p className="text-sm">Get started by adding your first contractor using the button above.</p>
-        </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                  <th className="px-6 py-4">Contractor</th>
-                  <th className="px-6 py-4">Contact Info</th>
-                  <th className="px-6 py-4 text-right">Total Invoiced</th>
-                  <th className="px-6 py-4 text-right">Total Paid</th>
-                  <th className="px-6 py-4 text-right">Outstanding Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {contractors.map((c) => {
-                  const balanceNum = typeof c.balance === 'string' ? parseFloat(c.balance) : c.balance;
-                  const isNegative = balanceNum < 0;
-                  return (
-                    <motion.tr 
-                      key={c.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-900">{c.name}</div>
-                        <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{c.id}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          {c.phone && (
-                            <div className="flex items-center gap-1.5 text-slate-600 text-xs">
-                              <Phone size={12} className="text-slate-400" />
-                              {c.phone}
-                            </div>
-                          )}
-                          {c.email && (
-                            <div className="flex items-center gap-1.5 text-slate-600 text-xs">
-                              <Mail size={12} className="text-slate-400" />
-                              {c.email}
-                            </div>
-                          )}
-                          {c.address && (
-                            <div className="flex items-center gap-1.5 text-slate-400 text-xs truncate max-w-[200px]" title={c.address}>
-                              <MapPin size={12} />
-                              {c.address}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-700">
-                        {formatCurrency(c.total_bills)}
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-emerald-600">
-                        {formatCurrency(c.total_payments)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${
-                          isNegative 
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200/50' 
-                            : balanceNum > 0 
-                            ? 'bg-rose-50 text-rose-700 border border-rose-200/50'
-                            : 'bg-slate-50 text-slate-600 border border-slate-200/50'
-                        }`}>
-                          {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">Advance</span>}
-                          {formatCurrency(Math.abs(balanceNum))}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Table
+          data={contractors}
+          columns={columns}
+          searchKeys={['name', 'email', 'phone', 'address']}
+          searchPlaceholder="Search contractors by name, email, phone or address..."
+          keyExtractor={(c) => c.id}
+          emptyMessage="No contractors found in database. Get started by adding one above."
+        />
       )}
 
       {/* Add Contractor Modal */}
@@ -292,6 +303,7 @@ export default function Contractors() {
           </div>
         )}
       </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
