@@ -1,4 +1,6 @@
 const User = require('../models/user');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const getAllUsers = async (req, res) => {
   try {
@@ -21,15 +23,15 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { name, email, role } = req.body;
-    if (!name || !email || !role) {
-      return res.status(400).json({ message: 'Name, email, and role are required' });
+    const { name, email, role, password } = req.body;
+    if (!name || !email || !role || !password) {
+      return res.status(400).json({ message: 'Name, email, role, and password are required' });
     }
     const roles = ['ADMIN', 'MANAGER', 'EMPLOYEE'];
     if (!roles.includes(role.toUpperCase())) {
       return res.status(400).json({ message: `Role must be one of ${roles.join(', ')}` });
     }
-    const user = await User.create({ name, email, role: role.toUpperCase() });
+    const user = await User.create({ name, email, role: role.toUpperCase(), password });
     res.status(201).json(user);
   } catch (error) {
     if (error.code === '23505') { // Postgres Unique Violation
@@ -42,7 +44,7 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role } = req.body;
+    const { name, email, role, password } = req.body;
     if (!name || !email || !role) {
       return res.status(400).json({ message: 'Name, email, and role are required' });
     }
@@ -56,7 +58,7 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = await User.update(id, { name, email, role: role.toUpperCase() });
+    const user = await User.update(id, { name, email, role: role.toUpperCase(), password });
     res.json(user);
   } catch (error) {
     if (error.code === '23505') { // Postgres Unique Violation
@@ -82,15 +84,35 @@ const deleteUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: 'Email address is required' });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email address and password are required' });
     }
     const user = await User.findByEmail(email);
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized staff member account or invalid email.' });
     }
-    res.json(user);
+    
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password || '');
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid password.' });
+    }
+
+    // Sign JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'supersecretjwtkey_change_me_in_production',
+      { expiresIn: '24h' }
+    );
+
+    // Exclude password hash from direct response
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.json({
+      user: userWithoutPassword,
+      token
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -104,3 +126,4 @@ module.exports = {
   deleteUser,
   loginUser,
 };
+

@@ -4,15 +4,16 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'EMPLOYEE')),
+    password VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Mock Users
-INSERT INTO users (name, email, role) VALUES 
-('Admine Admin', 'admine@admin.com', 'ADMIN'),
-('Admine Manager', 'admine@manager.com', 'MANAGER'),
-('Admine Employee', 'admine@employee.com', 'EMPLOYEE');
+INSERT INTO users (name, email, role, password) VALUES 
+('Admine Admin', 'admine@admin.com', 'ADMIN', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6'),
+('Admine Manager', 'admine@manager.com', 'MANAGER', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W'),
+('Admine Employee', 'admine@employee.com', 'EMPLOYEE', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.');
 
 -- Contractors Table
 CREATE TABLE contractors (

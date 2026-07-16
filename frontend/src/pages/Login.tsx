@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import logo from '../public/logo.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -14,12 +15,12 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password) return;
 
     try {
       setLoading(true);
       setError('');
-      await login(email.trim().toLowerCase());
+      await login(email.trim().toLowerCase(), password);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Verification failed. Please check your credentials.');
@@ -29,11 +30,17 @@ export default function Login() {
   };
 
   const handleDemoLogin = async (demoEmail: string) => {
+    let demoPass = 'password123';
+    if (demoEmail === 'admine@admin.com') demoPass = 'admin123';
+    else if (demoEmail === 'admine@manager.com') demoPass = 'manager123';
+    else if (demoEmail === 'admine@employee.com') demoPass = 'employee123';
+
     setEmail(demoEmail);
+    setPassword(demoPass);
     try {
       setLoading(true);
       setError('');
-      await login(demoEmail);
+      await login(demoEmail, demoPass);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Verification failed.');
@@ -89,6 +96,23 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
+                className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 font-medium"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase text-slate-400 mb-1.5 tracking-wider">
+              Secret Password
+            </label>
+            <div className="relative">
+              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 font-medium"
               />
             </div>

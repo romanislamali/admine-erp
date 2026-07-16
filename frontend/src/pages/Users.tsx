@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users as UsersIcon, 
@@ -42,7 +42,8 @@ export default function Users() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'EMPLOYEE' as 'ADMIN' | 'MANAGER' | 'EMPLOYEE'
+    role: 'EMPLOYEE' as 'ADMIN' | 'MANAGER' | 'EMPLOYEE',
+    password: ''
   });
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
@@ -68,7 +69,7 @@ export default function Users() {
   // Handle create user
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.role) return;
+    if (!formData.name.trim() || !formData.email.trim() || !formData.role || !formData.password.trim()) return;
 
     const confirmed = await confirmSave(
       'Register Staff Member?', 
@@ -93,7 +94,7 @@ export default function Users() {
         'Staff Registered Successfully', 
         `Access configuration for ${formData.name} is complete and live.`
       );
-      setFormData({ name: '', email: '', role: 'EMPLOYEE' });
+      setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
       setIsAddModalOpen(false);
       fetchUsers();
     } catch (err: any) {
@@ -112,7 +113,8 @@ export default function Users() {
     setFormData({
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      password: ''
     });
     setIsEditModalOpen(true);
   };
@@ -130,10 +132,19 @@ export default function Users() {
 
     try {
       setSubmitting(true);
+      const payload: any = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role
+      };
+      if (formData.password.trim()) {
+        payload.password = formData.password.trim();
+      }
+
       const res = await fetch(`/api/users/${selectedUserId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
 
@@ -145,7 +156,7 @@ export default function Users() {
         'Information Saved',
         'Staff accessibility permissions were updated successfully.'
       );
-      setFormData({ name: '', email: '', role: 'EMPLOYEE' });
+      setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
       setSelectedUserId(null);
       setIsEditModalOpen(false);
       fetchUsers();
@@ -249,7 +260,7 @@ export default function Users() {
         </div>
         <button
           onClick={() => {
-            setFormData({ name: '', email: '', role: 'EMPLOYEE' });
+            setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
             setIsAddModalOpen(true);
           }}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -516,6 +527,18 @@ export default function Users() {
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Enter password (min 6 characters)"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                  />
+                </div>
+
                 <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                   <button
                     type="button"
@@ -603,6 +626,17 @@ export default function Users() {
                     <option value="MANAGER">MANAGER</option>
                     <option value="EMPLOYEE">EMPLOYEE</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password (blank to keep existing)</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Enter new password"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                  />
                 </div>
 
                 <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">

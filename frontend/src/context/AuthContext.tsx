@@ -11,11 +11,49 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Globals fetch interceptor to automatically hook credentials to every outgoing api lookup.
+const originalFetch = window.fetch;
+window.fetch = async (input, init) => {
+  let url = '';
+  if (typeof input === 'string') {
+    url = input;
+  } else if (input instanceof URL) {
+    url = input.href;
+  } else if (input && typeof input === 'object' && 'url' in input) {
+    url = (input as Request).url;
+  }
+
+  // Append token to internal api calls
+  if (url.startsWith('/api/') || url.includes('/api/')) {
+    const token = localStorage.getItem('admine_token');
+    if (token) {
+      init = init || {};
+      const headers = new Headers(init.headers || {});
+      headers.set('Authorization', `Bearer ${token}`);
+      init.headers = headers;
+    }
+  }
+
+  const response = await originalFetch(input, init);
+
+  // Auto clean stale session on 401 Authorization failure
+  if (response.status === 401 && !url.includes('/api/users/login')) {
+    localStorage.removeItem('admine_token');
+    localStorage.removeItem('admine_user');
+    // Use timeout to prevent rendering cycle issues in React router
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 100);
+  }
+
+  return response;
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -24,23 +62,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check if user is stored in local storage
     const storedUser = localStorage.getItem('admine_user');
-    if (storedUser) {
+    const token = localStorage.getItem('admine_token');
+    
+    if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (err) {
         localStorage.removeItem('admine_user');
+        localStorage.removeItem('admine_token');
       }
+    } else {
+      // Clear if one is mismatching
+      localStorage.removeItem('admine_user');
+      localStorage.removeItem('admine_token');
     }
     setLoading(false);
   }, []);
 
-  const login = async (email: string) => {
-    const res = await fetch('/api/users/login', {
+  const login = async (email: string, password: string) => {
+    const res = await originalFetch('/api/users/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, password }),
     });
 
     if (!res.ok) {
@@ -48,12 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(errorData.message || 'Login failed');
     }
 
-    const userData: User = await res.json();
+    const { user: userData, token } = await res.json();
+    localStorage.setItem('admine_token', token);
     localStorage.setItem('admine_user', JSON.stringify(userData));
     setUser(userData);
   };
 
   const logout = () => {
+    localStorage.removeItem('admine_token');
     localStorage.removeItem('admine_user');
     setUser(null);
   };
@@ -72,3 +119,4 @@ export function useAuth() {
   }
   return context;
 }
+

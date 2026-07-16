@@ -19,11 +19,12 @@ const projectRoutes = require('./routes/projectRoutes');
 const billRoutes = require('./routes/billRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const { authenticateToken } = require('./middlewares/auth');
 
-app.use('/api/contractors', contractorRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/bills', billRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/contractors', authenticateToken, contractorRoutes);
+app.use('/api/projects', authenticateToken, projectRoutes);
+app.use('/api/bills', authenticateToken, billRoutes);
+app.use('/api/payments', authenticateToken, paymentRoutes);
 app.use('/api/users', userRoutes);
 
 app.listen(port, () => {
