@@ -207,7 +207,7 @@ export default function Table<T>({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-extrabold uppercase tracking-wider select-none">
+              <tr className="border-b border-gray-300 bg-slate-50/50 text-slate-500 text-xs font-extrabold uppercase tracking-wider select-none">
                 {columns.map((col, idx) => (
                   <th 
                     key={idx}
