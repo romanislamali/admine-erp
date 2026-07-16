@@ -118,8 +118,8 @@ export default function Dashboard() {
   const stats = [
     { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-gray-700 border-gray-100' },
     { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-amber-700 border-amber-100' },
-    { name: 'Outstanding Liability', value: formatCurrency(outstandingBalance) + ' ' + (isOutstandingBalanceNegative ? '(ADVANCE)' : '(DUE)'), icon: ArrowUpRight,
-       color: isOutstandingBalanceNegative ? 'text-green-700 border-emerald-100' : 'text-red-600 border-rose-100' },
+    { name: 'Outstanding Liability', value: formatCurrency(outstandingBalance) + ' ' + (isOutstandingBalanceNegative ? '(ADVANCE)' : '(DUE)'),
+       icon: ArrowUpRight, color: isOutstandingBalanceNegative ? 'text-green-700 border-emerald-100' : 'text-red-600 border-rose-100' },
     { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-100' }
   ];
 
