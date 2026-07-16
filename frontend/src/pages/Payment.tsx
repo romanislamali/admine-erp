@@ -154,7 +154,8 @@ export default function Payment() {
           </button>
         </div>
 
-        {error && (
+        <div className='mt-2'>
+          {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
             {error}
           </div>
@@ -225,6 +226,7 @@ export default function Payment() {
             </div>
           </div>
         )}
+        </div>
 
         {/* Record Payment Modal */}
         <AnimatePresence>

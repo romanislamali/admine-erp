@@ -157,77 +157,79 @@ export default function Billing() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-primary" size={32} />
-          </div>
-        ) : bills.length === 0 ? (
-          <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-            <ReceiptText size={48} className="text-slate-300 mb-3" />
-            <p className="text-lg font-medium text-slate-600">No bills found</p>
-            <p className="text-sm">Log your first supplier or contractor bill to get started.</p>
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <th className="px-6 py-4">Invoice #</th>
-                    <th className="px-6 py-4">Contractor</th>
-                    <th className="px-6 py-4">Associated Project</th>
-                    <th className="px-6 py-4">Invoice Date</th>
-                    <th className="px-6 py-4 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {bills.map((b) => (
-                    <motion.tr
-                      key={b.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-mono">
-                        <div className="flex items-center gap-2">
-                          <FileText size={16} className="text-slate-400 shrink-0" />
-                          <span className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id}`}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">DB_ID: #{b.id}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-700">{b.contractor_name || 'N/A'}</div>
-                        <div className="text-xs text-slate-400">ID: #{b.contractor_id}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {b.project_name ? (
-                          <div>
-                            <div className="font-medium text-slate-700">{b.project_name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">PJ_ID: #{b.project_id}</div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-xs italic">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-medium font-mono">
-                        {formatDate(b.bill_date)}
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-slate-900">
-                        {formatCurrency(b.amount)}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className='mt-2'>
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
+              {error}
             </div>
-          </div>
-        )}
+          )}
+
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+          ) : bills.length === 0 ? (
+            <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
+              <ReceiptText size={48} className="text-slate-300 mb-3" />
+              <p className="text-lg font-medium text-slate-600">No bills found</p>
+              <p className="text-sm">Log your first supplier or contractor bill to get started.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                      <th className="px-6 py-4">Invoice #</th>
+                      <th className="px-6 py-4">Contractor</th>
+                      <th className="px-6 py-4">Associated Project</th>
+                      <th className="px-6 py-4">Invoice Date</th>
+                      <th className="px-6 py-4 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {bills.map((b) => (
+                      <motion.tr
+                        key={b.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-slate-50/50 transition-colors"
+                      >
+                        <td className="px-6 py-4 font-mono">
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-slate-400 shrink-0" />
+                            <span className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id}`}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">DB_ID: #{b.id}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-slate-700">{b.contractor_name || 'N/A'}</div>
+                          <div className="text-xs text-slate-400">ID: #{b.contractor_id}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {b.project_name ? (
+                            <div>
+                              <div className="font-medium text-slate-700">{b.project_name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">PJ_ID: #{b.project_id}</div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-medium font-mono">
+                          {formatDate(b.bill_date)}
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-slate-900">
+                          {formatCurrency(b.amount)}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Log Invoice Modal */}
         <AnimatePresence>

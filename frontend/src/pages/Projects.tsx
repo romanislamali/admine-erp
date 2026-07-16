@@ -144,66 +144,68 @@ export default function Projects() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
+        <div className='mt-2'>
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-primary" size={32} />
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-            <FolderKanban size={48} className="text-slate-300 mb-3" />
-            <p className="text-lg font-medium text-slate-600">No projects found</p>
-            <p className="text-sm">Kick start operations by defining your first project dashboard.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((p) => (
-              <motion.div
-                key={p.id}
-                layout
-                className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 text-lg leading-tight hover:text-primary transition-colors cursor-pointer truncate">{p.name}</h3>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono mt-1">
-                        <span>ID: #{p.id}</span>
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
+              <FolderKanban size={48} className="text-slate-300 mb-3" />
+              <p className="text-lg font-medium text-slate-600">No projects found</p>
+              <p className="text-sm">Kick start operations by defining your first project dashboard.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((p) => (
+                <motion.div
+                  key={p.id}
+                  layout
+                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-slate-900 text-lg leading-tight hover:text-primary transition-colors cursor-pointer truncate">{p.name}</h3>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono mt-1">
+                          <span>ID: #{p.id}</span>
+                        </div>
+                      </div>
+                      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border shrink-0 ${getStatusBadgeClass(p.status)}`}>
+                        {p.status}
+                      </span>
+                    </div>
+
+                    <p className="text-slate-600 text-sm line-clamp-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      {p.description || 'No description provided.'}
+                    </p>
+
+                    <div className="space-y-2 pt-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <User size={14} className="text-slate-400" />
+                        <span>Contractor: <strong className="text-slate-800">{p.contractor_name || 'Unassigned'}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Calendar size={14} className="text-slate-400" />
+                        <span>Start Date: <strong className="text-slate-800">{formatDate(p.start_date)}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Calendar size={14} className="text-slate-400" />
+                        <span>Est. End: <strong className="text-slate-800">{formatDate(p.end_date)}</strong></span>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border shrink-0 ${getStatusBadgeClass(p.status)}`}>
-                      {p.status}
-                    </span>
                   </div>
-
-                  <p className="text-slate-600 text-sm line-clamp-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                    {p.description || 'No description provided.'}
-                  </p>
-
-                  <div className="space-y-2 pt-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <User size={14} className="text-slate-400" />
-                      <span>Contractor: <strong className="text-slate-800">{p.contractor_name || 'Unassigned'}</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Calendar size={14} className="text-slate-400" />
-                      <span>Start Date: <strong className="text-slate-800">{formatDate(p.start_date)}</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Calendar size={14} className="text-slate-400" />
-                      <span>Est. End: <strong className="text-slate-800">{formatDate(p.end_date)}</strong></span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Create Project Modal */}
         <AnimatePresence>

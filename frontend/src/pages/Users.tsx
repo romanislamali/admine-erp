@@ -253,7 +253,7 @@ export default function Users() {
       <div className='bg-white shadow-sm shadow-amber-100 p-5 rounded-xl'>
         {/* Top Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
+          <div className='mb-2'>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
               User Access Management
             </h1>
@@ -272,7 +272,7 @@ export default function Users() {
         </div>
 
         {/* Stats Counter Cards Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {/* Total Users card with card-hover microanimation */}
           <motion.div
             whileHover={{ y: -2 }}
@@ -331,7 +331,7 @@ export default function Users() {
         </div>
 
         {/* Filter and Search Bar Section */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm mb-4">
           <div className="relative w-full md:w-80">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

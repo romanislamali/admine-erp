@@ -186,26 +186,28 @@ export default function Contractors() {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
-          {error}
-        </div>
-      )}
+        <div className='mt-2'>
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
 
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="animate-spin text-primary" size={32} />
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+          ) : (
+            <Table
+              data={contractors}
+              columns={columns}
+              searchKeys={['name', 'email', 'phone', 'address']}
+              searchPlaceholder="Search contractors by name, email, phone or address..."
+              keyExtractor={(c) => c.id}
+              emptyMessage="No contractors found in database. Get started by adding one above."
+            />
+          )}
         </div>
-      ) : (
-        <Table
-          data={contractors}
-          columns={columns}
-          searchKeys={['name', 'email', 'phone', 'address']}
-          searchPlaceholder="Search contractors by name, email, phone or address..."
-          keyExtractor={(c) => c.id}
-          emptyMessage="No contractors found in database. Get started by adding one above."
-        />
-      )}
 
       {/* Add Contractor Modal */}
       <AnimatePresence>
