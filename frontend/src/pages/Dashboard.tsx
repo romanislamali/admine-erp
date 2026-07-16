@@ -83,6 +83,7 @@ export default function Dashboard() {
   const totalInvoiced = data.bills.reduce((sum, b) => sum + parseFloat(b.amount as string || '0'), 0);
   const totalPaid = data.payments.reduce((sum, p) => sum + parseFloat(p.amount as string || '0'), 0);
   const outstandingBalance = totalInvoiced - totalPaid;
+  const isOutstandingBalanceNegative = outstandingBalance < 0;
 
   const activeProjectsCount = data.projects.filter(p => p.status === 'Active').length;
   const totalProjectsCount = data.projects.length;
@@ -115,10 +116,11 @@ export default function Dashboard() {
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
 
   const stats = [
-    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
-    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-    { name: 'Outstanding Liability', value: formatCurrency(outstandingBalance), icon: ArrowUpRight, color: 'text-rose-600 bg-rose-50 border-rose-100' },
-    { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-600 bg-sky-50 border-sky-100' }
+    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-gray-700 border-gray-100' },
+    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-amber-700 border-amber-100' },
+    { name: 'Outstanding Liability', value: formatCurrency(outstandingBalance) + ' ' + (isOutstandingBalanceNegative ? '(ADVANCE)' : '(DUE)'), icon: ArrowUpRight,
+       color: isOutstandingBalanceNegative ? 'text-green-700 border-emerald-100' : 'text-red-600 border-rose-100' },
+    { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-100' }
   ];
 
   return (
@@ -156,7 +158,7 @@ export default function Dashboard() {
 
               {/* Bottom Section: Value */}
               <div>
-                <div className="text-xl font-black text-slate-800">{item.value}</div>
+                <div className={`text-xl font-bold ${item.color}`}>{item.value}</div>
               </div>
 
             </div>

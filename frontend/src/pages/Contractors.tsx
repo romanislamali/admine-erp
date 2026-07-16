@@ -133,7 +133,7 @@ export default function Contractors() {
       align: 'right' as const,
       sortable: true,
       render: (c: Contractor) => (
-        <span className="font-semibold text-emerald-600">
+        <span className="font-semibold text-amber-700">
           {formatCurrency(c.total_payments)}
         </span>
       )
@@ -149,13 +149,14 @@ export default function Contractors() {
         return (
           <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${
             isNegative 
-              ? 'bg-amber-50 text-amber-700 border border-amber-200/50' 
+              ? 'bg-amber-50 text-emerald-600 border border-amber-200/50' 
               : balanceNum > 0 
               ? 'bg-rose-50 text-rose-700 border border-rose-200/50'
               : 'bg-slate-50 text-slate-600 border border-slate-200/50'
           }`}>
-            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">Advance</span>}
             {formatCurrency(Math.abs(balanceNum))}
+            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">(Advance)</span>}
+            {balanceNum > 0 && <span className="text-[10px] uppercase font-bold tracking-tight">(Due)</span>}
           </div>
         );
       }
