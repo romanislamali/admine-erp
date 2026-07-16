@@ -8,7 +8,6 @@ import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Users from './pages/Users';
 import Login from './pages/Login';
-import Logout from './pages/Logout';
 import { ModalProvider } from './context/ModalContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalModal } from './components/GlobalModal';
@@ -63,17 +62,6 @@ function AppContent() {
         </div>
       } />
       
-      <Route path="/logout" element={
-        <div className="min-h-screen bg-bg-page flex flex-col justify-between">
-          <Header />
-          <div className="flex-grow flex items-center justify-center">
-            <Logout />
-          </div>
-          <footer className="py-8 text-center text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Admine ERP Solution. All rights reserved.
-          </footer>
-        </div>
-      } />
 
       {/* Protected routes */}
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
