@@ -10,6 +10,8 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - erp_network
 
   backend:
     build: ./backend
@@ -22,9 +24,16 @@ services:
       DB_NAME: ${DB_NAME:-erp_db}
       DB_PORT: ${DB_PORT:-5432}
       PORT: ${PORT:-3000}
+      ALERT_EMAIL: ${ALERT_EMAIL:-[EMAIL_ADDRESS]}
+      ALERT_EMAIL_PASSWORD: ${ALERT_EMAIL_PASSWORD:-vcctxwtqkazbgwjm}
     volumes:
       - ./backend:/app
       - /app/node_modules
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - erp_network
     depends_on:
       - db
 
@@ -38,8 +47,14 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    networks:
+      - erp_network
     depends_on:
       - backend
 
 volumes:
   pgdata:
+
+networks:
+  erp_network:
+    driver: bridge

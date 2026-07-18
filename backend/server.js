@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// For Google Drive DB Backup
+require('./backupScheduler.js');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
