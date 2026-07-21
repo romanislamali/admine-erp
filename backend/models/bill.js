@@ -1,14 +1,23 @@
 const db = require('../config/db');
 
 const Bill = {
-  getAll: async () => {
-    const { rows } = await db.query(`
+  getAll: async (contractorId = null) => {
+    let queryText = `
       SELECT b.*, c.name as contractor_name, p.name as project_name
       FROM bills b
       LEFT JOIN contractors c ON b.contractor_id = c.id
       LEFT JOIN projects p ON b.project_id = p.id
-      ORDER BY b.id DESC
-    `);
+    `;
+    const params = [];
+    if (contractorId) {
+      queryText += ` WHERE b.contractor_id = $1 AND b.deleted = false`;
+      params.push(contractorId);
+    } else {
+      queryText += ` WHERE b.deleted = false`;
+    }
+    queryText += ` ORDER BY b.id DESC`;
+
+    const { rows } = await db.query(queryText, params);
     return rows;
   },
   

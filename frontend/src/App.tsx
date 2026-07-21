@@ -12,6 +12,7 @@ import { ModalProvider } from './context/ModalContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalModal } from './components/GlobalModal';
 import { Loader2 } from 'lucide-react';
+import ContractorDetails from './pages/ContractorDetails';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -67,6 +68,7 @@ function AppContent() {
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
       <Route path="/projects" element={<ProtectedLayout><Projects /></ProtectedLayout>} />
       <Route path="/contractors" element={<ProtectedLayout><Contractors /></ProtectedLayout>} />
+      <Route path="/contractor-details/:id" element={<ProtectedLayout><ContractorDetails /></ProtectedLayout>} />
       <Route path="/billing" element={<ProtectedLayout><Billing /></ProtectedLayout>} />
       <Route path="/payment" element={<ProtectedLayout><Payment /></ProtectedLayout>} />
       <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />

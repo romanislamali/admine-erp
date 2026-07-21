@@ -2,7 +2,8 @@ const Payment = require('../models/payment');
 
 const getAllPayments = async (req, res) => {
   try {
-    const payments = await Payment.getAll();
+    const { contractor_id } = req.query;
+    const payments = await Payment.getAll(contractor_id ? parseInt(contractor_id) : null);
     res.json(payments);
   } catch (error) {
     res.status(500).json({ message: error.message });

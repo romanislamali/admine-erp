@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Phone, Mail, MapPin, X, Loader2 } from 'lucide-react';
+import { UserPlus, Phone, Mail, MapPin, X, Loader2, Eye, Pencil, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Table from '../components/Table';
+import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 
 interface Contractor {
   id: number;
@@ -15,11 +18,17 @@ interface Contractor {
 }
 
 export default function Contractors() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -47,27 +56,105 @@ export default function Contractors() {
     fetchContractors();
   }, []);
 
+  const handleViewBillsAndPayments = (contractorId: number) => {
+    navigate(`/contractor-details/${contractorId}`);
+  };
+
+  const handleEdit = (contractor: Contractor) => {
+    setEditId(contractor.id);
+    setFormData({
+      name: contractor.name,
+      phone: contractor.phone || '',
+      email: contractor.email || '',
+      address: contractor.address || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    const confirmed = await confirmDelete(
+      'Remove Contractor?',
+      'This will permanently delete this contractor from the directory. This action is irreversible.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/contractors/${id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete contractor');
+      }
+
+      await showSuccess(
+        'Contractor Deleted',
+        'The contractor has been successfully removed from the directory.'
+      );
+      fetchContractors();
+    } catch (err: any) {
+      await showError(
+        'Deletion Failed',
+        err.message || 'We could not delete this contractor. Please verify if it is associated with any projects or bills.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditId(null);
+    setFormData({ name: '', phone: '', email: '', address: '' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
+    const actionText = editId ? 'Save Contractor Updates' : 'Add Contractor';
+    const messageText = editId 
+      ? `Are you sure you want to save updates for ${formData.name}?`
+      : `Are you sure you want to add ${formData.name} to the directory?`;
+
+    const confirmed = await confirmSave(actionText, messageText);
+    if (!confirmed) return;
+
     try {
       setSubmitting(true);
-      const res = await fetch('/api/contractors', {
-        method: 'POST',
+      const url = editId ? `/api/contractors/${editId}` : '/api/contractors';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
 
-      if (!res.ok) throw new Error('Failed to create contractor');
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} contractor`);
+      }
       
-      setFormData({ name: '', phone: '', email: '', address: '' });
-      setIsModalOpen(false);
+      await showSuccess(
+        editId ? 'Contractor Updated' : 'Contractor Added',
+        editId 
+          ? `Updates to ${formData.name} were successfully saved.` 
+          : `${formData.name} has been added to the contractor directory.`
+      );
+
+      handleCloseModal();
       fetchContractors();
     } catch (err: any) {
-      alert(err.message || 'Failed to create contractor');
+      await showError(
+        'Database Sync Failed',
+        err.message || `Unable to store changes. Please try again.`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -82,6 +169,39 @@ export default function Contractors() {
   };
 
   const columns = [
+    {
+      header: 'Action',
+      key: 'action',
+      render: (c: Contractor) => (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleViewBillsAndPayments(c.id)}
+            title="View bills and payments"
+            className="p-1 px-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded transition-colors"
+          >
+            <Eye size={16} />
+          </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => handleEdit(c)}
+                title="Edit contractor"
+                className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={() => handleDelete(c.id)}
+                title="Delete contractor"
+                className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+        </div> 
+      )
+    },
     {
       header: 'Contractor',
       key: 'name',
@@ -178,7 +298,11 @@ export default function Contractors() {
           <p className="text-slate-500 mt-1">Manage vendor details, track invoices, payments, and live balances.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditId(null);
+            setFormData({ name: '', phone: '', email: '', address: '' });
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           <UserPlus size={18} />
@@ -218,7 +342,7 @@ export default function Contractors() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleCloseModal}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
             {/* Modal Content */}
@@ -229,9 +353,11 @@ export default function Contractors() {
               className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">New Contractor</h3>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {editId ? 'Modify Contractor' : 'New Contractor'}
+                </h3>
                 <button 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
                 >
                   <X size={20} />
@@ -288,7 +414,7 @@ export default function Contractors() {
                 <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={handleCloseModal}
                     className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
                   >
                     Cancel
@@ -298,7 +424,13 @@ export default function Contractors() {
                     disabled={submitting}
                     className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                   >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit'}
+                    {submitting ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : editId ? (
+                      'Save Changes'
+                    ) : (
+                      'Submit'
+                    )}
                   </button>
                 </div>
               </form>
