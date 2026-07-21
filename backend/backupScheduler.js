@@ -50,13 +50,13 @@ async function sendMailToSystemAdmin(subject, text) {
     }
 }
 
-// Generate PG backup using pg_dump
+// Generate PG backup using pg_dump in plain-text SQL format
 function generatePGBackup() {
     return new Promise((resolve, reject) => {
-        const fileName = `db-backup-${new Date().toISOString().split('T')[0]}.dump`;
+        const fileName = `db-backup-${new Date().toISOString().split('T')[0]}.sql`;
         const filePath = path.join(__dirname, fileName);
 
-        const command = `pg_dump -h ${process.env.DB_HOST} -p ${process.env.DB_PORT} -U ${process.env.DB_USER} -d ${process.env.DB_NAME} -F c -b -v -f "${filePath}"`;
+        const command = `pg_dump -h ${process.env.DB_HOST} -p ${process.env.DB_PORT} -U ${process.env.DB_USER} -d ${process.env.DB_NAME} -F p -b -v -f "${filePath}"`;
 
         exec(command, { env: { ...process.env, PGPASSWORD: process.env.DB_PASSWORD } }, (error) => {
             if (error) return reject(error);
