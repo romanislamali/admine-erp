@@ -115,7 +115,7 @@ export default function Contractors() {
     if (!formData.name.trim()) return;
 
     const actionText = editId ? 'Save Contractor Updates' : 'Add Contractor';
-    const messageText = editId 
+    const messageText = editId
       ? `Are you sure you want to save updates for ${formData.name}?`
       : `Are you sure you want to add ${formData.name} to the directory?`;
 
@@ -140,11 +140,11 @@ export default function Contractors() {
       if (!res.ok) {
         throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} contractor`);
       }
-      
+
       await showSuccess(
         editId ? 'Contractor Updated' : 'Contractor Added',
-        editId 
-          ? `Updates to ${formData.name} were successfully saved.` 
+        editId
+          ? `Updates to ${formData.name} were successfully saved.`
           : `${formData.name} has been added to the contractor directory.`
       );
 
@@ -200,7 +200,7 @@ export default function Contractors() {
               </button>
             </>
           )}
-        </div> 
+        </div>
       )
     },
     {
@@ -268,13 +268,12 @@ export default function Contractors() {
         const balanceNum = typeof c.balance === 'string' ? parseFloat(c.balance) : c.balance;
         const isNegative = balanceNum < 0;
         return (
-          <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${
-            isNegative 
-              ? 'bg-amber-50 text-emerald-600 border border-amber-200/50' 
-              : balanceNum > 0 
+          <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${isNegative
+            ? 'bg-amber-50 text-emerald-600 border border-amber-200/50'
+            : balanceNum > 0
               ? 'bg-rose-50 text-rose-700 border border-rose-200/50'
               : 'bg-slate-50 text-slate-600 border border-slate-200/50'
-          }`}>
+            }`}>
             {formatCurrency(Math.abs(balanceNum))}
             {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">(Advance)</span>}
             {balanceNum > 0 && <span className="text-[10px] uppercase font-bold tracking-tight">(Due)</span>}
@@ -285,31 +284,31 @@ export default function Contractors() {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
       <div className='bg-white shadow-sm shadow-amber-100 p-5 rounded-xl'>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-            Contractor Directory
-          </h1>
-          <p className="text-slate-500 mt-1">Manage vendor details, track invoices, payments, and live balances.</p>
+          <div>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
+              Contractor Directory
+            </h1>
+            <p className="text-slate-500 mt-1">Manage vendor details, track invoices, payments, and live balances.</p>
+          </div>
+          <button
+            onClick={() => {
+              setEditId(null);
+              setFormData({ name: '', phone: '', email: '', address: '' });
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <UserPlus size={18} />
+            Add Contractor
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setEditId(null);
-            setFormData({ name: '', phone: '', email: '', address: '' });
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <UserPlus size={18} />
-          Add Contractor
-        </button>
-      </div>
 
         <div className='mt-2'>
           {error && (
@@ -334,111 +333,111 @@ export default function Contractors() {
           )}
         </div>
 
-      {/* Add Contractor Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCloseModal}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            {/* Modal Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">
-                  {editId ? 'Modify Contractor' : 'New Contractor'}
-                </h3>
-                <button 
-                  onClick={handleCloseModal}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Company / Contractor Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter name"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                  />
+        {/* Add Contractor Modal */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleCloseModal}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              />
+              {/* Modal Content */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {editId ? 'Update Contractor Details' : 'Add New Contractor'}
+                  </h3>
+                  <button
+                    onClick={handleCloseModal}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Phone Number</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Company / Contractor Name *</label>
                     <input
                       type="text"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="e.g. +1 555-0199"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter name"
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="e.g. +8801xxxxxxx"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="email@company.com"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="email@company.com"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Street Address</label>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="Enter physical address details"
+                      rows={2}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 resize-none"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Street Address</label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter physical address details"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 resize-none"
-                  />
-                </div>
-
-                <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
-                  >
-                    {submitting ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : editId ? (
-                      'Save Changes'
-                    ) : (
-                      'Submit'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : editId ? (
+                        'Save Changes'
+                      ) : (
+                        'Submit'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
