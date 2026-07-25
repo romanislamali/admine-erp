@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FolderKanban, Loader2 } from 'lucide-react';
+import { X, FolderKanban, Loader2, Pencil, Trash2 } from 'lucide-react';
 import Table, { Column } from '../components/Table';
 import { useModal } from '../context/ModalContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Project {
   id: number;
@@ -28,6 +29,8 @@ export default function Projects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   const { confirmSave, confirmDelete, showSuccess, showError } = useModal();
 
@@ -204,6 +207,33 @@ export default function Projects() {
 
   const columns: Column<Project>[] = [
     {
+      header: 'Action',
+      key: 'action',
+      render: (p: Project) => (
+        <div className="flex items-center gap-1.5">
+
+          <>
+            <button
+              onClick={() => handleEdit(p)}
+              title="Edit project"
+              className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+            >
+              <Pencil size={16} />
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleDelete(p.id)}
+                title="Delete contractor"
+                className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </>
+        </div>
+      )
+    },
+    {
       header: 'Project Name',
       key: 'name',
       sortable: true,
@@ -312,9 +342,6 @@ export default function Projects() {
               searchKeys={['name', 'contractor_name', 'status', 'description']}
               searchPlaceholder="Search projects by name, contractor, status..."
               initialItemsPerPage={10}
-              onEdit={handleEdit}
-              onDelete={(row) => handleDelete(row.id)}
-              roles={{ edit: ['ADMIN'], delete: ['ADMIN'] }}
               keyExtractor={(row) => row.id}
               emptyMessage="No projects found."
             />
