@@ -49,6 +49,26 @@ const Bill = {
     } finally {
       client.release();
     }
+  },
+
+  update: async (id, billData) => {
+    const { contractor_id, project_id, amount, invoice_number, bill_date } = billData;
+    const { rows } = await db.query(
+      `UPDATE bills
+       SET contractor_id = $1, project_id = $2, amount = $3, invoice_number = $4, bill_date = $5, updated_at = NOW()
+       WHERE id = $6 AND deleted = false
+       RETURNING *`,
+      [contractor_id, project_id || null, amount, invoice_number, bill_date || new Date(), id]
+    );
+    return rows[0];
+  },
+
+  delete: async (id) => {
+    const { rows } = await db.query(
+      'UPDATE bills SET deleted = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    return rows[0];
   }
 };
 

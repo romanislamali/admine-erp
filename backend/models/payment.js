@@ -48,6 +48,26 @@ const Payment = {
     } finally {
       client.release();
     }
+  },
+
+  update: async (id, paymentData) => {
+    const { contractor_id, bill_id, amount, payment_date } = paymentData;
+    const { rows } = await db.query(
+      `UPDATE payments
+       SET contractor_id = $1, bill_id = $2, amount = $3, payment_date = $4, updated_at = NOW()
+       WHERE id = $5 AND deleted = false
+       RETURNING *`,
+      [contractor_id, bill_id || null, amount, payment_date || new Date(), id]
+    );
+    return rows[0];
+  },
+
+  delete: async (id) => {
+    const { rows } = await db.query(
+      'UPDATE payments SET deleted = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    return rows[0];
   }
 };
 
