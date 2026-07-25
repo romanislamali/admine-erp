@@ -2,18 +2,20 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(20) UNIQUE,  
+    email VARCHAR(100) UNIQUE,
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'EMPLOYEE')),
-    password VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Mock Users
-INSERT INTO users (name, email, role, password) VALUES 
-('Admine Admin', 'admine@admin.com', 'ADMIN', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6'),
-('Admine Manager', 'admine@manager.com', 'MANAGER', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W'),
-('Admine Employee', 'admine@employee.com', 'EMPLOYEE', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.');
+INSERT INTO users (name, username, password, phone, email, role) VALUES 
+('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', [EMAIL_ADDRESS]', 'ADMIN'),
+('Admine Manager', 'adminemanager', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W', '+8801710310756', [EMAIL_ADDRESS]', 'MANAGER'),
+('Admine Employee', 'admineemployee', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.', '+8801710310757', [EMAIL_ADDRESS]', 'EMPLOYEE');
 
 -- Contractors Table
 CREATE TABLE contractors (

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Loader2, Mail, ShieldAlert, KeyRound, ArrowRight } from 'lucide-react';
+import { Loader2, User, ShieldAlert, KeyRound, ArrowRight } from 'lucide-react';
 import logo from '../public/logo.png';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,12 +15,12 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!username.trim() || !password) return;
 
     try {
       setLoading(true);
       setError('');
-      await login(email.trim().toLowerCase(), password);
+      await login(username.trim(), password);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Verification failed. Please check your credentials.');
@@ -29,18 +29,18 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string) => {
+  const handleDemoLogin = async (demoUsername: string) => {
     let demoPass = 'password123';
-    if (demoEmail === 'admine@admin.com') demoPass = 'admin123';
-    else if (demoEmail === 'admine@manager.com') demoPass = 'manager123';
-    else if (demoEmail === 'admine@employee.com') demoPass = 'employee123';
+    if (demoUsername === 'admineadmin') demoPass = 'admin123';
+    else if (demoUsername === 'adminemanager') demoPass = 'manager123';
+    else if (demoUsername === 'admineemployee') demoPass = 'employee123';
 
-    setEmail(demoEmail);
+    setUsername(demoUsername);
     setPassword(demoPass);
     try {
       setLoading(true);
       setError('');
-      await login(demoEmail, demoPass);
+      await login(demoUsername, demoPass);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Verification failed.');
@@ -86,16 +86,16 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1.5 tracking-wider">
-              Staff Email Address
+              Staff Username
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
                 className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 font-medium"
               />
             </div>
@@ -143,19 +143,19 @@ export default function Login() {
           
           <div className="space-y-2">
             {[
-              { email: 'admine@admin.com', label: 'Administrator', style: 'bg-indigo-50 text-indigo-700 border-indigo-200/50 hover:bg-indigo-100/50' },
-              { email: 'admine@manager.com', label: 'Billing Manager', style: 'bg-sky-50 text-sky-700 border-sky-200/50 hover:bg-sky-100/50' },
-              { email: 'admine@employee.com', label: 'Staff Member', style: 'bg-emerald-50 text-emerald-700 border-emerald-200/50 hover:bg-emerald-100/50' },
+              { username: 'admineadmin', label: 'Administrator', style: 'bg-indigo-50 text-indigo-700 border-indigo-200/50 hover:bg-indigo-100/50' },
+              { username: 'adminemanager', label: 'Billing Manager', style: 'bg-sky-50 text-sky-700 border-sky-200/50 hover:bg-sky-100/50' },
+              { username: 'admineemployee', label: 'Staff Member', style: 'bg-emerald-50 text-emerald-700 border-emerald-200/50 hover:bg-emerald-100/50' },
             ].map((account) => (
               <button
-                key={account.email}
+                key={account.username}
                 type="button"
-                onClick={() => handleDemoLogin(account.email)}
+                onClick={() => handleDemoLogin(account.username)}
                 disabled={loading}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${account.style}`}
               >
                 <span>{account.label}</span>
-                <span className="font-mono text-[11px] opacity-80">{account.email}</span>
+                <span className="font-mono text-[11px] opacity-80">{account.username}</span>
               </button>
             ))}
           </div>

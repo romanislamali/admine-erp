@@ -3,11 +3,15 @@ const bcrypt = require('bcryptjs');
 
 const User = {
   getAll: async () => {
-    const { rows } = await db.query('SELECT id, name, email, role, created_at, updated_at FROM users ORDER BY id DESC');
+    const { rows } = await db.query('SELECT id, name, username, phone, email, role, created_at, updated_at FROM users ORDER BY id DESC');
     return rows;
   },
   getById: async (id) => {
-    const { rows } = await db.query('SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = $1', [id]);
+    const { rows } = await db.query('SELECT id, name, username, phone, email, role, created_at, updated_at FROM users WHERE id = $1', [id]);
+    return rows[0];
+  },
+  findByUsername: async (username) => {
+    const { rows } = await db.query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
     return rows[0];
   },
   findByEmail: async (email) => {
@@ -15,29 +19,29 @@ const User = {
     return rows[0];
   },
   create: async (user) => {
-    const { name, email, role, password } = user;
+    const { name, username, phone, email, role, password } = user;
     const passwordHash = password ? await bcrypt.hash(password, 10) : null;
     const { rows } = await db.query(
-      'INSERT INTO users (name, email, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at, updated_at',
-      [name, email, role, passwordHash]
+      'INSERT INTO users (name, username, phone, email, role, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, username, phone, email, role, created_at, updated_at',
+      [name, username, phone || null, email || null, role, passwordHash]
     );
     return rows[0];
   },
   update: async (id, user) => {
-    const { name, email, role, password } = user;
-    let queryText = 'UPDATE users SET name = $1, email = $2, role = $3 WHERE id = $4 RETURNING id, name, email, role, created_at, updated_at';
-    let params = [name, email, role, id];
+    const { name, username, phone, email, role, password } = user;
+    let queryText = 'UPDATE users SET name = $1, username = $2, phone = $3, email = $4, role = $5, updated_at = NOW() WHERE id = $6 RETURNING id, name, username, phone, email, role, created_at, updated_at';
+    let params = [name, username, phone || null, email || null, role, id];
     
     if (password) {
       const passwordHash = await bcrypt.hash(password, 10);
-      queryText = 'UPDATE users SET name = $1, email = $2, role = $3, password = $4 WHERE id = $5 RETURNING id, name, email, role, created_at, updated_at';
-      params = [name, email, role, passwordHash, id];
+      queryText = 'UPDATE users SET name = $1, username = $2, phone = $3, email = $4, role = $5, password = $6, updated_at = NOW() WHERE id = $7 RETURNING id, name, username, phone, email, role, created_at, updated_at';
+      params = [name, username, phone || null, email || null, role, passwordHash, id];
     }
     const { rows } = await db.query(queryText, params);
     return rows[0];
   },
   delete: async (id) => {
-    const { rows } = await db.query('DELETE FROM users WHERE id = $1 RETURNING id, name, email, role, created_at, updated_at', [id]);
+    const { rows } = await db.query('DELETE FROM users WHERE id = $1 RETURNING id, name, username, phone, email, role, created_at, updated_at', [id]);
     return rows[0];
   }
 };

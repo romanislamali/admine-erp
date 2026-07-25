@@ -3,7 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export interface User {
   id: number;
   name: string;
-  email: string;
+  username: string;
+  phone?: string;
+  email?: string;
   role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
   created_at: string;
 }
@@ -11,7 +13,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -79,13 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     const res = await originalFetch('/api/users/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
 
     if (!res.ok) {

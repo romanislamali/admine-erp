@@ -12,6 +12,7 @@ import {
   Loader2,
   X,
   Mail,
+  Phone,
   AlertCircle
 } from 'lucide-react';
 import { useModal } from '../context/ModalContext';
@@ -19,7 +20,9 @@ import { useModal } from '../context/ModalContext';
 interface User {
   id: number;
   name: string;
-  email: string;
+  username: string;
+  phone?: string;
+  email?: string;
   role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
   created_at: string;
 }
@@ -41,9 +44,12 @@ export default function Users() {
   // Form states
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
+    phone: '',
     email: '',
     role: 'EMPLOYEE' as 'ADMIN' | 'MANAGER' | 'EMPLOYEE',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
@@ -69,7 +75,12 @@ export default function Users() {
   // Handle create user
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.role || !formData.password.trim()) return;
+    if (!formData.name.trim() || !formData.username.trim() || !formData.role || !formData.password) return;
+
+    if (formData.password !== formData.confirmPassword) {
+      await showError('Password Mismatch', 'Secret Password and Confirm Password do not match.');
+      return;
+    }
 
     const confirmed = await confirmSave(
       'Register Staff Member?',
@@ -82,7 +93,14 @@ export default function Users() {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          username: formData.username.trim(),
+          phone: formData.phone.trim() || null,
+          email: formData.email.trim() || null,
+          role: formData.role,
+          password: formData.password
+        })
       });
       const data = await res.json();
 
@@ -94,7 +112,7 @@ export default function Users() {
         'Staff Registered Successfully',
         `Access configuration for ${formData.name} is complete and live.`
       );
-      setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
+      setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setIsAddModalOpen(false);
       fetchUsers();
     } catch (err: any) {
@@ -112,9 +130,12 @@ export default function Users() {
     setSelectedUserId(user.id);
     setFormData({
       name: user.name,
-      email: user.email,
+      username: user.username || '',
+      phone: user.phone || '',
+      email: user.email || '',
       role: user.role,
-      password: ''
+      password: '',
+      confirmPassword: ''
     });
     setIsEditModalOpen(true);
   };
@@ -122,7 +143,12 @@ export default function Users() {
   // Handle edit user
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUserId || !formData.name.trim() || !formData.email.trim() || !formData.role) return;
+    if (!selectedUserId || !formData.name.trim() || !formData.username.trim() || !formData.role) return;
+
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      await showError('Password Mismatch', 'Secret Password and Confirm Password do not match.');
+      return;
+    }
 
     const confirmed = await confirmSave(
       'Save Account Updates?',
@@ -133,8 +159,10 @@ export default function Users() {
     try {
       setSubmitting(true);
       const payload: any = {
-        name: formData.name,
-        email: formData.email,
+        name: formData.name.trim(),
+        username: formData.username.trim(),
+        phone: formData.phone.trim() || null,
+        email: formData.email.trim() || null,
         role: formData.role
       };
       if (formData.password.trim()) {
@@ -156,7 +184,7 @@ export default function Users() {
         'Information Saved',
         'Staff accessibility permissions were updated successfully.'
       );
-      setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
+      setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setSelectedUserId(null);
       setIsEditModalOpen(false);
       fetchUsers();
@@ -208,7 +236,9 @@ export default function Users() {
   const filteredUsers = users.filter(user => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      (user.username && user.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.phone && user.phone.includes(searchQuery));
 
     const matchesRole =
       selectedRoleFilter === 'ALL' ||
@@ -261,7 +291,7 @@ export default function Users() {
           </div>
           <button
             onClick={() => {
-              setFormData({ name: '', email: '', role: 'EMPLOYEE', password: '' });
+              setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
               setIsAddModalOpen(true);
             }}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -273,7 +303,7 @@ export default function Users() {
 
         {/* Stats Counter Cards Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {/* Total Users card with card-hover microanimation */}
+          {/* Total Users card */}
           <motion.div
             whileHover={{ y: -2 }}
             className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between"
@@ -338,7 +368,7 @@ export default function Users() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or email..."
+              placeholder="Search by name, username, email..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
             />
           </div>
@@ -384,7 +414,8 @@ export default function Users() {
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
                     <th className="px-6 py-4">Full Name</th>
-                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Username</th>
+                    <th className="px-6 py-4">Contact Information</th>
                     <th className="px-6 py-4">Role Permission</th>
                     <th className="px-6 py-4">Date Joined</th>
                     <th className="px-6 py-4 text-center">Modify</th>
@@ -413,12 +444,27 @@ export default function Users() {
                         </div>
                       </td>
 
-                      {/* Email */}
-                      <td className="px-6 py-4 text-slate-600">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                          <Mail size={12} className="text-slate-400" />
-                          {user.email}
-                        </div>
+                      {/* Username */}
+                      <td className="px-6 py-4 text-slate-700 font-mono text-xs font-medium">
+                        @{user.username}
+                      </td>
+
+                      {/* Contact Info (Email & Phone optional) */}
+                      <td className="px-6 py-4 text-slate-600 space-y-1">
+                        {user.email ? (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <Mail size={12} className="text-slate-400 shrink-0" />
+                            <span>{user.email}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">No email</span>
+                        )}
+                        {user.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Phone size={12} className="text-slate-400 shrink-0" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Role Permission Badge */}
@@ -463,7 +509,7 @@ export default function Users() {
         {/* CREATE STAFF MODAL */}
         <AnimatePresence>
           {isAddModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -477,7 +523,7 @@ export default function Users() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
+                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-900">Add Staff Account</h3>
@@ -503,10 +549,32 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Username *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      placeholder="Enter username for login"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Phone Number (Optional)</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+8801700000000"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address (Optional)</label>
                     <input
                       type="email"
-                      required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="name@company.com"
@@ -539,6 +607,28 @@ export default function Users() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="Confirm password"
+                      className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${
+                        formData.confirmPassword && formData.password !== formData.confirmPassword
+                          ? 'border-rose-400 focus:border-rose-500'
+                          : 'border-slate-200 focus:border-primary'
+                      }`}
+                    />
+                    {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                      <p className="text-xs text-rose-500 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle size={12} />
+                        Passwords do not match
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                     <button
                       type="button"
@@ -549,7 +639,7 @@ export default function Users() {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || (!!formData.confirmPassword && formData.password !== formData.confirmPassword)}
                       className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                     >
                       {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Create User'}
@@ -564,7 +654,7 @@ export default function Users() {
         {/* EDIT STAFF MODAL */}
         <AnimatePresence>
           {isEditModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -578,7 +668,7 @@ export default function Users() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
+                className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-900">Modify User Account</h3>
@@ -604,10 +694,32 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Username *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      placeholder="Enter username for login"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Phone Number (Optional)</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+8801700000000"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Email Address (Optional)</label>
                     <input
                       type="email"
-                      required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="name@company.com"
@@ -639,6 +751,27 @@ export default function Users() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password</label>
+                    <input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                      className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${
+                        formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
+                          ? 'border-rose-400 focus:border-rose-500'
+                          : 'border-slate-200 focus:border-primary'
+                      }`}
+                    />
+                    {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                      <p className="text-xs text-rose-500 font-medium mt-1 flex items-center gap-1">
+                        <AlertCircle size={12} />
+                        Passwords do not match
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                     <button
                       type="button"
@@ -652,7 +785,7 @@ export default function Users() {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || (!!formData.password && !!formData.confirmPassword && formData.password !== formData.confirmPassword)}
                       className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                     >
                       {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Save Changes'}

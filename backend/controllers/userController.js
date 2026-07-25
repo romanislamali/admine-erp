@@ -23,19 +23,28 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { name, email, role, password } = req.body;
-    if (!name || !email || !role || !password) {
-      return res.status(400).json({ message: 'Name, email, role, and password are required' });
+    const { name, username, phone, email, role, password } = req.body;
+    if (!name || !username || !role || !password) {
+      return res.status(400).json({ message: 'Name, username, role, and password are required' });
     }
     const roles = ['ADMIN', 'MANAGER', 'EMPLOYEE'];
     if (!roles.includes(role.toUpperCase())) {
       return res.status(400).json({ message: `Role must be one of ${roles.join(', ')}` });
     }
-    const user = await User.create({ name, email, role: role.toUpperCase(), password });
+    const user = await User.create({ name, username, phone, email, role: role.toUpperCase(), password });
     res.status(201).json(user);
   } catch (error) {
     if (error.code === '23505') { // Postgres Unique Violation
-      return res.status(400).json({ message: 'Email already exists' });
+      if (error.detail && error.detail.includes('username')) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      if (error.detail && error.detail.includes('email')) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+      if (error.detail && error.detail.includes('phone')) {
+        return res.status(400).json({ message: 'Phone number already exists' });
+      }
+      return res.status(400).json({ message: 'A user with these unique credentials already exists' });
     }
     res.status(400).json({ message: error.message });
   }
@@ -44,9 +53,9 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, password } = req.body;
-    if (!name || !email || !role) {
-      return res.status(400).json({ message: 'Name, email, and role are required' });
+    const { name, username, phone, email, role, password } = req.body;
+    if (!name || !username || !role) {
+      return res.status(400).json({ message: 'Name, username, and role are required' });
     }
     const roles = ['ADMIN', 'MANAGER', 'EMPLOYEE'];
     if (!roles.includes(role.toUpperCase())) {
@@ -58,11 +67,20 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = await User.update(id, { name, email, role: role.toUpperCase(), password });
+    const user = await User.update(id, { name, username, phone, email, role: role.toUpperCase(), password });
     res.json(user);
   } catch (error) {
     if (error.code === '23505') { // Postgres Unique Violation
-      return res.status(400).json({ message: 'Email already exists' });
+      if (error.detail && error.detail.includes('username')) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      if (error.detail && error.detail.includes('email')) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+      if (error.detail && error.detail.includes('phone')) {
+        return res.status(400).json({ message: 'Phone number already exists' });
+      }
+      return res.status(400).json({ message: 'A user with these unique credentials already exists' });
     }
     res.status(400).json({ message: error.message });
   }
@@ -84,24 +102,25 @@ const deleteUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email address and password are required' });
+    const { username, email, password } = req.body;
+    const loginIdentifier = username || email;
+    if (!loginIdentifier || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
     }
-    const user = await User.findByEmail(email);
+    const user = await User.findByUsername(loginIdentifier);
     if (!user) {
-      return res.status(401).json({ message: 'Unauthorized staff member account or invalid email.' });
+      return res.status(401).json({ message: 'Invalid username or password.' });
     }
     
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password || '');
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid password.' });
+      return res.status(401).json({ message: 'Invalid username or password.' });
     }
 
     // Sign JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET || 'supersecretjwtkey_change_me_in_production',
       { expiresIn: '24h' }
     );
