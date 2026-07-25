@@ -13,7 +13,9 @@ import {
   X,
   Mail,
   Phone,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useModal } from '../context/ModalContext';
 
@@ -51,6 +53,8 @@ export default function Users() {
     password: '',
     confirmPassword: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   // Fetch all users
@@ -433,7 +437,7 @@ export default function Users() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${user.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' :
-                              user.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
+                            user.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
                             }`}>
                             {user.name.substring(0, 2)}
                           </div>
@@ -526,7 +530,7 @@ export default function Users() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Add Staff Account</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">Onboard User</h3>
                   <button
                     onClick={() => setIsAddModalOpen(false)}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
@@ -597,30 +601,49 @@ export default function Users() {
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter password (min 6 characters)"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Enter password (min 6 characters)"
+                        className="w-full pl-3 pr-10 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Confirm password"
-                      className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${
-                        formData.confirmPassword && formData.password !== formData.confirmPassword
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        placeholder="Confirm password"
+                        className={`w-full pl-3 pr-10 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${formData.confirmPassword && formData.password !== formData.confirmPassword
                           ? 'border-rose-400 focus:border-rose-500'
                           : 'border-slate-200 focus:border-primary'
-                      }`}
-                    />
+                          }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+                        title={showConfirmPassword ? "Hide password" : "Show password"}
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                     {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                       <p className="text-xs text-rose-500 font-medium mt-1 flex items-center gap-1">
                         <AlertCircle size={12} />
@@ -742,28 +765,47 @@ export default function Users() {
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password (blank to keep existing)</label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter new password"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Enter new password"
+                        className="w-full pl-3 pr-10 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password</label>
-                    <input
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Confirm new password"
-                      className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${
-                        formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                        className={`w-full pl-3 pr-10 py-2 border rounded-xl focus:outline-none text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 ${formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
                           ? 'border-rose-400 focus:border-rose-500'
                           : 'border-slate-200 focus:border-primary'
-                      }`}
-                    />
+                          }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+                        title={showConfirmPassword ? "Hide password" : "Show password"}
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                     {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
                       <p className="text-xs text-rose-500 font-medium mt-1 flex items-center gap-1">
                         <AlertCircle size={12} />
