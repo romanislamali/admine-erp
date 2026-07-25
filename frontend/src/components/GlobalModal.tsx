@@ -22,8 +22,8 @@ interface ThemeConfig {
 
 const THEMES: Record<ModalType, ThemeConfig> = {
   success: {
-    icon: <CheckCircle2 className="w-8 h-8 text-emerald-500" />,
-    iconBgClass: 'bg-emerald-50 border border-emerald-100/50 rgba(16, 185, 129, 0.1)',
+    icon: <CheckCircle2 className="w-6 h-6 text-emerald-500" />,
+    iconBgClass: 'bg-emerald-50 border border-emerald-100/50',
     accentBarClass: 'bg-gradient-to-r from-emerald-400 to-teal-500',
     buttonGradientClass: 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white',
     buttonShadowClass: 'shadow-emerald-500/20',
@@ -32,8 +32,8 @@ const THEMES: Record<ModalType, ThemeConfig> = {
     pulseClass: 'bg-emerald-400/20',
   },
   error: {
-    icon: <AlertCircle className="w-8 h-8 text-rose-500" />,
-    iconBgClass: 'bg-rose-50 border border-rose-100/50 rgba(244, 63, 94, 0.1)',
+    icon: <AlertCircle className="w-6 h-6 text-rose-500" />,
+    iconBgClass: 'bg-rose-50 border border-rose-100/50',
     accentBarClass: 'bg-gradient-to-r from-rose-400 to-red-500',
     buttonGradientClass: 'bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white',
     buttonShadowClass: 'shadow-rose-500/20',
@@ -43,7 +43,7 @@ const THEMES: Record<ModalType, ThemeConfig> = {
   },
   save: {
     icon: <Save className="w-8 h-8 text-indigo-600" />,
-    iconBgClass: 'bg-indigo-50 border border-indigo-100/50 rgba(79, 70, 229, 0.1)',
+    iconBgClass: 'bg-indigo-50 border border-indigo-100/50',
     accentBarClass: 'bg-gradient-to-r from-indigo-400 to-violet-500',
     buttonGradientClass: 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white',
     buttonShadowClass: 'shadow-indigo-500/20',
@@ -53,7 +53,7 @@ const THEMES: Record<ModalType, ThemeConfig> = {
   },
   delete: {
     icon: <Trash2 className="w-8 h-8 text-red-500" />,
-    iconBgClass: 'bg-red-50 border border-red-100/50 rgba(239, 68, 68, 0.1)',
+    iconBgClass: 'bg-red-50 border border-red-100/50',
     accentBarClass: 'bg-gradient-to-r from-red-500 to-rose-600',
     buttonGradientClass: 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white',
     buttonShadowClass: 'shadow-red-500/20',
@@ -65,7 +65,7 @@ const THEMES: Record<ModalType, ThemeConfig> = {
 
 export const GlobalModal: React.FC = () => {
   const { modal, closeModal } = useModal();
-  const { isOpen, type, title, message, confirmText, cancelText } = modal;
+  const { isOpen, type, title, message, confirmText, cancelText, autoDismiss, duration } = modal;
 
   // Handle ESC keyboard press
   useEffect(() => {
@@ -80,59 +80,91 @@ export const GlobalModal: React.FC = () => {
 
   const currentTheme = type ? THEMES[type] : null;
 
-  // Animation settings for the modal body
-  const modalVariants = {
-    hidden: { 
-      opacity: 0, 
-      scale: 0.95, 
-      y: 15,
-      transition: { type: 'spring', duration: 0.2 } 
-    },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      y: 0,
-      transition: { 
-        type: 'spring', 
-        stiffness: 300, 
-        damping: 24, 
-        mass: 0.8 
-      } 
-    },
-    exit: { 
-      opacity: 0, 
-      scale: 0.95, 
-      y: 10,
-      transition: { duration: 0.15, ease: 'easeIn' } 
-    }
-  };
+  if (!isOpen || !currentTheme) return null;
 
-  const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.25 } },
-    exit: { opacity: 0, transition: { duration: 0.2 } }
-  };
+  const dismissDurationSec = (duration || 2000) / 1000;
+  const isToast = type === 'success' || type === 'error';
 
+  // Render Top Right Toast Notification for success and error
+  if (isToast) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed top-5 right-5 z-[200] w-full max-w-sm pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, x: 80, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 80, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              className="relative bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col"
+            >
+              {/* Top Accent Line */}
+              <div className={`h-1 w-full ${currentTheme.accentBarClass}`} />
+
+              <div className="p-4 flex items-start gap-3">
+                {/* Toast Icon Housing */}
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${currentTheme.iconBgClass}`}>
+                  {currentTheme.icon}
+                </div>
+
+                {/* Text Content */}
+                <div className="flex-1 min-w-0 pr-2">
+                  <h4 className={`text-sm font-bold leading-snug ${currentTheme.titleColorClass}`}>
+                    {title}
+                  </h4>
+                  <p className="text-slate-500 text-xs font-medium mt-0.5 leading-relaxed">
+                    {message}
+                  </p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => closeModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+                  aria-label="Close notification"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Countdown Progress Bar */}
+              {autoDismiss && (
+                <div className="w-full bg-slate-100 h-1 overflow-hidden">
+                  <motion.div
+                    initial={{ width: '100%' }}
+                    animate={{ width: '0%' }}
+                    transition={{ duration: dismissDurationSec, ease: 'linear' }}
+                    className={`h-full ${type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Render Center Confirmation Modal for Save and Delete
   return (
     <AnimatePresence>
-      {isOpen && currentTheme && (
+      {isOpen && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           {/* Backdrop Overlay */}
           <motion.div
-            variants={backdropVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={() => closeModal(false)}
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-[6px]"
           />
 
           {/* Modal Container */}
           <motion.div
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 24, mass: 0.8 }}
             role="dialog"
             aria-modal="true"
             className="relative bg-white/95 backdrop-blur-md w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-slate-100 z-110 flex flex-col"
@@ -186,18 +218,16 @@ export const GlobalModal: React.FC = () => {
               </p>
 
               {/* Action Buttons Grid */}
-              <div className={`w-full flex gap-3 mt-8 ${currentTheme.hasCancel ? 'flex-row' : 'flex-col'}`}>
-                {currentTheme.hasCancel && (
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => closeModal(false)}
-                    className="flex-1 px-5 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-2xl hover:bg-slate-50 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    {cancelText || 'Cancel'}
-                  </motion.button>
-                )}
+              <div className="w-full flex gap-3 mt-8 flex-row">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => closeModal(false)}
+                  className="flex-1 px-5 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-2xl hover:bg-slate-50 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  {cancelText || 'Cancel'}
+                </motion.button>
                 
                 <motion.button
                   type="button"

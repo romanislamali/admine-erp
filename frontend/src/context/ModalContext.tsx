@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 
 export type ModalType = 'success' | 'error' | 'save' | 'delete';
 
@@ -9,13 +9,15 @@ interface ModalState {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  duration?: number;
+  autoDismiss?: boolean;
   resolve?: (value: any) => void;
 }
 
 interface ModalContextType {
   modal: ModalState;
-  showSuccess: (title: string, message: string, options?: { confirmText?: string }) => Promise<void>;
-  showError: (title: string, message: string, options?: { confirmText?: string }) => Promise<void>;
+  showSuccess: (title: string, message: string, options?: { confirmText?: string; duration?: number }) => Promise<void>;
+  showError: (title: string, message: string, options?: { confirmText?: string; duration?: number }) => Promise<void>;
   confirmSave: (title: string, message: string, options?: { confirmText?: string; cancelText?: string }) => Promise<boolean>;
   confirmDelete: (title: string, message: string, options?: { confirmText?: string; cancelText?: string }) => Promise<boolean>;
   closeModal: (result: boolean) => void;
@@ -31,7 +33,29 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     message: '',
   });
 
-  const showSuccess = (title: string, message: string, options?: { confirmText?: string }) => {
+  const timerRef = useRef<any>(null);
+
+  const clearExistingTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const closeModal = (result: boolean) => {
+    clearExistingTimer();
+    setModal((prev) => {
+      if (prev.resolve) {
+        prev.resolve(result);
+      }
+      return { ...prev, isOpen: false };
+    });
+  };
+
+  const showSuccess = (title: string, message: string, options?: { confirmText?: string; duration?: number }) => {
+    clearExistingTimer();
+    const duration = options?.duration ?? 2000;
+
     return new Promise<void>((resolve) => {
       setModal({
         isOpen: true,
@@ -39,12 +63,21 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         title,
         message,
         confirmText: options?.confirmText || 'Got it',
+        duration,
+        autoDismiss: true,
         resolve: () => resolve(),
       });
+
+      timerRef.current = setTimeout(() => {
+        closeModal(true);
+      }, duration);
     });
   };
 
-  const showError = (title: string, message: string, options?: { confirmText?: string }) => {
+  const showError = (title: string, message: string, options?: { confirmText?: string; duration?: number }) => {
+    clearExistingTimer();
+    const duration = options?.duration ?? 2000;
+
     return new Promise<void>((resolve) => {
       setModal({
         isOpen: true,
@@ -52,12 +85,19 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         title,
         message,
         confirmText: options?.confirmText || 'Close',
+        duration,
+        autoDismiss: true,
         resolve: () => resolve(),
       });
+
+      timerRef.current = setTimeout(() => {
+        closeModal(false);
+      }, duration);
     });
   };
 
   const confirmSave = (title: string, message: string, options?: { confirmText?: string; cancelText?: string }) => {
+    clearExistingTimer();
     return new Promise<boolean>((resolve) => {
       setModal({
         isOpen: true,
@@ -66,12 +106,14 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         message,
         confirmText: options?.confirmText || 'Yes, Save',
         cancelText: options?.cancelText || 'No, Cancel',
+        autoDismiss: false,
         resolve: (val) => resolve(val),
       });
     });
   };
 
   const confirmDelete = (title: string, message: string, options?: { confirmText?: string; cancelText?: string }) => {
+    clearExistingTimer();
     return new Promise<boolean>((resolve) => {
       setModal({
         isOpen: true,
@@ -80,16 +122,10 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         message,
         confirmText: options?.confirmText || 'Yes, Delete',
         cancelText: options?.cancelText || 'No, Cancel',
+        autoDismiss: false,
         resolve: (val) => resolve(val),
       });
     });
-  };
-
-  const closeModal = (result: boolean) => {
-    if (modal.resolve) {
-      modal.resolve(result);
-    }
-    setModal((prev) => ({ ...prev, isOpen: false }));
   };
 
   return (
