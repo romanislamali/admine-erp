@@ -6,13 +6,14 @@ const Project = {
       SELECT p.*, c.name as contractor_name
       FROM projects p
       LEFT JOIN contractors c ON p.contractor_id = c.id
+      WHERE p.deleted = false
       ORDER BY p.id DESC
     `);
     return rows;
   },
 
   getById: async (id) => {
-    const { rows } = await db.query('SELECT * FROM projects WHERE id = $1', [id]);
+    const { rows } = await db.query('SELECT * FROM projects WHERE id = $1 AND deleted = false', [id]);
     return rows[0];
   },
 
@@ -23,6 +24,26 @@ const Project = {
        VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
        RETURNING *`,
       [name, description, contractor_id, start_date || null, end_date || null, status || 'Planned']
+    );
+    return rows[0];
+  },
+
+  update: async (id, projectData) => {
+    const { name, description, contractor_id, start_date, end_date, status } = projectData;
+    const { rows } = await db.query(
+      `UPDATE projects 
+       SET name = $1, description = $2, contractor_id = $3, start_date = $4, end_date = $5, status = $6, updated_at = NOW() 
+       WHERE id = $7 AND deleted = false
+       RETURNING *`,
+      [name, description, contractor_id, start_date || null, end_date || null, status || 'Planned', id]
+    );
+    return rows[0];
+  },
+
+  delete: async (id) => {
+    const { rows } = await db.query(
+      'UPDATE projects SET deleted = true WHERE id = $1 RETURNING *',
+      [id]
     );
     return rows[0];
   }

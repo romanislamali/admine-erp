@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FolderKanban, Calendar, Loader2, User } from 'lucide-react';
+import { X, FolderKanban, Loader2 } from 'lucide-react';
+import Table, { Column } from '../components/Table';
+import { useModal } from '../context/ModalContext';
 
 interface Project {
   id: number;
@@ -24,7 +26,10 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const { confirmSave, confirmDelete, showSuccess, showError } = useModal();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -62,14 +67,84 @@ export default function Projects() {
     fetchData();
   }, []);
 
+  const handleEdit = (project: Project) => {
+    setEditId(project.id);
+    setFormData({
+      name: project.name || '',
+      description: project.description || '',
+      contractor_id: project.contractor_id ? project.contractor_id.toString() : '',
+      start_date: project.start_date ? project.start_date.split('T')[0] : '',
+      end_date: project.end_date ? project.end_date.split('T')[0] : '',
+      status: project.status || 'Planned'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    const confirmed = await confirmDelete(
+      'Delete Project?',
+      'This will permanently delete this project. This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete project');
+      }
+
+      await showSuccess(
+        'Project Deleted',
+        'The project has been successfully deleted.'
+      );
+      fetchData();
+    } catch (err: any) {
+      await showError(
+        'Deletion Failed',
+        err.message || 'Could not delete project.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditId(null);
+    setFormData({
+      name: '',
+      description: '',
+      contractor_id: '',
+      start_date: '',
+      end_date: '',
+      status: 'Planned'
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.contractor_id) return;
 
+    const actionText = editId ? 'Save Project Updates' : 'Create Project';
+    const messageText = editId
+      ? `Are you sure you want to save updates for "${formData.name}"?`
+      : `Are you sure you want to create project "${formData.name}"?`;
+
+    const confirmed = await confirmSave(actionText, messageText);
+    if (!confirmed) return;
+
     try {
       setSubmitting(true);
-      const res = await fetch('/api/projects', {
-        method: 'POST',
+      const url = editId ? `/api/projects/${editId}` : '/api/projects';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -81,20 +156,24 @@ export default function Projects() {
         })
       });
 
-      if (!res.ok) throw new Error('Failed to create project');
+      const data = await res.json();
 
-      setFormData({
-        name: '',
-        description: '',
-        contractor_id: '',
-        start_date: '',
-        end_date: '',
-        status: 'Planned'
-      });
-      setIsModalOpen(false);
+      if (!res.ok) throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} project`);
+
+      await showSuccess(
+        editId ? 'Project Updated' : 'Project Created',
+        editId
+          ? `Project "${formData.name}" details were successfully updated.`
+          : `Project "${formData.name}" was successfully created.`
+      );
+
+      handleCloseModal();
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create project');
+      await showError(
+        'Operation Failed',
+        err.message || 'Unable to save project details. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -123,6 +202,64 @@ export default function Projects() {
     }
   };
 
+  const columns: Column<Project>[] = [
+    {
+      header: 'Project Name',
+      key: 'name',
+      sortable: true,
+      render: (p: Project) => (
+        <div>
+          <div className="font-bold text-slate-900 text-sm">{p.name}</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-0.5">ID: #{p.id}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Contractor',
+      key: 'contractor_name',
+      sortable: true,
+      render: (p: Project) => (
+        <span className="font-semibold text-slate-700">{p.contractor_name || 'Unassigned'}</span>
+      )
+    },
+    {
+      header: 'Start Date',
+      key: 'start_date',
+      sortable: true,
+      render: (p: Project) => (
+        <span className="text-slate-600">{formatDate(p.start_date)}</span>
+      )
+    },
+    {
+      header: 'Expected End Date',
+      key: 'end_date',
+      sortable: true,
+      render: (p: Project) => (
+        <span className="text-slate-600">{formatDate(p.end_date)}</span>
+      )
+    },
+    {
+      header: 'Status',
+      key: 'status',
+      sortable: true,
+      render: (p: Project) => (
+        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${getStatusBadgeClass(p.status)}`}>
+          {p.status}
+        </span>
+      )
+    },
+    {
+      header: 'Description',
+      key: 'description',
+      sortable: false,
+      render: (p: Project) => (
+        <span className="text-slate-500 text-xs line-clamp-1 max-w-xs" title={p.description}>
+          {p.description || '—'}
+        </span>
+      )
+    }
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -138,7 +275,18 @@ export default function Projects() {
             <p className="text-slate-500 mt-1">Track active, planned, and completed projects assigned to contractors.</p>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditId(null);
+              setFormData({
+                name: '',
+                description: '',
+                contractor_id: '',
+                start_date: '',
+                end_date: '',
+                status: 'Planned'
+              });
+              setIsModalOpen(true);
+            }}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <FolderKanban size={18} />
@@ -146,9 +294,9 @@ export default function Projects() {
           </button>
         </div>
 
-        <div className='mt-2'>
+        <div className='mt-6'>
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
+            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm mb-4">
               {error}
             </div>
           )}
@@ -157,59 +305,23 @@ export default function Projects() {
             <div className="flex justify-center items-center py-20">
               <Loader2 className="animate-spin text-primary" size={32} />
             </div>
-          ) : projects.length === 0 ? (
-            <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-              <FolderKanban size={48} className="text-slate-300 mb-3" />
-              <p className="text-lg font-medium text-slate-600">No projects found</p>
-              <p className="text-sm">Kick start operations by defining your first project dashboard.</p>
-            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((p) => (
-                <motion.div
-                  key={p.id}
-                  layout
-                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 text-lg leading-tight hover:text-primary transition-colors cursor-pointer truncate">{p.name}</h3>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono mt-1">
-                          <span>ID: #{p.id}</span>
-                        </div>
-                      </div>
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border shrink-0 ${getStatusBadgeClass(p.status)}`}>
-                        {p.status}
-                      </span>
-                    </div>
-
-                    <p className="text-slate-600 text-sm line-clamp-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                      {p.description || 'No description provided.'}
-                    </p>
-
-                    <div className="space-y-2 pt-2 text-xs">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <User size={14} className="text-slate-400" />
-                        <span>Contractor: <strong className="text-slate-800">{p.contractor_name || 'Unassigned'}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span>Start Date: <strong className="text-slate-800">{formatDate(p.start_date)}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span>Est. End: <strong className="text-slate-800">{formatDate(p.end_date)}</strong></span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <Table<Project>
+              data={projects}
+              columns={columns}
+              searchKeys={['name', 'contractor_name', 'status', 'description']}
+              searchPlaceholder="Search projects by name, contractor, status..."
+              initialItemsPerPage={10}
+              onEdit={handleEdit}
+              onDelete={(row) => handleDelete(row.id)}
+              roles={{ edit: ['ADMIN'], delete: ['ADMIN'] }}
+              keyExtractor={(row) => row.id}
+              emptyMessage="No projects found."
+            />
           )}
         </div>
 
-        {/* Create Project Modal */}
+        {/* Create / Edit Project Modal */}
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -217,7 +329,7 @@ export default function Projects() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
               />
               <motion.div
@@ -227,9 +339,11 @@ export default function Projects() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">New Project</h3>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {editId ? 'Update Project' : 'New Project'}
+                  </h3>
                   <button
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={handleCloseModal}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
                   >
                     <X size={20} />
@@ -315,7 +429,7 @@ export default function Projects() {
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={handleCloseModal}
                       className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
                     >
                       Cancel
@@ -325,7 +439,13 @@ export default function Projects() {
                       disabled={submitting}
                       className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50"
                     >
-                      {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit'}
+                      {submitting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : editId ? (
+                        'Save Changes'
+                      ) : (
+                        'Submit'
+                      )}
                     </button>
                   </div>
                 </form>
