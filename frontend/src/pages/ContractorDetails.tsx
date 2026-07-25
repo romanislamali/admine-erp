@@ -106,7 +106,7 @@ export default function ContractorDetails() {
     const formatCurrency = (val: string | number) => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
         if (isNaN(num) || num === null || num === undefined) return '0';
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-IN', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2
         }).format(num);

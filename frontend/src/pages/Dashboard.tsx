@@ -90,7 +90,7 @@ export default function Dashboard() {
 
   const formatCurrency = (amount: number) => {
     if (isNaN(amount) || amount === null || amount === undefined) return '0';
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(amount);
