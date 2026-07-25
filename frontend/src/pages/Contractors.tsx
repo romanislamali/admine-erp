@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 
 interface Contractor {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -28,7 +28,7 @@ export default function Contractors() {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -56,7 +56,7 @@ export default function Contractors() {
     fetchContractors();
   }, []);
 
-  const handleViewBillsAndPayments = (contractorId: number) => {
+  const handleViewBillsAndPayments = (contractorId: string) => {
     navigate(`/contractor-details/${contractorId}`);
   };
 
@@ -71,7 +71,7 @@ export default function Contractors() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Remove Contractor?',
       'This will permanently delete this contractor from the directory. This action is irreversible.'

@@ -6,10 +6,10 @@ import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
 
 interface Project {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  contractor_id: number;
+  contractor_id: string;
   contractor_name: string;
   start_date: string;
   end_date: string;
@@ -17,7 +17,7 @@ interface Project {
 }
 
 interface Contractor {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -27,7 +27,7 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
@@ -83,7 +83,7 @@ export default function Projects() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Delete Project?',
       'This will permanently delete this project. This action cannot be undone.'
@@ -153,7 +153,7 @@ export default function Projects() {
         },
         body: JSON.stringify({
           ...formData,
-          contractor_id: parseInt(formData.contractor_id),
+          contractor_id: formData.contractor_id,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null
         })
@@ -367,7 +367,7 @@ export default function Projects() {
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-900">
-                    {editId ? 'Update Project' : 'New Project'}
+                    {editId ? 'Update Project' : 'Create New Project'}
                   </h3>
                   <button
                     onClick={handleCloseModal}
@@ -400,7 +400,7 @@ export default function Projects() {
                     >
                       <option value="" disabled>-- Select Contractor --</option>
                       {contractors.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (ID: #{c.id})</option>
+                        <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
                   </div>

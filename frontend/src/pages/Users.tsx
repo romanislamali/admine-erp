@@ -20,7 +20,7 @@ import {
 import { useModal } from '../context/ModalContext';
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   username: string;
   phone?: string;
@@ -55,7 +55,7 @@ export default function Users() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Fetch all users
   const fetchUsers = async () => {
@@ -203,7 +203,7 @@ export default function Users() {
   };
 
   // Handle delete user
-  const handleDeleteConfirm = async (id: number) => {
+  const handleDeleteConfirm = async (id: string) => {
     const confirmed = await confirmDelete(
       'Remove Staff Account?',
       'This will permanently revoke system access. This action is irreversible.'

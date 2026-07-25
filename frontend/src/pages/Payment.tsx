@@ -3,31 +3,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wallet, Loader2, ArrowUpRight } from 'lucide-react';
 
 interface Payment {
-  id: number;
-  contractor_id: number;
+  id: string;
+  contractor_id: string;
   contractor_name: string;
-  bill_id: number;
-  bill_invoice: string;
+  project_id?: string | null;
+  project_name?: string;
+  bill_id?: string | null;
+  bill_invoice?: string;
   amount: string | number;
   payment_date: string;
 }
 
 interface Contractor {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface Bill {
-  id: number;
+  id: string;
   invoice_number: string;
-  contractor_id: number;
+  contractor_id: string;
   amount: string | number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  contractor_id: string;
 }
 
 export default function Payment() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,6 +45,7 @@ export default function Payment() {
   // Form state
   const [formData, setFormData] = useState({
     contractor_id: '',
+    project_id: '',
     bill_id: '',
     amount: '',
     payment_date: ''
@@ -44,10 +54,11 @@ export default function Payment() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [payRes, contRes, billRes] = await Promise.all([
+      const [payRes, contRes, billRes, projRes] = await Promise.all([
         fetch('/api/payments'),
         fetch('/api/contractors'),
-        fetch('/api/bills')
+        fetch('/api/bills'),
+        fetch('/api/projects')
       ]);
 
       if (!payRes.ok || !contRes.ok || !billRes.ok) throw new Error('Failed to fetch data');
@@ -59,6 +70,11 @@ export default function Payment() {
       setPayments(paysData);
       setContractors(contsData);
       setBills(billsData);
+
+      if (projRes.ok) {
+        const projsData = await projRes.json();
+        setProjects(projsData);
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -82,8 +98,9 @@ export default function Payment() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          contractor_id: parseInt(formData.contractor_id),
-          bill_id: formData.bill_id ? parseInt(formData.bill_id) : null,
+          contractor_id: formData.contractor_id,
+          project_id: formData.project_id || null,
+          bill_id: formData.bill_id || null,
           amount: parseFloat(formData.amount),
           payment_date: formData.payment_date || null
         })
@@ -96,6 +113,7 @@ export default function Payment() {
 
       setFormData({
         contractor_id: '',
+        project_id: '',
         bill_id: '',
         amount: '',
         payment_date: ''
@@ -127,9 +145,13 @@ export default function Payment() {
     });
   };
 
-  // Filter bills based on selected contractor
+  // Filter bills and projects based on selected contractor
   const filteredBills = bills.filter(
-    (b) => b.contractor_id === parseInt(formData.contractor_id)
+    (b) => b.contractor_id === formData.contractor_id
+  );
+
+  const filteredProjects = projects.filter(
+    (p) => p.contractor_id === formData.contractor_id
   );
 
   return (
@@ -180,6 +202,7 @@ export default function Payment() {
                   <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
                     <th className="px-6 py-4">Payment Ref</th>
                     <th className="px-6 py-4">Contractor</th>
+                    <th className="px-6 py-4">Project</th>
                     <th className="px-6 py-4">Linked Invoice</th>
                     <th className="px-6 py-4">Payment Date</th>
                     <th className="px-6 py-4 text-right">Paid Amount</th>
@@ -196,19 +219,25 @@ export default function Payment() {
                       <td className="px-6 py-4 font-mono">
                         <div className="flex items-center gap-2">
                           <ArrowUpRight size={16} className="text-emerald-555 shrink-0" />
-                          <span className="font-semibold text-slate-900">REF-{p.id.toString().padStart(4, '0')}</span>
+                          <span className="font-semibold text-slate-900">REF-{p.id.slice(0, 8)}</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">DB_ID: #{p.id}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-700">{p.contractor_name || 'N/A'}</div>
-                        <div className="text-xs text-slate-405 font-mono">ID: #{p.contractor_id}</div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {p.project_name ? (
+                          <div>
+                            <div className="font-semibold text-slate-700">{p.project_name}</div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-slate-600">
                         {p.bill_invoice ? (
                           <div>
                             <div className="font-semibold text-slate-700">{p.bill_invoice}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">BILL_ID: #{p.bill_id}</div>
                           </div>
                         ) : (
                           <span className="text-amber-700 bg-amber-50/70 px-2.5 py-1 rounded-lg text-xs border border-amber-200/50 font-bold whitespace-nowrap">Unlinked / Advance</span>
@@ -262,12 +291,27 @@ export default function Payment() {
                     <select
                       required
                       value={formData.contractor_id}
-                      onChange={(e) => setFormData({ ...formData, contractor_id: e.target.value, bill_id: '' })}
+                      onChange={(e) => setFormData({ ...formData, contractor_id: e.target.value, project_id: '', bill_id: '' })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     >
                       <option value="" disabled>-- Select Contractor --</option>
                       {contractors.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (ID: #{c.id})</option>
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Project (Optional)</label>
+                    <select
+                      value={formData.project_id}
+                      disabled={!formData.contractor_id}
+                      onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
+                    >
+                      <option value="">-- No Project Link --</option>
+                      {filteredProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                     </select>
                   </div>
@@ -278,7 +322,7 @@ export default function Payment() {
                       value={formData.bill_id}
                       disabled={!formData.contractor_id}
                       onChange={(e) => {
-                        const selectedBill = bills.find((b) => b.id === parseInt(e.target.value));
+                        const selectedBill = bills.find((b) => b.id === e.target.value);
                         setFormData({
                           ...formData,
                           bill_id: e.target.value,
@@ -295,7 +339,7 @@ export default function Payment() {
                       ))}
                     </select>
                     {!formData.contractor_id && (
-                      <p className="text-[10px] text-slate-400 mt-1">Please select a contractor to view outstanding invoices.</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Please select a contractor to view outstanding invoices and projects.</p>
                     )}
                   </div>
 

@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 const Contractor = {
   getAll: async () => {
-    const { rows } = await db.query('SELECT * FROM contractors WHERE deleted = false ORDER BY id DESC');
+    const { rows } = await db.query('SELECT * FROM contractors WHERE deleted = false ORDER BY created_at DESC');
     return rows;
   },
   getById: async (id) => {

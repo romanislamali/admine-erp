@@ -4,13 +4,13 @@ import { ArrowUpRight, FolderKanban, ReceiptText, Wallet, Loader2, ArrowRight } 
 import { Link } from 'react-router-dom';
 
 interface Contractor {
-  id: number;
+  id: string;
   name: string;
   balance: string | number;
 }
 
 interface Bill {
-  id: number;
+  id: string;
   contractor_name: string;
   amount: string | number;
   invoice_number: string;
@@ -18,14 +18,14 @@ interface Bill {
 }
 
 interface Payment {
-  id: number;
+  id: string;
   contractor_name: string;
   amount: string | number;
   payment_date: string;
 }
 
 interface Project {
-  id: number;
+  id: string;
   status: string;
 }
 
@@ -122,7 +122,7 @@ export default function Dashboard() {
       id: `bill-${b.id}`,
       type: 'Bill Logged',
       title: `${b.contractor_name} invoiced ${formatCurrency(parseFloat(b.amount as string))}`,
-      ref: b.invoice_number || `INV-${b.id}`,
+      ref: b.invoice_number || `INV-${b.id.slice(0, 8)}`,
       date: new Date(b.bill_date),
       amount: parseFloat(b.amount as string),
     })),
@@ -130,7 +130,7 @@ export default function Dashboard() {
       id: `pay-${p.id}`,
       type: 'Payment Made',
       title: `Disbursed ${formatCurrency(parseFloat(p.amount as string))} to ${p.contractor_name}`,
-      ref: `REF-${p.id.toString().padStart(4, '0')}`,
+      ref: `REF-${p.id.slice(0, 8)}`,
       date: new Date(p.payment_date),
       amount: parseFloat(p.amount as string),
     }))
@@ -217,7 +217,6 @@ export default function Dashboard() {
                       <div key={c.id} className="py-3.5 flex justify-between items-center hover:bg-slate-50/30 px-2 rounded-lg transition-colors">
                         <div>
                           <div className="font-bold text-slate-800">{c.name}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">Contractor ID: #{c.id}</div>
                         </div>
                         <div className={`text-sm font-extrabold ${bal < 0 ? 'text-amber-600' : bal > 0 ? 'text-rose-600' : 'text-slate-500'
                           }`}>

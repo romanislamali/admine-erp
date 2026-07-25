@@ -7,7 +7,7 @@ const Project = {
       FROM projects p
       LEFT JOIN contractors c ON p.contractor_id = c.id
       WHERE p.deleted = false
-      ORDER BY p.id DESC
+      ORDER BY p.created_at DESC
     `);
     return rows;
   },

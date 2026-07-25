@@ -3,25 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ReceiptText, Loader2, FileText } from 'lucide-react';
 
 interface Bill {
-  id: number;
-  contractor_id: number;
+  id: string;
+  contractor_id: string;
   contractor_name: string;
-  project_id: number;
-  project_name: string;
+  project_id?: string | null;
+  project_name?: string;
   amount: string | number;
   invoice_number: string;
   bill_date: string;
 }
 
 interface Contractor {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface Project {
-  id: number;
+  id: string;
   name: string;
-  contractor_id: number;
+  contractor_id: string;
 }
 
 export default function Billing() {
@@ -83,8 +83,8 @@ export default function Billing() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          contractor_id: parseInt(formData.contractor_id),
-          project_id: formData.project_id ? parseInt(formData.project_id) : null,
+          contractor_id: formData.contractor_id,
+          project_id: formData.project_id || null,
           amount: parseFloat(formData.amount),
           invoice_number: formData.invoice_number || null,
           bill_date: formData.bill_date || null
@@ -132,7 +132,7 @@ export default function Billing() {
 
   // Filter projects based on selected contractor
   const filteredProjects = projects.filter(
-    (p) => p.contractor_id === parseInt(formData.contractor_id)
+    (p) => p.contractor_id === formData.contractor_id
   );
 
   return (
@@ -201,17 +201,14 @@ export default function Billing() {
                             <FileText size={16} className="text-slate-400 shrink-0" />
                             <span className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id}`}</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">DB_ID: #{b.id}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-medium text-slate-700">{b.contractor_name || 'N/A'}</div>
-                          <div className="text-xs text-slate-400">ID: #{b.contractor_id}</div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-slate-600">
                           {b.project_name ? (
-                            <div>
-                              <div className="font-medium text-slate-700">{b.project_name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">PJ_ID: #{b.project_id}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-slate-800">{b.project_name}</span>
                             </div>
                           ) : (
                             <span className="text-slate-400 text-xs italic">N/A</span>
@@ -232,7 +229,7 @@ export default function Billing() {
           )}
         </div>
 
-        {/* Log Invoice Modal */}
+        {/* Create Bill Modal */}
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -270,13 +267,13 @@ export default function Billing() {
                     >
                       <option value="" disabled>-- Select Contractor --</option>
                       {contractors.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (ID: #{c.id})</option>
+                        <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Link (Optional)</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Project (Optional)</label>
                     <select
                       value={formData.project_id}
                       disabled={!formData.contractor_id}
@@ -285,50 +282,44 @@ export default function Billing() {
                     >
                       <option value="">-- No Project Link --</option>
                       {filteredProjects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} (ID: #{p.id})</option>
+                        <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                     </select>
-                    {!formData.contractor_id && (
-                      <p className="text-[10px] text-slate-400 mt-1">Please select a contractor to see their projects.</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Number</label>
-                      <input
-                        type="text"
-                        value={formData.invoice_number}
-                        onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                        placeholder="e.g. INV-9901"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Bill Date</label>
-                      <input
-                        type="date"
-                        value={formData.bill_date}
-                        onChange={(e) => setFormData({ ...formData, bill_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      />
-                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Amount *</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        required
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        placeholder="0"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      />
-                    </div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Number</label>
+                    <input
+                      type="text"
+                      value={formData.invoice_number}
+                      onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+                      placeholder="e.g. INV-2024-001"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Date</label>
+                    <input
+                      type="date"
+                      value={formData.bill_date}
+                      onChange={(e) => setFormData({ ...formData, bill_date: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Bill Amount *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="0"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
                   </div>
 
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">

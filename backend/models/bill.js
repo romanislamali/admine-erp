@@ -15,7 +15,7 @@ const Bill = {
     } else {
       queryText += ` WHERE b.deleted = false`;
     }
-    queryText += ` ORDER BY b.id DESC`;
+    queryText += ` ORDER BY b.created_at DESC`;
 
     const { rows } = await db.query(queryText, params);
     return rows;

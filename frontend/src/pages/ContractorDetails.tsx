@@ -6,28 +6,30 @@ import Table from '../components/Table';
 import { useModal } from '../context/ModalContext';
 
 interface Bill {
-    id: number;
-    contractor_id: number;
+    id: string;
+    contractor_id: string;
     contractor_name: string;
-    project_id: number;
-    project_name: string;
+    project_id?: string | null;
+    project_name?: string;
     amount: string | number;
     invoice_number: string;
     bill_date: string;
 }
 
 interface Payment {
-    id: number;
-    contractor_id: number;
+    id: string;
+    contractor_id: string;
     contractor_name: string;
-    bill_id: number;
-    bill_invoice: string;
+    project_id?: string | null;
+    project_name?: string;
+    bill_id?: string | null;
+    bill_invoice?: string;
     amount: string | number;
     payment_date: string;
 }
 
 interface Contractor {
-    id: number;
+    id: string;
     name: string;
     phone: string;
     email: string;
@@ -38,9 +40,9 @@ interface Contractor {
 }
 
 interface Project {
-    id: number;
+    id: string;
     name: string;
-    contractor_id: number;
+    contractor_id: string;
 }
 
 export default function ContractorDetails() {
@@ -58,8 +60,8 @@ export default function ContractorDetails() {
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-    const [editingBillId, setEditingBillId] = useState<number | null>(null);
-    const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
+    const [editingBillId, setEditingBillId] = useState<string | null>(null);
+    const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
 
     const [submittingBill, setSubmittingBill] = useState(false);
     const [submittingPayment, setSubmittingPayment] = useState(false);
@@ -76,6 +78,7 @@ export default function ContractorDetails() {
     // Payment Form state
     const [paymentFormData, setPaymentFormData] = useState({
         contractor_id: id || '',
+        project_id: '',
         bill_id: '',
         amount: '',
         payment_date: ''
@@ -176,7 +179,7 @@ export default function ContractorDetails() {
         setIsBillModalOpen(true);
     };
 
-    const handleDeleteBill = async (billId: number) => {
+    const handleDeleteBill = async (billId: string) => {
         const confirmed = await confirmDelete(
             'Delete Invoice Bill?',
             'Are you sure you want to remove this bill? This action is irreversible.'
@@ -230,8 +233,8 @@ export default function ContractorDetails() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    contractor_id: parseInt(contractorIdToUse),
-                    project_id: billFormData.project_id ? parseInt(billFormData.project_id) : null,
+                    contractor_id: contractorIdToUse,
+                    project_id: billFormData.project_id || null,
                     amount: parseFloat(billFormData.amount),
                     invoice_number: billFormData.invoice_number || null,
                     bill_date: billFormData.bill_date || null
@@ -268,6 +271,7 @@ export default function ContractorDetails() {
         setEditingPaymentId(null);
         setPaymentFormData({
             contractor_id: id || '',
+            project_id: '',
             bill_id: '',
             amount: '',
             payment_date: ''
@@ -280,6 +284,7 @@ export default function ContractorDetails() {
         setEditingPaymentId(null);
         setPaymentFormData({
             contractor_id: id || '',
+            project_id: '',
             bill_id: '',
             amount: '',
             payment_date: ''
@@ -290,6 +295,7 @@ export default function ContractorDetails() {
         setEditingPaymentId(p.id);
         setPaymentFormData({
             contractor_id: p.contractor_id ? p.contractor_id.toString() : (id || ''),
+            project_id: p.project_id ? p.project_id.toString() : '',
             bill_id: p.bill_id ? p.bill_id.toString() : '',
             amount: p.amount ? p.amount.toString() : '',
             payment_date: p.payment_date ? new Date(p.payment_date).toISOString().split('T')[0] : ''
@@ -297,7 +303,7 @@ export default function ContractorDetails() {
         setIsPaymentModalOpen(true);
     };
 
-    const handleDeletePayment = async (paymentId: number) => {
+    const handleDeletePayment = async (paymentId: string) => {
         const confirmed = await confirmDelete(
             'Delete Payment Record?',
             'Are you sure you want to remove this payment record? This action is irreversible.'
@@ -351,8 +357,9 @@ export default function ContractorDetails() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    contractor_id: parseInt(contractorIdToUse),
-                    bill_id: paymentFormData.bill_id ? parseInt(paymentFormData.bill_id) : null,
+                    contractor_id: contractorIdToUse,
+                    project_id: paymentFormData.project_id || null,
+                    bill_id: paymentFormData.bill_id || null,
                     amount: parseFloat(paymentFormData.amount),
                     payment_date: paymentFormData.payment_date || null
                 })
@@ -407,18 +414,17 @@ export default function ContractorDetails() {
             )
         },
         {
-            header: 'Invoice #',
+            header: 'Invoice',
             key: 'invoice_number',
             sortable: true,
             render: (b: Bill) => (
                 <div className="font-mono">
                     <div className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id}`}</div>
-                    <div className="text-[10px] text-slate-400">ID: #{b.id}</div>
                 </div>
             )
         },
         {
-            header: 'Associated Project',
+            header: 'Project',
             key: 'project_name',
             sortable: true,
             render: (b: Bill) => (
@@ -426,7 +432,6 @@ export default function ContractorDetails() {
                     {b.project_name ? (
                         <>
                             <div className="font-semibold text-slate-900">{b.project_name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">ID: #{b.project_id}</div>
                         </>
                     ) : (
                         <span className="text-slate-400 text-xs italic">N/A</span>
@@ -481,22 +486,31 @@ export default function ContractorDetails() {
             )
         },
         {
-            header: 'Payment ID',
-            key: 'id',
+            header: 'Project',
+            key: 'project_name',
             sortable: true,
-            render: (p: Payment) => (
-                <div className="font-mono">
-                    <div className="font-semibold text-slate-900">PAY-#{p.id}</div>
-                </div>
-            )
+            render: (p: Payment) => {
+                const project = projects.find(pr => pr.id === p.project_id);
+                const nameToDisplay = p.project_name || project?.name || (p.project_id ? `PROJ-${p.project_id}` : null);
+                return (
+                    <div>
+                        {nameToDisplay ? (
+                            <div className="items-center gap-1.5 text-slate-600 text-xs">
+                                <span className="font-mono font-medium">{nameToDisplay}</span>
+                            </div>
+                        ) : (
+                            <span className="text-slate-400 text-xs italic">N/A</span>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             header: 'Linked Invoice',
             key: 'bill_invoice',
             sortable: true,
             render: (p: Payment) => (
-                <div className="flex items-center gap-1.5 text-slate-600 text-xs">
-                    <FileText size={12} className="text-slate-400" />
+                <div className="items-center gap-1.5 text-slate-600 text-xs">
                     <span className="font-mono font-medium">{p.bill_invoice || `INV-${p.bill_id}`}</span>
                 </div>
             )
@@ -654,7 +668,7 @@ export default function ContractorDetails() {
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <ReceiptText size={18} />
-                                    Create New Bill
+                                    Create Bill
                                 </button>
                             </div>
                         </div>
@@ -678,7 +692,7 @@ export default function ContractorDetails() {
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <Wallet size={18} />
-                                    Record Payment
+                                    Create Payment
                                 </button>
                             </div>
                         </div>
@@ -714,7 +728,7 @@ export default function ContractorDetails() {
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-slate-900">
-                                    {editingBillId ? 'Update Bill' : 'Create New Bill'}
+                                    {editingBillId ? 'Edit Bill' : 'Create Bill'}
                                 </h3>
                                 <button
                                     onClick={handleCloseBillModal}
@@ -746,7 +760,7 @@ export default function ContractorDetails() {
                                     >
                                         <option value="">-- No Project Link --</option>
                                         {filteredProjects.map((p) => (
-                                            <option key={p.id} value={p.id}>{p.name} (ID: #{p.id})</option>
+                                            <option key={p.id} value={p.id}>{p.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -836,7 +850,7 @@ export default function ContractorDetails() {
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-slate-900">
-                                    {editingPaymentId ? 'Update Payment' : 'Record Payment'}
+                                    {editingPaymentId ? 'Edit Payment' : 'Record Payment'}
                                 </h3>
                                 <button
                                     onClick={handleClosePaymentModal}
@@ -860,11 +874,25 @@ export default function ContractorDetails() {
                                 </div>
 
                                 <div>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Link (Optional)</label>
+                                    <select
+                                        value={paymentFormData.project_id}
+                                        onChange={(e) => setPaymentFormData({ ...paymentFormData, project_id: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                                    >
+                                        <option value="">-- No Project Link --</option>
+                                        {filteredProjects.map((p) => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Invoice (Optional)</label>
                                     <select
                                         value={paymentFormData.bill_id}
                                         onChange={(e) => {
-                                            const selectedBill = bills.find((b) => b.id === parseInt(e.target.value));
+                                            const selectedBill = bills.find((b) => b.id === e.target.value);
                                             setPaymentFormData({
                                                 ...paymentFormData,
                                                 bill_id: e.target.value,

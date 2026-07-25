@@ -30,7 +30,6 @@ export default function Login() {
     }
   };
 
-  /*
   const handleDemoLogin = async (demoUsername: string) => {
     let demoPass = 'password123';
     if (demoUsername === 'admineadmin') demoPass = 'admin123';
@@ -50,7 +49,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-  */
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 relative overflow-hidden">
@@ -141,7 +139,7 @@ export default function Login() {
         </form>
 
         {/* Demo Accounts Quick-Select */}
-        {/* <div className="mt-8 pt-6 border-t border-slate-100">
+        <div className="mt-8 pt-6 border-t border-slate-100">
           <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">
             <KeyRound size={14} />
             <span>Quick-Access Demo Credentials</span>
@@ -165,7 +163,7 @@ export default function Login() {
               </button>
             ))}
           </div>
-        </div> */}
+        </div>
       </motion.div>
     </div>
   );

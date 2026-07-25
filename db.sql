@@ -1,6 +1,6 @@
 -- Users Table
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) UNIQUE NOT NULL,
@@ -13,13 +13,13 @@ CREATE TABLE users (
 
 -- Mock Users
 INSERT INTO users (name, username, password, phone, email, role) VALUES 
-('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', [EMAIL_ADDRESS]', 'ADMIN'),
-('Admine Manager', 'adminemanager', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W', '+8801710310756', [EMAIL_ADDRESS]', 'MANAGER'),
-('Admine Employee', 'admineemployee', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.', '+8801710310757', [EMAIL_ADDRESS]', 'EMPLOYEE');
+('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', 'admin@admine.com', 'ADMIN'),
+('Admine Manager', 'adminemanager', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W', '+8801710310756', 'manager@admine.com', 'MANAGER'),
+('Admine Employee', 'admineemployee', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.', '+8801710310757', 'employee@admine.com', 'EMPLOYEE');
 
 -- Contractors Table
 CREATE TABLE contractors (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100),
@@ -36,10 +36,10 @@ CREATE TABLE contractors (
 
 -- Projects Table
 CREATE TABLE projects (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    contractor_id INT REFERENCES contractors(id),
+    contractor_id UUID REFERENCES contractors(id),
     start_date DATE,
     end_date DATE,
     status VARCHAR(20),
@@ -52,9 +52,9 @@ CREATE TABLE projects (
 
 -- Bills Table
 CREATE TABLE bills (
-    id SERIAL PRIMARY KEY,
-    contractor_id INT REFERENCES contractors(id),
-    project_id INT REFERENCES projects(id),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contractor_id UUID REFERENCES contractors(id),
+    project_id UUID REFERENCES projects(id),
     amount DECIMAL(12, 2) NOT NULL,
     invoice_number VARCHAR(50),
     bill_date DATE,
@@ -67,9 +67,10 @@ CREATE TABLE bills (
 
 -- Payments Table
 CREATE TABLE payments (
-    id SERIAL PRIMARY KEY,
-    contractor_id INT REFERENCES contractors(id),
-    bill_id INT REFERENCES bills(id),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    contractor_id UUID REFERENCES contractors(id),
+    project_id UUID REFERENCES projects(id),
+    bill_id UUID REFERENCES bills(id),
     amount DECIMAL(12, 2) NOT NULL,
     payment_date DATE,
     deleted BOOLEAN DEFAULT false,

@@ -3,7 +3,7 @@ const Bill = require('../models/bill');
 const getAllBills = async (req, res) => {
   try {
     const { contractor_id } = req.query;
-    const bills = await Bill.getAll(contractor_id ? parseInt(contractor_id) : null);
+    const bills = await Bill.getAll(contractor_id || null);
     res.json(bills);
   } catch (error) {
     res.status(500).json({ message: error.message });
