@@ -83,7 +83,6 @@ export default function Dashboard() {
   const totalInvoiced = data.bills.reduce((sum, b) => sum + parseFloat(b.amount as string || '0'), 0);
   const totalPaid = data.payments.reduce((sum, p) => sum + parseFloat(p.amount as string || '0'), 0);
   const outstandingBalance = totalInvoiced - totalPaid;
-  const isOutstandingBalanceNegative = outstandingBalance < 0;
 
   const activeProjectsCount = data.projects.filter(p => p.status === 'Active').length;
   const totalProjectsCount = data.projects.length;
@@ -95,6 +94,27 @@ export default function Dashboard() {
       maximumFractionDigits: 2
     }).format(amount);
   };
+
+  const getLiabilityStat = () => {
+    if (outstandingBalance === 0) {
+      return {
+        value: formatCurrency(0),
+        color: 'text-slate-800 border-slate-100'
+      };
+    }
+    if (outstandingBalance < 0) {
+      return {
+        value: `${formatCurrency(Math.abs(outstandingBalance))} (ADVANCE)`,
+        color: 'text-green-700 border-emerald-100'
+      };
+    }
+    return {
+      value: `${formatCurrency(outstandingBalance)} (DUE)`,
+      color: 'text-red-600 border-rose-100'
+    };
+  };
+
+  const liabilityStat = getLiabilityStat();
 
   // Compile recent activities chronologically
   const recentActivities = [
@@ -119,8 +139,12 @@ export default function Dashboard() {
   const stats = [
     { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-gray-700 border-gray-100' },
     { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-amber-700 border-amber-100' },
-    { name: 'Outstanding Liability', value: formatCurrency(outstandingBalance) + ' ' + (isOutstandingBalanceNegative ? '(ADVANCE)' : '(DUE)'),
-       icon: ArrowUpRight, color: isOutstandingBalanceNegative ? 'text-green-700 border-emerald-100' : 'text-red-600 border-rose-100' },
+    {
+      name: 'Outstanding Liability',
+      value: liabilityStat.value,
+      icon: ArrowUpRight,
+      color: liabilityStat.color
+    },
     { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-100' }
   ];
 
