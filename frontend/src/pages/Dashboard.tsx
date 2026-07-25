@@ -89,8 +89,9 @@ export default function Dashboard() {
   const totalProjectsCount = data.projects.length;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      minimumFractionDigits: 2,
+    if (isNaN(amount) || amount === null || amount === undefined) return '0';
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(amount);
   };

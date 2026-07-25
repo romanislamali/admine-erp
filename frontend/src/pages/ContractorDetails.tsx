@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, Plus, X, Wallet, ReceiptText } from 'lucide-react';
+import { Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X, Wallet, ReceiptText } from 'lucide-react';
 import Table from '../components/Table';
 
 interface Bill {
@@ -105,10 +105,11 @@ export default function ContractorDetails() {
 
     const formatCurrency = (val: string | number) => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
+        if (isNaN(num) || num === null || num === undefined) return '0';
         return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(num || 0);
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(num);
     };
 
     const formatDate = (dateStr: string) => {
@@ -553,9 +554,8 @@ export default function ContractorDetails() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Amount ($USD) *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Amount *</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -563,8 +563,8 @@ export default function ContractorDetails() {
                                             required
                                             value={billFormData.amount}
                                             onChange={(e) => setBillFormData({ ...billFormData, amount: e.target.value })}
-                                            placeholder="0.00"
-                                            className="w-full pl-7 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                                         />
                                     </div>
                                 </div>
@@ -674,9 +674,8 @@ export default function ContractorDetails() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Paid Amount ($USD) *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Paid Amount *</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -684,8 +683,8 @@ export default function ContractorDetails() {
                                             required
                                             value={paymentFormData.amount}
                                             onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: e.target.value })}
-                                            placeholder="0.00"
-                                            className="w-full pl-7 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                                            placeholder="0"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                                         />
                                     </div>
                                 </div>

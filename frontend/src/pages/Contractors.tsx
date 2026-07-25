@@ -162,10 +162,11 @@ export default function Contractors() {
 
   const formatCurrency = (val: string | number) => {
     const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num) || num === null || num === undefined) return '0';
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(num || 0);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(num);
   };
 
   const columns = [
