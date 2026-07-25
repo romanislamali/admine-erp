@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Loader2, User, ShieldAlert, KeyRound, ArrowRight } from 'lucide-react';
+import { Loader2, User, ShieldAlert, KeyRound, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import logo from '../public/logo.png';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -29,6 +30,7 @@ export default function Login() {
     }
   };
 
+  /*
   const handleDemoLogin = async (demoUsername: string) => {
     let demoPass = 'password123';
     if (demoUsername === 'admineadmin') demoPass = 'admin123';
@@ -48,6 +50,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+  */
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 relative overflow-hidden">
@@ -103,13 +106,21 @@ export default function Login() {
             <div className="relative">
               <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 font-medium"
+                className="w-full pl-11 pr-11 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 font-medium"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
