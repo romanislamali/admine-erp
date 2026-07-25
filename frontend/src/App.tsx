@@ -50,10 +50,9 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 function AppContent() {
   return (
     <Routes>
-      {/* Public routes (but Header handles layout dynamically) */}
+      {/* Public routes */}
       <Route path="/login" element={
         <div className="min-h-screen bg-bg-page flex flex-col justify-between">
-          <Header />
           <div className="flex-grow flex items-center justify-center">
             <Login />
           </div>
