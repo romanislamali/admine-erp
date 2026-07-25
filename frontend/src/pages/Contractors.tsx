@@ -202,13 +202,12 @@ export default function Contractors() {
       )
     },
     {
-      header: 'Contractor',
+      header: 'Name',
       key: 'name',
       sortable: true,
       render: (c: Contractor) => (
         <div>
           <div className="font-semibold text-slate-900">{c.name}</div>
-          <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{c.id}</div>
         </div>
       )
     },

@@ -227,7 +227,7 @@ export default function Table<T>({
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/80 text-sm">
+            <tbody className="divide-y divide-slate-200 text-sm">
               <AnimatePresence mode="popLayout">
                 {paginatedData.length === 0 ? (
                   <tr>
@@ -247,7 +247,7 @@ export default function Table<T>({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="hover:bg-slate-50/30 transition-colors"
+                      className="hover:bg-slate-100/60 border-b border-slate-200 transition-colors"
                       transition={{ duration: 0.15 }}
                     >
                       {columns.map((col, idx) => (

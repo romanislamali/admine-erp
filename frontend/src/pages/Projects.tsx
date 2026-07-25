@@ -240,7 +240,6 @@ export default function Projects() {
       render: (p: Project) => (
         <div>
           <div className="font-bold text-slate-900 text-sm">{p.name}</div>
-          <div className="text-[11px] text-slate-400 font-mono mt-0.5">ID: #{p.id}</div>
         </div>
       )
     },
