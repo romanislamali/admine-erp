@@ -60,8 +60,9 @@ export default function Login() {
       >
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Admine ERP" className="h-12 w-auto mb-4" />
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Login</h2>
+          <img src={logo} className="h-7 w-auto mb-2" />
+          <h1 className='text-3xl font-bold text-slate-900 tracking-tight mb-4'>Admine ERP System</h1>
+          <h2 className="text-3xl font-medium text-slate-700 tracking-tight">Login</h2>
         </div>
 
         {/* Error Banner */}
