@@ -637,7 +637,7 @@ export default function ContractorDetails() {
 
                             {/* Invoiced Card */}
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
-                                <div className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                                <div className="text-[16px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
                                     <FileText size={14} className="shrink-0" />
                                     <span className="truncate">Invoiced</span>
                                 </div>
@@ -648,7 +648,7 @@ export default function ContractorDetails() {
 
                             {/* Paid Card */}
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
-                                <div className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                                <div className="text-[16px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
                                     <Coins size={14} className="shrink-0" />
                                     <span className="truncate">Paid</span>
                                 </div>
@@ -664,16 +664,13 @@ export default function ContractorDetails() {
                                     ? 'bg-rose-50/40 border-rose-100 text-rose-800'
                                     : 'bg-slate-50 border-slate-100 text-slate-800'
                                 }`}>
-                                <div className="text-[11px] font-semibold uppercase opacity-75 flex items-center gap-1.5 mb-2">
+                                <div className="text-[16px] font-semibold uppercase opacity-75 flex items-center gap-1.5 mb-2">
                                     <CreditCard size={14} className="shrink-0" />
-                                    <span className="truncate">Balance</span>
+                                    <span className="truncate">Balance</span> {balanceNum < 0 ? '(Advance)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
                                 </div>
                                 <div className="space-y-1">
                                     <div className="text-sm sm:text-base lg:text-lg font-bold break-all leading-tight">
                                         {formatCurrency(Math.abs(balanceNum))}
-                                    </div>
-                                    <div className="text-[10px] font-bold uppercase tracking-tight opacity-75 truncate">
-                                        {balanceNum < 0 ? '(Advance)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
                                     </div>
                                 </div>
                             </div>
