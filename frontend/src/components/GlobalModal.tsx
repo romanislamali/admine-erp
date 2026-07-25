@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircle2, 
-  AlertCircle, 
-  Save, 
-  Trash2, 
-  X 
+import {
+  CheckCircle2,
+  AlertCircle,
+  Save,
+  Trash2,
+  X
 } from 'lucide-react';
 import { useModal, ModalType } from '../context/ModalContext';
 
@@ -198,9 +198,9 @@ export const GlobalModal: React.FC = () => {
                   }}
                   className={`absolute inset-0 w-16 h-16 rounded-full ${currentTheme.pulseClass}`}
                 />
-                
+
                 {/* Icon Inner Housing */}
-                <motion.div 
+                <motion.div
                   whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
                   transition={{ duration: 0.4 }}
                   className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm ${currentTheme.iconBgClass}`}
@@ -228,7 +228,7 @@ export const GlobalModal: React.FC = () => {
                 >
                   {cancelText || 'Cancel'}
                 </motion.button>
-                
+
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.02 }}
