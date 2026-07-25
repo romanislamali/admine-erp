@@ -47,6 +47,17 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Role-Guard Component for Admin Only Routes
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  if (user?.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   return (
     <Routes>
@@ -61,7 +72,6 @@ function AppContent() {
           </footer>
         </div>
       } />
-      
 
       {/* Protected routes */}
       <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
@@ -71,8 +81,19 @@ function AppContent() {
       <Route path="/billing" element={<ProtectedLayout><Billing /></ProtectedLayout>} />
       <Route path="/payment" element={<ProtectedLayout><Payment /></ProtectedLayout>} />
       <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
-      <Route path="/users" element={<ProtectedLayout><Users /></ProtectedLayout>} />
-      
+
+      {/* Admin-only restricted route */}
+      <Route
+        path="/users"
+        element={
+          <ProtectedLayout>
+            <AdminRoute>
+              <Users />
+            </AdminRoute>
+          </ProtectedLayout>
+        }
+      />
+
       {/* Catch-all navigation */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -85,7 +106,7 @@ function App() {
       <AuthProvider>
         <ModalProvider>
           <AppContent />
-          
+
           {/* Global Modal Overlay */}
           <GlobalModal />
         </ModalProvider>

@@ -11,21 +11,19 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Billing', href: '/billing', icon: ReceiptText },
   { name: 'Payment', href: '/payment', icon: BarChart3 },
-  { name: 'Users', href: '/users', icon: Users },
+  { name: 'Users', href: '/users', icon: Users, roles: ['ADMIN'] },
 ];
 
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Extracted logout action from your auth hook
+  const { user, logout } = useAuth();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close the dropdown cleanly if clicking anywhere else on the page layout
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // TypeScript now safely checks if target belongs inside HTMLDivElement nodes
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
@@ -36,12 +34,20 @@ export default function Header() {
 
   if (!user) return null;
 
+  // Filter out navigation links that require specific roles if the user doesn't match
+  const filteredNavigation = navigation.filter((item) => {
+    if (!item.roles) return true;
+    return item.roles.includes(user.role);
+  });
+
   const initials = user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+    ? user.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase()
+    : 'U';
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm shadow-gray-300">
@@ -58,13 +64,15 @@ export default function Header() {
 
             {/* Desktop Navigation Link Tabs */}
             <nav className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => {
+              {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                    className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                      ? 'text-primary bg-primary/5'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                       }`}
                   >
                     <div className="flex items-center gap-2">
@@ -95,7 +103,7 @@ export default function Header() {
               {initials}
             </button>
 
-            {/* Floating Absolute Dropdown Menu Panel Panel */}
+            {/* Floating Dropdown Menu Panel */}
             <AnimatePresence>
               {isDropdownOpen && (
                 <motion.div
@@ -118,7 +126,7 @@ export default function Header() {
                     </div>
                   </div>
 
-                  {/* Dynamic Control Actions */}
+                  {/* Actions */}
                   <div className="flex flex-col gap-0.5">
                     <button
                       type="button"
