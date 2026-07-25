@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, Loader2, ArrowUpRight } from 'lucide-react';
+import { X, Wallet, Loader2, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import Table, { Column } from '../components/Table';
+import { useModal } from '../context/ModalContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Payment {
   id: string;
@@ -33,6 +36,10 @@ interface Project {
 }
 
 export default function Payment() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
@@ -40,6 +47,7 @@ export default function Payment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
@@ -86,14 +94,82 @@ export default function Payment() {
     fetchData();
   }, []);
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditId(null);
+    setFormData({
+      contractor_id: '',
+      project_id: '',
+      bill_id: '',
+      amount: '',
+      payment_date: ''
+    });
+  };
+
+  const handleEdit = (payment: Payment) => {
+    setEditId(payment.id);
+    setFormData({
+      contractor_id: payment.contractor_id || '',
+      project_id: payment.project_id || '',
+      bill_id: payment.bill_id || '',
+      amount: payment.amount ? payment.amount.toString() : '',
+      payment_date: payment.payment_date ? new Date(payment.payment_date).toISOString().split('T')[0] : ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDelete(
+      'Delete Payment Record?',
+      'Are you sure you want to remove this payment record? This action is irreversible.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/payments/${id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete payment');
+      }
+
+      await showSuccess(
+        'Payment Deleted',
+        'The payment record has been successfully removed.'
+      );
+      fetchData();
+    } catch (err: any) {
+      await showError(
+        'Deletion Failed',
+        err.message || 'We could not delete this payment record.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.contractor_id || !formData.amount.trim()) return;
 
+    const actionText = editId ? 'Save Payment Updates' : 'Record Payment';
+    const messageText = editId
+      ? 'Are you sure you want to save updates to this payment record?'
+      : 'Are you sure you want to record this payment?';
+
+    const confirmed = await confirmSave(actionText, messageText);
+    if (!confirmed) return;
+
     try {
       setSubmitting(true);
-      const res = await fetch('/api/payments', {
-        method: 'POST',
+      const url = editId ? `/api/payments/${editId}` : '/api/payments';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -106,22 +182,24 @@ export default function Payment() {
         })
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to create payment');
+        throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} payment`);
       }
 
-      setFormData({
-        contractor_id: '',
-        project_id: '',
-        bill_id: '',
-        amount: '',
-        payment_date: ''
-      });
-      setIsModalOpen(false);
+      await showSuccess(
+        editId ? 'Payment Updated' : 'Payment Recorded',
+        editId ? 'Payment record details were successfully updated.' : 'Payment has been recorded successfully.'
+      );
+
+      handleCloseModal();
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create payment');
+      await showError(
+        'Operation Failed',
+        err.message || 'Unable to store changes. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -154,6 +232,93 @@ export default function Payment() {
     (p) => p.contractor_id === formData.contractor_id
   );
 
+  const columns: Column<Payment>[] = [
+    {
+      header: 'Action',
+      key: 'action',
+      render: (p: Payment) => (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleEdit(p)}
+            title="Edit payment"
+            className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+          >
+            <Pencil size={16} />
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => handleDelete(p.id)}
+              title="Delete payment"
+              className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      )
+    },
+    {
+      header: 'Payment Ref',
+      key: 'id',
+      sortable: true,
+      render: (p: Payment) => (
+        <div className="flex items-center gap-2 font-mono">
+          <ArrowUpRight size={16} className="text-emerald-555 shrink-0" />
+          <span className="font-semibold text-slate-900">REF-{p.id.slice(0, 8)}</span>
+        </div>
+      )
+    },
+    {
+      header: 'Contractor',
+      key: 'contractor_name',
+      sortable: true,
+      render: (p: Payment) => (
+        <div className="font-medium text-slate-700">{p.contractor_name || 'N/A'}</div>
+      )
+    },
+    {
+      header: 'Project',
+      key: 'project_name',
+      sortable: true,
+      render: (p: Payment) => (
+        p.project_name ? (
+          <span className="font-semibold text-slate-700">{p.project_name}</span>
+        ) : (
+          <span className="text-slate-400 text-xs italic">N/A</span>
+        )
+      )
+    },
+    {
+      header: 'Linked Invoice',
+      key: 'bill_invoice',
+      sortable: true,
+      render: (p: Payment) => (
+        p.bill_invoice ? (
+          <span className="font-semibold text-slate-700">{p.bill_invoice}</span>
+        ) : (
+          <span className="text-amber-700 bg-amber-50/70 px-2.5 py-1 rounded-lg text-xs border border-amber-200/50 font-bold whitespace-nowrap">Unlinked / Advance</span>
+        )
+      )
+    },
+    {
+      header: 'Payment Date',
+      key: 'payment_date',
+      sortable: true,
+      render: (p: Payment) => (
+        <span className="text-slate-600 font-medium font-mono">{formatDate(p.payment_date)}</span>
+      )
+    },
+    {
+      header: 'Paid Amount',
+      key: 'amount',
+      align: 'right',
+      sortable: true,
+      render: (p: Payment) => (
+        <span className="font-bold text-emerald-600">{formatCurrency(p.amount)}</span>
+      )
+    }
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -169,7 +334,17 @@ export default function Payment() {
             <p className="text-slate-500 mt-1">Record contractor cash disbursements and adjust accounting ledgers.</p>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditId(null);
+              setFormData({
+                contractor_id: '',
+                project_id: '',
+                bill_id: '',
+                amount: '',
+                payment_date: ''
+              });
+              setIsModalOpen(true);
+            }}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Wallet size={18} />
@@ -179,86 +354,28 @@ export default function Payment() {
 
         <div className='mt-2'>
           {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-primary" size={32} />
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-            <Wallet size={48} className="text-slate-300 mb-3" />
-            <p className="text-lg font-medium text-slate-600">No payments found</p>
-            <p className="text-sm">Log your first supplier payment check to clear outstanding liabilities.</p>
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <th className="px-6 py-4">Payment Ref</th>
-                    <th className="px-6 py-4">Contractor</th>
-                    <th className="px-6 py-4">Project</th>
-                    <th className="px-6 py-4">Linked Invoice</th>
-                    <th className="px-6 py-4">Payment Date</th>
-                    <th className="px-6 py-4 text-right">Paid Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {payments.map((p) => (
-                    <motion.tr
-                      key={p.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-mono">
-                        <div className="flex items-center gap-2">
-                          <ArrowUpRight size={16} className="text-emerald-555 shrink-0" />
-                          <span className="font-semibold text-slate-900">REF-{p.id.slice(0, 8)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-700">{p.contractor_name || 'N/A'}</div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {p.project_name ? (
-                          <div>
-                            <div className="font-semibold text-slate-700">{p.project_name}</div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-xs italic">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        {p.bill_invoice ? (
-                          <div>
-                            <div className="font-semibold text-slate-700">{p.bill_invoice}</div>
-                          </div>
-                        ) : (
-                          <span className="text-amber-700 bg-amber-50/70 px-2.5 py-1 rounded-lg text-xs border border-amber-200/50 font-bold whitespace-nowrap">Unlinked / Advance</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-medium font-mono">
-                        {formatDate(p.payment_date)}
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-emerald-600">
-                        {formatCurrency(p.amount)}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm">
+              {error}
             </div>
-          </div>
-        )}
+          )}
+
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-primary" size={32} />
+            </div>
+          ) : (
+            <Table
+              data={payments}
+              columns={columns}
+              searchKeys={['id', 'contractor_name', 'project_name', 'bill_invoice', 'amount']}
+              searchPlaceholder="Search payments by reference, contractor, project..."
+              keyExtractor={(p) => p.id}
+              emptyMessage="No payments found in database. Get started by recording one above."
+            />
+          )}
         </div>
 
-        {/* Record Payment Modal */}
+        {/* Record/Edit Payment Modal */}
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -266,7 +383,7 @@ export default function Payment() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
               />
               <motion.div
@@ -276,9 +393,9 @@ export default function Payment() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Record Payment</h3>
+                  <h3 className="text-xl font-bold text-slate-900">{editId ? 'Edit Payment' : 'Record Payment'}</h3>
                   <button
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={handleCloseModal}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
                   >
                     <X size={20} />
@@ -321,60 +438,46 @@ export default function Payment() {
                     <select
                       value={formData.bill_id}
                       disabled={!formData.contractor_id}
-                      onChange={(e) => {
-                        const selectedBill = bills.find((b) => b.id === e.target.value);
-                        setFormData({
-                          ...formData,
-                          bill_id: e.target.value,
-                          amount: selectedBill ? selectedBill.amount.toString() : formData.amount
-                        });
-                      }}
+                      onChange={(e) => setFormData({ ...formData, bill_id: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
                     >
-                      <option value="">-- No Direct Link (Advance Payment) --</option>
+                      <option value="">-- Unlinked / Advance Payment --</option>
                       {filteredBills.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.invoice_number || `INV-${b.id}`} ({formatCurrency(b.amount)})
                         </option>
                       ))}
                     </select>
-                    {!formData.contractor_id && (
-                      <p className="text-[10px] text-slate-400 mt-1">Please select a contractor to view outstanding invoices and projects.</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Payment Date</label>
-                      <input
-                        type="date"
-                        value={formData.payment_date}
-                        onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      />
-                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Paid Amount *</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        required
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        placeholder="0"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      />
-                    </div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Payment Date</label>
+                    <input
+                      type="date"
+                      value={formData.payment_date}
+                      onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Payment Amount *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="0"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
                   </div>
 
                   <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={handleCloseModal}
                       className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors"
                     >
                       Cancel
