@@ -182,23 +182,21 @@ export default function Contractors() {
           >
             <Eye size={16} />
           </button>
+          <button
+            onClick={() => handleEdit(c)}
+            title="Edit contractor"
+            className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+          >
+            <Pencil size={16} />
+          </button>
           {isAdmin && (
-            <>
-              <button
-                onClick={() => handleEdit(c)}
-                title="Edit contractor"
-                className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={() => handleDelete(c.id)}
-                title="Delete contractor"
-                className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
-            </>
+            <button
+              onClick={() => handleDelete(c.id)}
+              title="Delete contractor"
+              className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
           )}
         </div>
       )

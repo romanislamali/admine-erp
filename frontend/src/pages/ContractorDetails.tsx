@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X, Wallet, ReceiptText, Pencil, Trash2 } from 'lucide-react';
 import Table from '../components/Table';
 import { useModal } from '../context/ModalContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Bill {
     id: string;
@@ -49,6 +50,8 @@ export default function ContractorDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
 
     const [contractor, setContractor] = useState<Contractor | null>(null);
     const [bills, setBills] = useState<Bill[]>([]);
@@ -403,13 +406,15 @@ export default function ContractorDetails() {
                     >
                         <Pencil size={14} />
                     </button>
-                    <button
-                        onClick={() => handleDeleteBill(b.id)}
-                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded transition-colors"
-                        title="Delete bill"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => handleDeleteBill(b.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded transition-colors"
+                            title="Delete bill"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                 </div>
             )
         },
@@ -475,13 +480,15 @@ export default function ContractorDetails() {
                     >
                         <Pencil size={14} />
                     </button>
-                    <button
-                        onClick={() => handleDeletePayment(p.id)}
-                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded transition-colors"
-                        title="Delete payment"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => handleDeletePayment(p.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded transition-colors"
+                            title="Delete payment"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                 </div>
             )
         },
@@ -587,71 +594,92 @@ export default function ContractorDetails() {
                     </button>
                 </div>
 
-                {/* Contractor Overview Card */}
-                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 mt-5">
-                    <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
-                        <div className="space-y-2">
+                {/* Contractor Overview Card (60 / 40 Split) */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 sm:p-6 mt-5 w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+                        {/* Left Section (60% Width on Desktop) */}
+                        <div className="lg:col-span-3 min-w-0 flex flex-col items-start gap-3">
                             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
                                 Contractor Profile
                             </span>
-                            <h1 className="text-3xl font-bold text-slate-900 mt-1">{contractor.name}</h1>
 
-                            <div className="flex flex-wrap gap-4 text-xs text-slate-500 pt-1">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 break-words w-full">
+                                {contractor.name}
+                            </h1>
+
+                            <div className="flex flex-row flex-wrap items-center gap-y-2 gap-x-4 sm:gap-x-6 text-xs sm:text-sm text-slate-500 pt-1 w-full">
                                 {contractor.phone && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Phone size={14} className="text-slate-400" />
-                                        <span>{contractor.phone}</span>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <Phone size={15} className="text-slate-400 shrink-0" />
+                                        <span className="truncate">{contractor.phone}</span>
                                     </div>
                                 )}
+
                                 {contractor.email && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Mail size={14} className="text-slate-400" />
-                                        <span>{contractor.email}</span>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <Mail size={15} className="text-slate-400 shrink-0" />
+                                        <span className="truncate break-all">{contractor.email}</span>
                                     </div>
                                 )}
+
                                 {contractor.address && (
-                                    <div className="flex items-center gap-1.5">
-                                        <MapPin size={14} className="text-slate-400" />
-                                        <span>{contractor.address}</span>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <MapPin size={15} className="text-slate-400 shrink-0" />
+                                        <span className="truncate">{contractor.address}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Stats Summary Group */}
-                        <div className="grid grid-cols-3 gap-4 lg:w-120 shrink-0">
-                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1">
-                                <div className="text-[10px] font-semibold uppercase text-slate-400 flex items-center gap-1">
-                                    <FileText size={10} />
-                                    Invoiced
+                        {/* Right Section / Side-by-Side Stats Cards (40% Width on Desktop) */}
+                        <div className="lg:col-span-2 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
+
+                            {/* Invoiced Card */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
+                                <div className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                                    <FileText size={14} className="shrink-0" />
+                                    <span className="truncate">Invoiced</span>
                                 </div>
-                                <p className="text-sm font-bold text-slate-900">{formatCurrency(contractor.total_bills)}</p>
+                                <div className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 break-all leading-tight">
+                                    {formatCurrency(contractor.total_bills)}
+                                </div>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-1">
-                                <div className="text-[10px] font-semibold uppercase text-slate-400 flex items-center gap-1">
-                                    <Coins size={10} />
-                                    Paid
+                            {/* Paid Card */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
+                                <div className="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                                    <Coins size={14} className="shrink-0" />
+                                    <span className="truncate">Paid</span>
                                 </div>
-                                <p className="text-sm font-bold text-slate-900">{formatCurrency(contractor.total_payments)}</p>
+                                <div className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 break-all leading-tight">
+                                    {formatCurrency(contractor.total_payments)}
+                                </div>
                             </div>
 
-                            <div className={`border rounded-xl p-3.5 space-y-1 ${balanceNum < 0
+                            {/* Balance Card */}
+                            <div className={`border rounded-xl p-3 flex flex-col justify-between min-w-0 ${balanceNum < 0
                                 ? 'bg-emerald-50/40 border-emerald-100 text-emerald-800'
                                 : balanceNum > 0
                                     ? 'bg-rose-50/40 border-rose-100 text-rose-800'
                                     : 'bg-slate-50 border-slate-100 text-slate-800'
                                 }`}>
-                                <div className="text-[10px] font-semibold uppercase opacity-75 flex items-center gap-1">
-                                    <CreditCard size={10} />
-                                    Balance
+                                <div className="text-[11px] font-semibold uppercase opacity-75 flex items-center gap-1.5 mb-2">
+                                    <CreditCard size={14} className="shrink-0" />
+                                    <span className="truncate">Balance</span>
                                 </div>
-                                <p className="text-sm font-bold">{formatCurrency(Math.abs(balanceNum))}</p>
-                                <div className="text-[8px] font-bold uppercase tracking-tight opacity-75">
-                                    {balanceNum < 0 ? '(Advance)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
+                                <div className="space-y-1">
+                                    <div className="text-sm sm:text-base lg:text-lg font-bold break-all leading-tight">
+                                        {formatCurrency(Math.abs(balanceNum))}
+                                    </div>
+                                    <div className="text-[10px] font-bold uppercase tracking-tight opacity-75 truncate">
+                                        {balanceNum < 0 ? '(Advance)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
+
                     </div>
                 </div>
 
