@@ -110,7 +110,7 @@ export default function Dashboard() {
     }
     return {
       value: `${formatCurrency(outstandingBalance)} (DUE)`,
-      color: 'text-red-600 border-rose-100'
+      color: 'text-rose-800 border-rose-100'
     };
   };
 
@@ -218,7 +218,7 @@ export default function Dashboard() {
                         <div>
                           <div className="font-bold text-slate-800">{c.name}</div>
                         </div>
-                        <div className={`text-sm font-extrabold ${bal < 0 ? 'text-amber-600' : bal > 0 ? 'text-rose-600' : 'text-slate-500'
+                        <div className={`text-sm font-extrabold ${bal < 0 ? 'text-amber-600' : bal > 0 ? 'text-rose-800' : 'text-slate-500'
                           }`}>
                           {bal < 0 && <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">ADV</span>}
                           {formatCurrency(Math.abs(bal))}
