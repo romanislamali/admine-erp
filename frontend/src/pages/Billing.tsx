@@ -93,7 +93,7 @@ export default function Billing() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to create bill');
+        throw new Error(errorData.message || 'Failed to create new bill');
       }
 
       setFormData({
@@ -106,7 +106,7 @@ export default function Billing() {
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create bill');
+      alert(err.message || 'Failed to create new bill');
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +154,7 @@ export default function Billing() {
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <ReceiptText size={18} />
-            Create Bill
+            Create New Bill
           </button>
         </div>
 
@@ -250,7 +250,7 @@ export default function Billing() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Create Bill</h3>
+                  <h3 className="text-xl font-bold text-slate-900">Create New Bill</h3>
                   <button
                     onClick={() => setIsModalOpen(false)}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"

@@ -211,7 +211,7 @@ export default function ContractorDetails() {
         const contractorIdToUse = billFormData.contractor_id || id;
         if (!contractorIdToUse || !billFormData.amount.trim()) return;
 
-        const actionText = editingBillId ? 'Save Bill Updates' : 'Create Bill';
+        const actionText = editingBillId ? 'Save Bill Updates' : 'Create New Bill';
         const messageText = editingBillId
             ? 'Are you sure you want to save updates to this bill?'
             : 'Are you sure you want to log this new bill?';
@@ -654,7 +654,7 @@ export default function ContractorDetails() {
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <ReceiptText size={18} />
-                                    Create Bill
+                                    Create New Bill
                                 </button>
                             </div>
                         </div>
@@ -714,7 +714,7 @@ export default function ContractorDetails() {
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-slate-900">
-                                    {editingBillId ? 'Update Bill' : 'Create Bill'}
+                                    {editingBillId ? 'Update Bill' : 'Create New Bill'}
                                 </h3>
                                 <button
                                     onClick={handleCloseBillModal}
