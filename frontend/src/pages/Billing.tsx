@@ -140,7 +140,7 @@ export default function Billing() {
     e.preventDefault();
     if (!formData.contractor_id || !formData.amount.trim()) return;
 
-    const actionText = editId ? 'Save Bill Updates' : 'Create New Bill';
+    const actionText = editId ? 'Edit Bill' : 'Create Bill';
     const messageText = editId
       ? 'Are you sure you want to save updates to this bill?'
       : 'Are you sure you want to create this bill?';
@@ -317,7 +317,7 @@ export default function Billing() {
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <ReceiptText size={18} />
-            Create New Bill
+            Create Bill
           </button>
         </div>
 

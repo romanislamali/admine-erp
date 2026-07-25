@@ -689,7 +689,7 @@ export default function ContractorDetails() {
                     {/* Bills Column */}
                     <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-slate-900">Invoices & Bills</h2>
+                            <h2 className="text-lg font-bold text-slate-900">Billing & Invoices</h2>
                             <div className='flex items-center gap-2'>
                                 <button
                                     onClick={handleOpenCreateBill}
@@ -720,7 +720,7 @@ export default function ContractorDetails() {
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <Wallet size={18} />
-                                    Create Payment
+                                    New Payment
                                 </button>
                             </div>
                         </div>
@@ -878,7 +878,7 @@ export default function ContractorDetails() {
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-slate-900">
-                                    {editingPaymentId ? 'Edit Payment' : 'Record Payment'}
+                                    {editingPaymentId ? 'Edit Payment' : 'New Payment'}
                                 </h3>
                                 <button
                                     onClick={handleClosePaymentModal}

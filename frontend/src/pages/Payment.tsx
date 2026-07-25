@@ -329,7 +329,7 @@ export default function Payment() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-              Payment Log
+              Payments Ledger
             </h1>
             <p className="text-slate-500 mt-1">Record contractor cash disbursements and adjust accounting ledgers.</p>
           </div>
@@ -348,7 +348,7 @@ export default function Payment() {
             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Wallet size={18} />
-            Record Payment
+            New Payment
           </button>
         </div>
 
@@ -393,7 +393,7 @@ export default function Payment() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">{editId ? 'Edit Payment' : 'Record Payment'}</h3>
+                  <h3 className="text-xl font-bold text-slate-900">{editId ? 'Edit Payment' : 'New Payment'}</h3>
                   <button
                     onClick={handleCloseModal}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
