@@ -51,23 +51,17 @@ export default function Login() {
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 relative overflow-hidden">
-      {/* Background Decorative Gradients */}
-      <div className="absolute top-1/4 left-1/4 -translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-y-1/2 translate-x-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xl relative z-10"
+        className="w-full max-w-md bg-white shadow-xl rounded-xl p-10 relative z-10"
       >
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="Admine ERP" className="h-12 w-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Staff Authentication</h2>
-          <p className="text-sm text-slate-500 mt-1.5 text-center">
-            Sign in to access your administrative dashboard and systems.
-          </p>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Login</h2>
         </div>
 
         {/* Error Banner */}
@@ -86,7 +80,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1.5 tracking-wider">
-              Staff Username
+              Username
             </label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -103,7 +97,7 @@ export default function Login() {
 
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1.5 tracking-wider">
-              Secret Password
+              Password
             </label>
             <div className="relative">
               <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -127,7 +121,7 @@ export default function Login() {
               <Loader2 className="animate-spin" size={18} />
             ) : (
               <>
-                Verify Credentials
+                Log In
                 <ArrowRight size={16} />
               </>
             )}
@@ -135,12 +129,12 @@ export default function Login() {
         </form>
 
         {/* Demo Accounts Quick-Select */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
+        {/* <div className="mt-8 pt-6 border-t border-slate-100">
           <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">
             <KeyRound size={14} />
             <span>Quick-Access Demo Credentials</span>
           </div>
-          
+
           <div className="space-y-2">
             {[
               { username: 'admineadmin', label: 'Administrator', style: 'bg-indigo-50 text-indigo-700 border-indigo-200/50 hover:bg-indigo-100/50' },
@@ -159,7 +153,7 @@ export default function Login() {
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
       </motion.div>
     </div>
   );
