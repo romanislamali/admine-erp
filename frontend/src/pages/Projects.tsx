@@ -75,7 +75,9 @@ export default function Projects() {
         },
         body: JSON.stringify({
           ...formData,
-          contractor_id: parseInt(formData.contractor_id)
+          contractor_id: parseInt(formData.contractor_id),
+          start_date: formData.start_date || null,
+          end_date: formData.end_date || null
         })
       });
 

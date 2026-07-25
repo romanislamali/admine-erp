@@ -22,7 +22,7 @@ const Project = {
       `INSERT INTO projects (name, description, contractor_id, start_date, end_date, status, created_at) 
        VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
        RETURNING *`,
-      [name, description, contractor_id, start_date, end_date, status || 'Planned']
+      [name, description, contractor_id, start_date || null, end_date || null, status || 'Planned']
     );
     return rows[0];
   }
