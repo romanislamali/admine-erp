@@ -32,7 +32,7 @@ export default function Projects() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  const { confirmSave, confirmDelete, showSuccess, showError } = useModal();
+  const { confirmDelete, showSuccess, showError } = useModal();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -101,18 +101,28 @@ export default function Projects() {
         throw new Error(data.message || 'Failed to delete project');
       }
 
-      await showSuccess(
-        'Project Deleted',
-        'The project has been successfully deleted.'
-      );
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Deletion Failed',
-        err.message || 'Could not delete project.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh project list
+      fetchData();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          'Project Deleted',
+          'The project has been successfully deleted.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Deletion Failed',
+          err.message || 'Could not delete project.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -133,13 +143,8 @@ export default function Projects() {
     e.preventDefault();
     if (!formData.name.trim() || !formData.contractor_id) return;
 
-    const actionText = editId ? 'Save Project Updates' : 'Create Project';
-    const messageText = editId
-      ? `Are you sure you want to save updates for "${formData.name}"?`
-      : `Are you sure you want to create project "${formData.name}"?`;
-
-    const confirmed = await confirmSave(actionText, messageText);
-    if (!confirmed) return;
+    const isEditing = Boolean(editId);
+    const projectName = formData.name;
 
     try {
       setSubmitting(true);
@@ -161,24 +166,36 @@ export default function Projects() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} project`);
+      if (!res.ok) throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} project`);
 
-      await showSuccess(
-        editId ? 'Project Updated' : 'Project Created',
-        editId
-          ? `Project "${formData.name}" details were successfully updated.`
-          : `Project "${formData.name}" was successfully created.`
-      );
-
+      // Close modal & stop spinner immediately before showing popup
       handleCloseModal();
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Operation Failed',
-        err.message || 'Unable to save project details. Please try again.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh list
+      fetchData();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          isEditing ? 'Project Updated' : 'Project Created',
+          isEditing
+            ? `Project "${projectName}" details were successfully updated.`
+            : `Project "${projectName}" was successfully created.`
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+
+      // Show error popup with automatic 1-second dismiss
+      await Promise.race([
+        showError(
+          'Operation Failed',
+          err.message || 'Unable to save project details. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -211,25 +228,22 @@ export default function Projects() {
       key: 'action',
       render: (p: Project) => (
         <div className="flex items-center gap-1.5">
-
-          <>
+          <button
+            onClick={() => handleEdit(p)}
+            title="Edit project"
+            className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+          >
+            <Pencil size={16} />
+          </button>
+          {isAdmin && (
             <button
-              onClick={() => handleEdit(p)}
-              title="Edit project"
-              className="p-1 px-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
+              onClick={() => handleDelete(p.id)}
+              title="Delete project"
+              className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
             >
-              <Pencil size={16} />
+              <Trash2 size={16} />
             </button>
-            {isAdmin && (
-              <button
-                onClick={() => handleDelete(p.id)}
-                title="Delete contractor"
-                className="p-1 px-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-          </>
+          )}
         </div>
       )
     },
