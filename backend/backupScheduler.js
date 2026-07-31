@@ -5,10 +5,10 @@ const { exec } = require('child_process');
 const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
 
-const CLIENT_ID = '975649624878-fpujk98nh9i77jlj71f7jbs59ok3rlqc.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REFRESH_TOKEN = '1//04tNrTO4uqO6LCgYIARAAGAQSNwF-L9IrMkOE8Fw9__Do45Yz88YdashR472D6E4jKnR2IUPmyG1dqBNMbqpXfrza7LIQ4AWrHss';
-const FOLDER_ID = '1VnnBGB8vS1p51qAqNxoesdknjOhMVdhE';
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '975649624878-fpujk98nh9i77jlj71f7jbs59ok3rlqc.apps.googleusercontent.com';
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
+const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || '1//04tNrTO4uqO6LCgYIARAAGAQSNwF-L9IrMkOE8Fw9__Do45Yz88YdashR472D6E4jKnR2IUPmyG1dqBNMbqpXfrza7LIQ4AWrHss';
+const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '1VnnBGB8vS1p51qAqNxoesdknjOhMVdhE';
 
 // OAuth2 client setup
 const oauth2Client = new google.auth.OAuth2(
@@ -73,7 +73,7 @@ async function cleanupOldBackups() {
         orderBy: 'createdTime desc'
     });
     const files = response.data.files;
-    if (files.length > 30) { 
+    if (files.length > 30) {
         for (let i = 30; i < files.length; i++) {
             await drive.files.delete({ fileId: files[i].id });
             console.log(`[Cleanup] Old backup deleted: ${files[i].name}`);
@@ -101,7 +101,7 @@ async function runBackupProcess() {
         await sendMailToSystemAdmin('CRITICAL: Google Drive Backup Failed!', `Error Detail: ${error.message}`);
     } finally {
         if (filePath && fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath); 
+            fs.unlinkSync(filePath);
         }
     }
 }

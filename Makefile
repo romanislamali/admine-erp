@@ -15,3 +15,9 @@ clean:
 	docker compose --env-file ./backend/.env up db -d
 	@echo "Following database initialization logs..."
 	docker compose --env-file ./backend/.env logs db -f
+
+nginx-test:
+	docker compose --env-file ./backend/.env exec nginx nginx -t
+
+nginx-reload:
+	docker compose --env-file ./backend/.env exec nginx nginx -s reload
