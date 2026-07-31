@@ -121,7 +121,7 @@ const loginUser = async (req, res) => {
     // Sign JWT
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
-      process.env.JWT_SECRET || 'supersecretjwtkey_change_me_in_production',
+      process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 

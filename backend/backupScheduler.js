@@ -5,10 +5,10 @@ const { exec } = require('child_process');
 const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '975649624878-fpujk98nh9i77jlj71f7jbs59ok3rlqc.apps.googleusercontent.com';
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
-const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || '1//04tNrTO4uqO6LCgYIARAAGAQSNwF-L9IrMkOE8Fw9__Do45Yz88YdashR472D6E4jKnR2IUPmyG1dqBNMbqpXfrza7LIQ4AWrHss';
-const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '1VnnBGB8vS1p51qAqNxoesdknjOhMVdhE';
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 // OAuth2 client setup
 const oauth2Client = new google.auth.OAuth2(
@@ -24,7 +24,7 @@ oauth2Client.setCredentials({
 
 const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-console.log("Hardcoded OAuth Credentials Loaded Successfully!");
+console.log("Google OAuth Credentials Loaded from Environment!");
 
 // Gmail notification setup
 const transporter = nodemailer.createTransport({
