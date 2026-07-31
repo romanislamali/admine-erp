@@ -15,6 +15,8 @@ interface Contractor {
   total_bills: string | number;
   total_payments: string | number;
   balance: string | number;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export default function Contractors() {
@@ -293,7 +295,18 @@ export default function Contractors() {
           </div>
         );
       }
-    }
+    },
+    ...(isAdmin ? [{
+      header: 'Created / Updated By',
+      key: 'created_by',
+      sortable: true,
+      render: (c: Contractor) => (
+        <div className="space-y-1 text-xs">
+          <div className="text-slate-600"><span className="font-semibold text-slate-500">Created:</span> {c.created_by || '—'}</div>
+          <div className="text-slate-400"><span className="font-semibold text-slate-400">Updated:</span> {c.updated_by || '—'}</div>
+        </div>
+      )
+    }] : [])
   ];
 
   return (

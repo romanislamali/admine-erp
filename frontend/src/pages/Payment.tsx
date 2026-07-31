@@ -15,6 +15,8 @@ interface Payment {
   bill_invoice?: string;
   amount: string | number;
   payment_date: string;
+  created_by?: string;
+  updated_by?: string;
 }
 
 interface Contractor {
@@ -332,7 +334,18 @@ export default function Payment() {
       render: (p: Payment) => (
         <span className="font-bold text-emerald-600">{formatCurrency(p.amount)}</span>
       )
-    }
+    },
+    ...(isAdmin ? [{
+      header: 'Created / Updated By',
+      key: 'created_by',
+      sortable: true,
+      render: (p: Payment) => (
+        <div className="space-y-1 text-xs">
+          <div className="text-slate-600"><span className="font-semibold text-slate-500">Created:</span> {p.created_by || '—'}</div>
+          <div className="text-slate-400"><span className="font-semibold text-slate-400">Updated:</span> {p.updated_by || '—'}</div>
+        </div>
+      )
+    }] : [])
   ];
 
   return (

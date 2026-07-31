@@ -14,6 +14,8 @@ interface Project {
   start_date: string;
   end_date: string;
   status: string;
+  created_by?: string;
+  updated_by?: string;
 }
 
 interface Contractor {
@@ -300,7 +302,18 @@ export default function Projects() {
           {p.description || '—'}
         </span>
       )
-    }
+    },
+    ...(isAdmin ? [{
+      header: 'Created / Updated By',
+      key: 'created_by',
+      sortable: true,
+      render: (p: Project) => (
+        <div className="space-y-1 text-xs">
+          <div className="text-slate-600"><span className="font-semibold text-slate-500">Created:</span> {p.created_by || '—'}</div>
+          <div className="text-slate-400"><span className="font-semibold text-slate-400">Updated:</span> {p.updated_by || '—'}</div>
+        </div>
+      )
+    }] : [])
   ];
 
   return (
