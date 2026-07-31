@@ -174,7 +174,7 @@ export default function Dashboard() {
               {/* Top Section: Icon and Name in a Row */}
               <div className="flex items-center gap-3 mb-4">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
-                  <item.icon size={22} />
+                  <item.icon size={16} />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
@@ -183,7 +183,7 @@ export default function Dashboard() {
 
               {/* Bottom Section: Value */}
               <div>
-                <div className={`text-xl font-bold ${item.color}`}>{item.value}</div>
+                <div className={`text-md font-bold ${item.color}`}>{item.value}</div>
               </div>
 
             </div>
