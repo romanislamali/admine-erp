@@ -30,7 +30,7 @@ interface Project {
 export default function Billing() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+  const { showSuccess, showError, confirmDelete } = useModal();
 
   const [bills, setBills] = useState<Bill[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -121,18 +121,28 @@ export default function Billing() {
         throw new Error(data.message || 'Failed to delete bill');
       }
 
-      await showSuccess(
-        'Bill Deleted',
-        'The invoice bill has been successfully removed.'
-      );
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Deletion Failed',
-        err.message || 'We could not delete this bill record.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh data
+      fetchData();
+
+      // Show success modal and automatically close it after 1 second
+      await Promise.race([
+        showSuccess(
+          'Bill Deleted',
+          'The invoice bill has been successfully removed.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Deletion Failed',
+          err.message || 'We could not delete this bill record.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -140,13 +150,7 @@ export default function Billing() {
     e.preventDefault();
     if (!formData.contractor_id || !formData.amount.trim()) return;
 
-    const actionText = editId ? 'Edit Bill' : 'Create Bill';
-    const messageText = editId
-      ? 'Are you sure you want to save updates to this bill?'
-      : 'Are you sure you want to create this bill?';
-
-    const confirmed = await confirmSave(actionText, messageText);
-    if (!confirmed) return;
+    const isEditing = Boolean(editId);
 
     try {
       setSubmitting(true);
@@ -170,23 +174,35 @@ export default function Billing() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} bill`);
+        throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} bill`);
       }
 
-      await showSuccess(
-        editId ? 'Bill Updated' : 'Bill Created',
-        editId ? 'Bill details were successfully updated.' : 'New bill has been successfully created.'
-      );
-
+      // Close modal & stop spinner immediately
       handleCloseModal();
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Operation Failed',
-        err.message || 'Unable to save bill details. Please try again.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh table data
+      fetchData();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          isEditing ? 'Bill Updated' : 'Bill Created',
+          isEditing ? 'Bill details were successfully updated.' : 'New bill has been successfully created.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+
+      // Show error popup with automatic 1-second dismiss
+      await Promise.race([
+        showError(
+          'Operation Failed',
+          err.message || 'Unable to save bill details. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
