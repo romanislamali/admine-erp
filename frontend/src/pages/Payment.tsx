@@ -38,7 +38,7 @@ interface Project {
 export default function Payment() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+  const { showSuccess, showError, confirmDelete } = useModal();
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -136,18 +136,28 @@ export default function Payment() {
         throw new Error(data.message || 'Failed to delete payment');
       }
 
-      await showSuccess(
-        'Payment Deleted',
-        'The payment record has been successfully removed.'
-      );
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Deletion Failed',
-        err.message || 'We could not delete this payment record.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh payments list
+      fetchData();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          'Payment Deleted',
+          'The payment record has been successfully removed.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Deletion Failed',
+          err.message || 'We could not delete this payment record.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -155,13 +165,7 @@ export default function Payment() {
     e.preventDefault();
     if (!formData.contractor_id || !formData.amount.trim()) return;
 
-    const actionText = editId ? 'Save Payment Updates' : 'Record Payment';
-    const messageText = editId
-      ? 'Are you sure you want to save updates to this payment record?'
-      : 'Are you sure you want to record this payment?';
-
-    const confirmed = await confirmSave(actionText, messageText);
-    if (!confirmed) return;
+    const isEditing = Boolean(editId);
 
     try {
       setSubmitting(true);
@@ -185,23 +189,35 @@ export default function Payment() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} payment`);
+        throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} payment`);
       }
 
-      await showSuccess(
-        editId ? 'Payment Updated' : 'Payment Recorded',
-        editId ? 'Payment record details were successfully updated.' : 'Payment has been recorded successfully.'
-      );
-
+      // Close modal & stop spinner immediately
       handleCloseModal();
-      fetchData();
-    } catch (err: any) {
-      await showError(
-        'Operation Failed',
-        err.message || 'Unable to store changes. Please try again.'
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh table data
+      fetchData();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          isEditing ? 'Payment Updated' : 'Payment Recorded',
+          isEditing ? 'Payment record details were successfully updated.' : 'Payment has been recorded successfully.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+
+      // Show error popup with automatic 1-second dismiss
+      await Promise.race([
+        showError(
+          'Operation Failed',
+          err.message || 'Unable to store changes. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
