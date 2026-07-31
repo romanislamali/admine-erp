@@ -16,7 +16,7 @@ const createBill = async (req, res) => {
     if (!contractor_id || !amount || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Contractor ID and positive numeric amount are required' });
     }
-    const bill = await Bill.create(req.body);
+    const bill = await Bill.create(req.body, req.user.name);
     res.status(201).json(bill);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -30,7 +30,7 @@ const updateBill = async (req, res) => {
     if (!contractor_id || !amount || isNaN(amount) || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Contractor ID and positive numeric amount are required' });
     }
-    const bill = await Bill.update(id, req.body);
+    const bill = await Bill.update(id, req.body, req.user.name);
     if (!bill) return res.status(404).json({ message: 'Bill not found' });
     res.json(bill);
   } catch (error) {

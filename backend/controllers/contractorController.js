@@ -21,7 +21,7 @@ const getContractorById = async (req, res) => {
 
 const createContractor = async (req, res) => {
   try {
-    const contractor = await Contractor.create(req.body);
+    const contractor = await Contractor.create(req.body, req.user.name);
     res.status(201).json(contractor);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -30,7 +30,7 @@ const createContractor = async (req, res) => {
 
 const updateContractor = async (req, res) => {
   try {
-    const contractor = await Contractor.update(req.params.id, req.body);
+    const contractor = await Contractor.update(req.params.id, req.body, req.user.name);
     if (!contractor) return res.status(404).json({ message: 'Contractor not found' });
     res.json(contractor);
   } catch (error) {

@@ -21,16 +21,16 @@ const Bill = {
     return rows;
   },
   
-  create: async (billData) => {
+  create: async (billData, createdBy) => {
     const { contractor_id, project_id, amount, invoice_number, bill_date } = billData;
     const client = await db.getClient();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       const insertQuery = `
-        INSERT INTO bills (contractor_id, project_id, amount, invoice_number, bill_date, created_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
+        INSERT INTO bills (contractor_id, project_id, amount, invoice_number, bill_date, created_by, updated_by, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $6, NOW())
         RETURNING *
       `;
       const { rows } = await client.query(insertQuery, [
@@ -38,7 +38,8 @@ const Bill = {
         project_id || null,
         amount,
         invoice_number,
-        bill_date || new Date()
+        bill_date || new Date(),
+        createdBy
       ]);
       
       await client.query('COMMIT');
@@ -51,14 +52,14 @@ const Bill = {
     }
   },
 
-  update: async (id, billData) => {
+  update: async (id, billData, updatedBy) => {
     const { contractor_id, project_id, amount, invoice_number, bill_date } = billData;
     const { rows } = await db.query(
       `UPDATE bills
-       SET contractor_id = $1, project_id = $2, amount = $3, invoice_number = $4, bill_date = $5, updated_at = NOW()
-       WHERE id = $6 AND deleted = false
+       SET contractor_id = $1, project_id = $2, amount = $3, invoice_number = $4, bill_date = $5, updated_by = $6, updated_at = NOW()
+       WHERE id = $7 AND deleted = false
        RETURNING *`,
-      [contractor_id, project_id || null, amount, invoice_number, bill_date || new Date(), id]
+      [contractor_id, project_id || null, amount, invoice_number, bill_date || new Date(), updatedBy, id]
     );
     return rows[0];
   },

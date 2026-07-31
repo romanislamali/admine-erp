@@ -26,8 +26,8 @@ CREATE TABLE contractors (
     total_payments NUMERIC DEFAULT 0.00,
     balance NUMERIC DEFAULT 0.00,
     deleted BOOLEAN DEFAULT false,
-    created_by VARCHAR(100) REFERENCES users(email),
-    updated_by VARCHAR(100) REFERENCES users(email),
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -42,8 +42,8 @@ CREATE TABLE projects (
     end_date DATE,
     status VARCHAR(20),
     deleted BOOLEAN DEFAULT false,
-    created_by VARCHAR(100) REFERENCES users(email),
-    updated_by VARCHAR(100) REFERENCES users(email),
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -57,8 +57,8 @@ CREATE TABLE bills (
     invoice_number VARCHAR(50),
     bill_date DATE,
     deleted BOOLEAN DEFAULT false,
-    created_by VARCHAR(100) REFERENCES users(email),
-    updated_by VARCHAR(100) REFERENCES users(email),
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -72,8 +72,8 @@ CREATE TABLE payments (
     amount NUMERIC NOT NULL,
     payment_date DATE,
     deleted BOOLEAN DEFAULT false,
-    created_by VARCHAR(100) REFERENCES users(email),
-    updated_by VARCHAR(100) REFERENCES users(email),
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

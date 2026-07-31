@@ -21,7 +21,7 @@ const getProjectById = async (req, res) => {
 
 const createProject = async (req, res) => {
   try {
-    const project = await Project.create(req.body);
+    const project = await Project.create(req.body, req.user.name);
     res.status(201).json(project);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -30,7 +30,7 @@ const createProject = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
-    const project = await Project.update(req.params.id, req.body);
+    const project = await Project.update(req.params.id, req.body, req.user.name);
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.json(project);
   } catch (error) {
