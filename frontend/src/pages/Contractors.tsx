@@ -20,7 +20,7 @@ interface Contractor {
 export default function Contractors() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+  const { showSuccess, showError, confirmDelete } = useModal();
   const isAdmin = user?.role === 'ADMIN';
 
   const [contractors, setContractors] = useState<Contractor[]>([]);
@@ -89,18 +89,27 @@ export default function Contractors() {
         throw new Error(data.message || 'Failed to delete contractor');
       }
 
-      await showSuccess(
-        'Contractor Deleted',
-        'The contractor has been successfully removed from the directory.'
-      );
+      setSubmitting(false);
+
+      // Show success modal and automatically close it after 1 second
+      await Promise.race([
+        showSuccess(
+          'Contractor Deleted',
+          'The contractor has been successfully removed from the directory.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+
       fetchContractors();
     } catch (err: any) {
-      await showError(
-        'Deletion Failed',
-        err.message || 'We could not delete this contractor. Please verify if it is associated with any projects or bills.'
-      );
-    } finally {
       setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Deletion Failed',
+          err.message || 'We could not delete this contractor. Please verify if it is associated with any projects or bills.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -114,13 +123,8 @@ export default function Contractors() {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    const actionText = editId ? 'Save Contractor Updates' : 'Add Contractor';
-    const messageText = editId
-      ? `Are you sure you want to save updates for ${formData.name}?`
-      : `Are you sure you want to add ${formData.name} to the directory?`;
-
-    const confirmed = await confirmSave(actionText, messageText);
-    if (!confirmed) return;
+    const currentName = formData.name;
+    const isEditing = Boolean(editId);
 
     try {
       setSubmitting(true);
@@ -138,25 +142,37 @@ export default function Contractors() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || `Failed to ${editId ? 'update' : 'create'} contractor`);
+        throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} contractor`);
       }
 
-      await showSuccess(
-        editId ? 'Contractor Updated' : 'Contractor Added',
-        editId
-          ? `Updates to ${formData.name} were successfully saved.`
-          : `${formData.name} has been added to the contractor directory.`
-      );
-
+      // Close modal & stop spinner immediately before showing popup
       handleCloseModal();
-      fetchContractors();
-    } catch (err: any) {
-      await showError(
-        'Database Sync Failed',
-        err.message || `Unable to store changes. Please try again.`
-      );
-    } finally {
       setSubmitting(false);
+
+      // Refresh list
+      fetchContractors();
+
+      // Show success popup with automatic 1-second dismiss
+      await Promise.race([
+        showSuccess(
+          isEditing ? 'Contractor Updated' : 'Contractor Added',
+          isEditing
+            ? `Updates to ${currentName} were successfully saved.`
+            : `${currentName} has been added to the contractor directory.`
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+
+      // Show error popup with automatic 1-second dismiss
+      await Promise.race([
+        showError(
+          'Database Sync Failed',
+          err.message || 'Unable to store changes. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -330,7 +346,7 @@ export default function Contractors() {
           )}
         </div>
 
-        {/* Add Contractor Modal */}
+        {/* Add/Edit Contractor Modal */}
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
