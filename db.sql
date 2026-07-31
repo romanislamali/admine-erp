@@ -13,9 +13,7 @@ CREATE TABLE users (
 
 -- Mock Users
 INSERT INTO users (name, username, password, phone, email, role) VALUES 
-('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', 'admin@admine.com', 'ADMIN'),
-('Admine Manager', 'adminemanager', '$2a$10$mJTbZulHdE2cH9klUNghx.posygxvke5711WySXYUn07WioU6QD.W', '+8801710310756', 'manager@admine.com', 'MANAGER'),
-('Admine Employee', 'admineemployee', '$2a$10$jMkoTuQMptuL.qwXBRPifONUEVWQggKrg4YCrIxA0mZ/QK7FGbNu.', '+8801710310757', 'employee@admine.com', 'EMPLOYEE');
+('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', 'admin@admine.com', 'ADMIN');
 
 -- Contractors Table
 CREATE TABLE contractors (
