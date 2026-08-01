@@ -90,6 +90,39 @@ To issue free SSL certificates with Let's Encrypt / Certbot:
 sudo certbot --nginx -d eoffice.adminead.com
 ```
 
+### 4. Public access from a laptop via Cloudflare Tunnel
+
+Since a laptop usually has no static public IP and shouldn't have inbound ports forwarded on its
+router, this project exposes `eoffice.adminead.com` publicly using a **Cloudflare Tunnel** instead.
+`cloudflared` opens an outbound-only connection from the laptop to Cloudflare, so nothing needs to
+be forwarded and the home network is never directly reachable from the internet. Cloudflare also
+terminates HTTPS for you, so Certbot isn't needed for this path.
+
+**One-time account setup (Cloudflare dashboard):**
+1. Add `adminead.com` as a site on [Cloudflare](https://dash.cloudflare.com) (free plan) and switch
+   your domain's nameservers at your registrar to the two Cloudflare gave you.
+2. In the Cloudflare dashboard, go to **Zero Trust -> Networks -> Tunnels -> Create a tunnel**,
+   choose **Cloudflared**, and name it (e.g. `admine-erp`).
+3. Under **Route Traffic**, add a **Public hostname**:
+   - Subdomain: `eoffice`, Domain: `adminead.com`
+   - Service: `HTTP` -> `nginx:80` (the Docker service name/port, since cloudflared runs on the same
+     Docker network)
+4. Copy the tunnel token shown on the install step (Docker tab).
+
+**Local setup:**
+1. Put the token in `backend/.env`:
+   ```
+   CLOUDFLARE_TUNNEL_TOKEN=your_token_here
+   ```
+2. Start (or restart) the stack:
+   ```bash
+   make up
+   ```
+   This also starts the `cloudflared` service, which connects out to Cloudflare and forwards
+   `eoffice.adminead.com` traffic to the `nginx` container.
+3. Visit `https://eoffice.adminead.com` from any device with internet access — no VPN, hosts file
+   edit, or port forwarding required.
+
 ## Project Structure
 
 ```

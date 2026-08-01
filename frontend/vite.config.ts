@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: port,
       host: true,
+      allowedHosts: ['eoffice.adminead.com', 'localhost', 'frontend'],
       watch: {
         usePolling: true,
       },
