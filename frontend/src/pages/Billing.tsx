@@ -276,7 +276,7 @@ export default function Billing() {
       )
     },
     {
-      header: 'Associated Project',
+      header: 'Project',
       key: 'project_name',
       sortable: true,
       render: (b: Bill) => (
@@ -296,12 +296,12 @@ export default function Billing() {
       )
     },
     {
-      header: 'Amount',
+      header: 'Invoice Amount',
       key: 'amount',
       align: 'right',
       sortable: true,
       render: (b: Bill) => (
-        <span className="font-bold text-slate-900">{formatCurrency(b.amount)}</span>
+        <span className="font-bold text-amber-700">{formatCurrency(b.amount)}</span>
       )
     },
     ...(isAdmin ? [{
