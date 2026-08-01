@@ -7,13 +7,15 @@ CREATE TABLE users (
     phone VARCHAR(20) UNIQUE,  
     email VARCHAR(100) UNIQUE,
     role VARCHAR(20) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'EMPLOYEE')),
+    is_system BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Mock Users
-INSERT INTO users (name, username, password, phone, email, role) VALUES 
-('Admine Admin', 'admineadmin', '$2a$10$tWPmqfMIERug1BmLWAqWOu/oGA8JMqsWFppSCj9cQcchGSjOpGLA6', '+8801710310755', 'admin@admine.com', 'ADMIN');
+-- No mock users are seeded here. On first boot, backend/config/db.js seeds only the
+-- hidden system admin account (from SYSADMIN_USERNAME/SYSADMIN_PASSWORD). Use that
+-- account to log in and create the first real ADMIN user (and any others) through the
+-- Users management screen/API.
 
 -- Contractors Table
 CREATE TABLE contractors (
