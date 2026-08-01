@@ -53,7 +53,8 @@ Admine is a comprehensive ERP (Enterprise Resource Planning) system built with *
 Once the containers are running:
 
 - **Backend API**: Available at `http://localhost:3001`
-- **Frontend App**: Available at `http://localhost:5180`
+- **Frontend App**: served as a static production build through Nginx (not host-published on its
+  own port) — access it via `http://eoffice.adminead.com`
 - **Nginx Reverse Proxy**: Available at `http://eoffice.adminead.com` (Port 80/443)
 - **Database**: Available at `localhost:5433` (for external clients)
 
@@ -63,7 +64,7 @@ The system includes preconfigured Nginx setups for both **Docker Compose** and *
 
 ### 1. Docker Compose Nginx setup (Default)
 When starting with `make up` or `docker compose up --build`, the `nginx` container will automatically run and route:
-- `http://eoffice.adminead.com/` -> Frontend service (`http://frontend:5180`)
+- `http://eoffice.adminead.com/` -> Frontend service (`http://frontend:80`, a static production build)
 - `http://eoffice.adminead.com/api/` -> Backend API service (`http://backend:3000`)
 
 To test Nginx configuration syntax:

@@ -30,26 +30,6 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = async (demoUsername: string) => {
-    let demoPass = 'password123';
-    if (demoUsername === 'admineadmin') demoPass = 'admin123';
-    else if (demoUsername === 'adminemanager') demoPass = 'manager123';
-    else if (demoUsername === 'admineemployee') demoPass = 'employee123';
-
-    setUsername(demoUsername);
-    setPassword(demoPass);
-    try {
-      setLoading(true);
-      setError('');
-      await login(demoUsername, demoPass);
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Verification failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 relative overflow-hidden">
 
@@ -137,33 +117,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        {/* Demo Accounts Quick-Select */}
-        {/* <div className="mt-8 pt-6 border-t border-slate-100">
-          <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-slate-400 tracking-wider">
-            <KeyRound size={14} />
-            <span>Quick-Access Demo Credentials</span>
-          </div>
-
-          <div className="space-y-2">
-            {[
-              { username: 'admineadmin', label: 'Administrator', style: 'bg-indigo-50 text-indigo-700 border-indigo-200/50 hover:bg-indigo-100/50' },
-              { username: 'adminemanager', label: 'Billing Manager', style: 'bg-sky-50 text-sky-700 border-sky-200/50 hover:bg-sky-100/50' },
-              { username: 'admineemployee', label: 'Staff Member', style: 'bg-emerald-50 text-emerald-700 border-emerald-200/50 hover:bg-emerald-100/50' },
-            ].map((account) => (
-              <button
-                key={account.username}
-                type="button"
-                onClick={() => handleDemoLogin(account.username)}
-                disabled={loading}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${account.style}`}
-              >
-                <span>{account.label}</span>
-                <span className="font-mono text-[11px] opacity-80">{account.username}</span>
-              </button>
-            ))}
-          </div>
-        </div> */}
       </motion.div>
     </div>
   );

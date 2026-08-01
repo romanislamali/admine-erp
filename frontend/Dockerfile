@@ -1,4 +1,5 @@
-FROM node:22-alpine
+# Build stage
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -8,6 +9,12 @@ RUN npm ci
 
 COPY . .
 
-EXPOSE 5180
+RUN npm run build
 
-CMD ["npm", "run", "dev"]
+# Production stage — serve the built static bundle with Nginx
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.frontend.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

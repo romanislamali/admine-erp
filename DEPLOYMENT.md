@@ -155,7 +155,8 @@ frontend, and `https://eoffice.adminead.com/api/health` should return
 
 ## Notes for later
 
-- The frontend currently runs via `vite --host` (a dev server), not a production build. This is
-  fine for testing but should be switched to a built static bundle served by Nginx directly before
-  treating this as a real production deployment.
+- The frontend is built as a static production bundle (`frontend/Dockerfile` does `npm run build`
+  and serves the result via its own Nginx on port 80); it's no longer running the Vite dev server.
+  Rebuilding (`make up` after a `git pull`) is required to pick up frontend code changes — there's
+  no more hot reload in this configuration.
 - Keep `backend/.env` production secrets out of git and out of any shared logs/screenshots.
