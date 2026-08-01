@@ -113,8 +113,8 @@ export default function Users() {
       }
 
       await showSuccess(
-        'Staff Registered Successfully',
-        `Access configuration for ${formData.name} is complete and live.`
+        'User Created',
+        `User "${formData.name}" has been created successfully.`
       );
       setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setIsAddModalOpen(false);
@@ -122,7 +122,7 @@ export default function Users() {
     } catch (err: any) {
       await showError(
         'Registration Failed',
-        err.message || 'We could not register this staff account. Please verify connectivity.'
+        err.message || 'Unable to create user. Please try again.'
       );
     } finally {
       setSubmitting(false);
@@ -185,8 +185,8 @@ export default function Users() {
       }
 
       await showSuccess(
-        'Information Saved',
-        'Staff accessibility permissions were updated successfully.'
+        'User Updated',
+        `User "${formData.name}" has been updated successfully.`
       );
       setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setSelectedUserId(null);
@@ -205,8 +205,8 @@ export default function Users() {
   // Handle delete user
   const handleDeleteConfirm = async (id: string) => {
     const confirmed = await confirmDelete(
-      'Remove Staff Account?',
-      'This will permanently revoke system access. This action is irreversible.'
+      'Remove User?',
+      'This will permanently revoke system access.'
     );
     if (!confirmed) return;
 
@@ -222,8 +222,8 @@ export default function Users() {
       }
 
       await showSuccess(
-        'Staff Account Deleted',
-        'System access has been systematically deconfigured for this user.'
+        'User Deleted',
+        `User "${formData.name}" has been deleted successfully.`
       );
       fetchUsers();
     } catch (err: any) {

@@ -123,7 +123,7 @@ export default function Payment() {
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Delete Payment Record?',
-      'Are you sure you want to remove this payment record? This action is irreversible.'
+      'Are you sure you want to delete this payment record?'
     );
     if (!confirmed) return;
 
@@ -204,8 +204,8 @@ export default function Payment() {
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
         showSuccess(
-          isEditing ? 'Payment Updated' : 'Payment Recorded',
-          isEditing ? 'Payment record details were successfully updated.' : 'Payment has been recorded successfully.'
+          isEditing ? 'Payment Updated' : 'Payment Created',
+          isEditing ? 'Payment has been updated successfully.' : 'Payment has been created successfully.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);

@@ -182,8 +182,8 @@ export default function Projects() {
         showSuccess(
           isEditing ? 'Project Updated' : 'Project Created',
           isEditing
-            ? `Project "${projectName}" details were successfully updated.`
-            : `Project "${projectName}" was successfully created.`
+            ? `Project "${projectName}" has been updated successfully.`
+            : `Project "${projectName}" has been created successfully.`
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
@@ -194,7 +194,7 @@ export default function Projects() {
       await Promise.race([
         showError(
           'Operation Failed',
-          err.message || 'Unable to save project details. Please try again.'
+          err.message || 'Unable to save project. Please try again.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);

@@ -345,7 +345,7 @@ export default function ContractorDetails() {
             await Promise.race([
                 showSuccess(
                     'Payment Deleted',
-                    'The payment record has been successfully removed.'
+                    'Payment has been deleted successfully.'
                 ),
                 new Promise((resolve) => setTimeout(resolve, 1000))
             ]);
@@ -353,7 +353,7 @@ export default function ContractorDetails() {
             await Promise.race([
                 showError(
                     'Deletion Failed',
-                    err.message || 'We could not delete this payment record.'
+                    err.message || 'Unable to delete this payment. Please try again.'
                 ),
                 new Promise((resolve) => setTimeout(resolve, 1000))
             ]);
@@ -402,10 +402,10 @@ export default function ContractorDetails() {
             // Show success popup with automatic 1-second dismiss
             await Promise.race([
                 showSuccess(
-                    isEditing ? 'Payment Updated' : 'Payment Recorded',
+                    isEditing ? 'Payment Updated' : 'Payment Created',
                     isEditing
-                        ? 'Payment updates were successfully saved.'
-                        : 'New payment record has been saved.'
+                        ? 'Payment has been updated successfully.'
+                        : 'Payment has been created successfully.'
                 ),
                 new Promise((resolve) => setTimeout(resolve, 1000))
             ]);
