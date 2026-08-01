@@ -4,7 +4,6 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import Contractors from './pages/Contractors';
 import Billing from './pages/Billing';
-import Settings from './pages/Settings';
 import Payment from './pages/Payment';
 import Users from './pages/Users';
 import Login from './pages/Login';
@@ -80,7 +79,6 @@ function AppContent() {
       <Route path="/contractor-details/:id" element={<ProtectedLayout><ContractorDetails /></ProtectedLayout>} />
       <Route path="/billing" element={<ProtectedLayout><Billing /></ProtectedLayout>} />
       <Route path="/payment" element={<ProtectedLayout><Payment /></ProtectedLayout>} />
-      <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
 
       {/* Admin-only restricted route */}
       <Route
