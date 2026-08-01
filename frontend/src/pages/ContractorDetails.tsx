@@ -49,7 +49,7 @@ interface Project {
 export default function ContractorDetails() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+    const { showSuccess, showError, confirmDelete } = useModal();
     const { user } = useAuth();
     const isAdmin = user?.role === 'ADMIN';
 
@@ -199,16 +199,25 @@ export default function ContractorDetails() {
                 throw new Error(data.message || 'Failed to delete bill');
             }
 
-            await showSuccess(
-                'Bill Deleted',
-                'The invoice bill has been successfully removed.'
-            );
+            // Refresh data
             fetchData();
+
+            // Show success popup with automatic 1-second dismiss
+            await Promise.race([
+                showSuccess(
+                    'Bill Deleted',
+                    'The invoice bill has been successfully removed.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         } catch (err: any) {
-            await showError(
-                'Deletion Failed',
-                err.message || 'We could not delete this bill record.'
-            );
+            await Promise.race([
+                showError(
+                    'Deletion Failed',
+                    err.message || 'We could not delete this bill record.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         }
     };
 
@@ -217,13 +226,7 @@ export default function ContractorDetails() {
         const contractorIdToUse = billFormData.contractor_id || id;
         if (!contractorIdToUse || !billFormData.amount.trim()) return;
 
-        const actionText = editingBillId ? 'Save Bill Updates' : 'Create New Bill';
-        const messageText = editingBillId
-            ? 'Are you sure you want to save updates to this bill?'
-            : 'Are you sure you want to log this new bill?';
-
-        const confirmed = await confirmSave(actionText, messageText);
-        if (!confirmed) return;
+        const isEditing = Boolean(editingBillId);
 
         try {
             setSubmittingBill(true);
@@ -250,22 +253,34 @@ export default function ContractorDetails() {
                 throw new Error(data.message || `Failed to ${editingBillId ? 'update' : 'create'} bill`);
             }
 
-            await showSuccess(
-                editingBillId ? 'Bill Updated' : 'Bill Logged',
-                editingBillId
-                    ? 'Bill updates were successfully saved.'
-                    : 'New bill has been recorded successfully.'
-            );
-
+            // Close modal & stop spinner immediately
             handleCloseBillModal();
-            fetchData();
-        } catch (err: any) {
-            await showError(
-                'Operation Failed',
-                err.message || 'Unable to store changes. Please try again.'
-            );
-        } finally {
             setSubmittingBill(false);
+
+            // Refresh table data
+            fetchData();
+
+            // Show success popup with automatic 1-second dismiss
+            await Promise.race([
+                showSuccess(
+                    isEditing ? 'Bill Updated' : 'Bill Logged',
+                    isEditing
+                        ? 'Bill updates were successfully saved.'
+                        : 'New bill has been recorded successfully.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
+        } catch (err: any) {
+            setSubmittingBill(false);
+
+            // Show error popup with automatic 1-second dismiss
+            await Promise.race([
+                showError(
+                    'Operation Failed',
+                    err.message || 'Unable to store changes. Please try again.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         }
     };
 
@@ -323,16 +338,25 @@ export default function ContractorDetails() {
                 throw new Error(data.message || 'Failed to delete payment');
             }
 
-            await showSuccess(
-                'Payment Deleted',
-                'The payment record has been successfully removed.'
-            );
+            // Refresh data
             fetchData();
+
+            // Show success popup with automatic 1-second dismiss
+            await Promise.race([
+                showSuccess(
+                    'Payment Deleted',
+                    'The payment record has been successfully removed.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         } catch (err: any) {
-            await showError(
-                'Deletion Failed',
-                err.message || 'We could not delete this payment record.'
-            );
+            await Promise.race([
+                showError(
+                    'Deletion Failed',
+                    err.message || 'We could not delete this payment record.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         }
     };
 
@@ -341,13 +365,7 @@ export default function ContractorDetails() {
         const contractorIdToUse = paymentFormData.contractor_id || id;
         if (!contractorIdToUse || !paymentFormData.amount.trim()) return;
 
-        const actionText = editingPaymentId ? 'Save Payment Updates' : 'Record Payment';
-        const messageText = editingPaymentId
-            ? 'Are you sure you want to save updates to this payment record?'
-            : 'Are you sure you want to record this payment?';
-
-        const confirmed = await confirmSave(actionText, messageText);
-        if (!confirmed) return;
+        const isEditing = Boolean(editingPaymentId);
 
         try {
             setSubmittingPayment(true);
@@ -374,22 +392,34 @@ export default function ContractorDetails() {
                 throw new Error(data.message || `Failed to ${editingPaymentId ? 'update' : 'create'} payment`);
             }
 
-            await showSuccess(
-                editingPaymentId ? 'Payment Updated' : 'Payment Recorded',
-                editingPaymentId
-                    ? 'Payment updates were successfully saved.'
-                    : 'New payment record has been saved.'
-            );
-
+            // Close modal & stop spinner immediately
             handleClosePaymentModal();
-            fetchData();
-        } catch (err: any) {
-            await showError(
-                'Operation Failed',
-                err.message || 'Unable to store changes. Please try again.'
-            );
-        } finally {
             setSubmittingPayment(false);
+
+            // Refresh table data
+            fetchData();
+
+            // Show success popup with automatic 1-second dismiss
+            await Promise.race([
+                showSuccess(
+                    isEditing ? 'Payment Updated' : 'Payment Recorded',
+                    isEditing
+                        ? 'Payment updates were successfully saved.'
+                        : 'New payment record has been saved.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
+        } catch (err: any) {
+            setSubmittingPayment(false);
+
+            // Show error popup with automatic 1-second dismiss
+            await Promise.race([
+                showError(
+                    'Operation Failed',
+                    err.message || 'Unable to store changes. Please try again.'
+                ),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         }
     };
 
