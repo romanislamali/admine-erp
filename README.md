@@ -54,17 +54,17 @@ Once the containers are running:
 
 - **Backend API**: Available at `http://localhost:3001`
 - **Frontend App**: Available at `http://localhost:5180`
-- **Nginx Reverse Proxy**: Available at `http://erp.adminead.com` (Port 80/443)
+- **Nginx Reverse Proxy**: Available at `http://eoffice.adminead.com` (Port 80/443)
 - **Database**: Available at `localhost:5433` (for external clients)
 
-## Nginx & Subdomain Configuration (`erp.adminead.com`)
+## Nginx & Subdomain Configuration (`eoffice.adminead.com`)
 
 The system includes preconfigured Nginx setups for both **Docker Compose** and **Host-level Nginx**.
 
 ### 1. Docker Compose Nginx setup (Default)
 When starting with `make up` or `docker compose up --build`, the `nginx` container will automatically run and route:
-- `http://erp.adminead.com/` -> Frontend service (`http://frontend:5180`)
-- `http://erp.adminead.com/api/` -> Backend API service (`http://backend:3000`)
+- `http://eoffice.adminead.com/` -> Frontend service (`http://frontend:5180`)
+- `http://eoffice.adminead.com/api/` -> Backend API service (`http://backend:3000`)
 
 To test Nginx configuration syntax:
 ```bash
@@ -78,8 +78,8 @@ make nginx-reload
 ### 2. Standalone Host Nginx setup
 If you prefer running Nginx on the host OS:
 ```bash
-sudo cp nginx/erp.adminead.com.conf /etc/nginx/sites-available/erp.adminead.com
-sudo ln -s /etc/nginx/sites-available/erp.adminead.com /etc/nginx/sites-enabled/
+sudo cp nginx/eoffice.adminead.com.conf /etc/nginx/sites-available/eoffice.adminead.com
+sudo ln -s /etc/nginx/sites-available/eoffice.adminead.com /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -87,7 +87,7 @@ sudo systemctl reload nginx
 ### 3. SSL / HTTPS Setup (Certbot)
 To issue free SSL certificates with Let's Encrypt / Certbot:
 ```bash
-sudo certbot --nginx -d erp.adminead.com
+sudo certbot --nginx -d eoffice.adminead.com
 ```
 
 ## Project Structure
