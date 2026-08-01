@@ -76,7 +76,7 @@ export default function Contractors() {
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Remove Contractor?',
-      'This will permanently delete this contractor from the directory. This action is irreversible.'
+      'This will permanently delete this contractor from the directory.'
     );
     if (!confirmed) return;
 
@@ -97,7 +97,7 @@ export default function Contractors() {
       await Promise.race([
         showSuccess(
           'Contractor Deleted',
-          'The contractor has been successfully removed from the directory.'
+          'Contractor has been successfully deleted.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
@@ -108,7 +108,7 @@ export default function Contractors() {
       await Promise.race([
         showError(
           'Deletion Failed',
-          err.message || 'We could not delete this contractor. Please verify if it is associated with any projects or bills.'
+          err.message || 'Unable to delete the contractor. Please try again.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
@@ -159,8 +159,8 @@ export default function Contractors() {
         showSuccess(
           isEditing ? 'Contractor Updated' : 'Contractor Added',
           isEditing
-            ? `Updates to ${currentName} were successfully saved.`
-            : `${currentName} has been added to the contractor directory.`
+            ? `${currentName} has been updated successfully.`
+            : `${currentName} has been added successfully.`
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);

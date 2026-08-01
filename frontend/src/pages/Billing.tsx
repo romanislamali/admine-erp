@@ -108,7 +108,7 @@ export default function Billing() {
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Delete Invoice Bill?',
-      'Are you sure you want to remove this bill? This action is irreversible.'
+      'Are you sure you want to delete this bill?'
     );
     if (!confirmed) return;
 
@@ -132,7 +132,7 @@ export default function Billing() {
       await Promise.race([
         showSuccess(
           'Bill Deleted',
-          'The invoice bill has been successfully removed.'
+          'Bill has been deleted successfully.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
@@ -141,7 +141,7 @@ export default function Billing() {
       await Promise.race([
         showError(
           'Deletion Failed',
-          err.message || 'We could not delete this bill record.'
+          err.message || 'Unable to delete this bill. Please try again.'
         ),
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
