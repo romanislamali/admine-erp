@@ -137,8 +137,8 @@ export default function Dashboard() {
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
 
   const stats = [
-    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-gray-700 border-gray-100' },
-    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-amber-700 border-amber-100' },
+    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-amber-700 border-amber-100' },
+    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-green-600 border-emerald-100' },
     {
       name: 'Outstanding Liability',
       value: liabilityStat.value,

@@ -490,7 +490,7 @@ export default function ContractorDetails() {
             align: 'right' as const,
             sortable: true,
             render: (b: Bill) => (
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-amber-700">
                     {formatCurrency(b.amount)}
                 </span>
             )

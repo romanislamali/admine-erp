@@ -261,7 +261,11 @@ export default function Contractors() {
       key: 'total_bills',
       align: 'right' as const,
       sortable: true,
-      render: (c: Contractor) => formatCurrency(c.total_bills)
+      render: (c: Contractor) => (
+        <span className="font-semibold text-amber-700">
+          {formatCurrency(c.total_bills)}
+        </span>
+      )
     },
     {
       header: 'Total Paid',
@@ -269,7 +273,7 @@ export default function Contractors() {
       align: 'right' as const,
       sortable: true,
       render: (c: Contractor) => (
-        <span className="font-semibold text-amber-700">
+        <span className="font-semibold text-green-600">
           {formatCurrency(c.total_payments)}
         </span>
       )
