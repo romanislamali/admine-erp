@@ -87,6 +87,11 @@ export const GlobalModal: React.FC = () => {
 
   // Render Top Right Toast Notification for success and error
   if (isToast) {
+    const bgColor = type === 'success' ? 'bg-emerald-600' : 'bg-rose-600';
+    const toastIcon = type === 'success'
+      ? <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+      : <AlertCircle className="w-5 h-5 text-white shrink-0" />;
+
     return (
       <AnimatePresence>
         {isOpen && (
@@ -96,45 +101,41 @@ export const GlobalModal: React.FC = () => {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 80, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-              className="relative bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col"
+              className={`relative ${bgColor} text-white rounded-xl shadow-lg overflow-hidden flex flex-col`}
             >
-              {/* Top Accent Line */}
-              <div className={`h-1 w-full ${currentTheme.accentBarClass}`} />
-
-              <div className="p-4 flex items-start gap-3">
-                {/* Toast Icon Housing */}
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${currentTheme.iconBgClass}`}>
-                  {currentTheme.icon}
-                </div>
-
-                {/* Text Content */}
-                <div className="flex-1 min-w-0 pr-2">
-                  <h4 className={`text-sm font-bold leading-snug ${currentTheme.titleColorClass}`}>
-                    {title}
-                  </h4>
-                  <p className="text-slate-500 text-xs font-medium mt-0.5 leading-relaxed">
-                    {message}
-                  </p>
+              <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  {toastIcon}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold leading-tight">
+                      {title}
+                    </h4>
+                    {message && (
+                      <p className="text-[10px] text-white/90 font-medium mt-0.5 leading-snug truncate">
+                        {message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Close Button */}
                 <button
                   onClick={() => closeModal(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+                  className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors shrink-0"
                   aria-label="Close notification"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </div>
 
               {/* Countdown Progress Bar */}
               {autoDismiss && (
-                <div className="w-full bg-slate-100 h-1 overflow-hidden">
+                <div className="w-full bg-black/10 h-0.5 overflow-hidden">
                   <motion.div
                     initial={{ width: '100%' }}
                     animate={{ width: '0%' }}
                     transition={{ duration: dismissDurationSec, ease: 'linear' }}
-                    className={`h-full ${type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                    className="h-full bg-white/40"
                   />
                 </div>
               )}
