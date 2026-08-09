@@ -12,9 +12,11 @@ services:
       - ./db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - erp_network
+    restart: unless-stopped
 
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "${BACKEND_PORT_EXPOSED:-3001}:${PORT:-3000}"
     environment:
@@ -44,6 +46,7 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     networks:
       - erp_network
     depends_on:
@@ -51,6 +54,7 @@ services:
 
   nginx:
     image: nginx:alpine
+    restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
