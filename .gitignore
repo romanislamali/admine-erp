@@ -42,3 +42,6 @@ pnpm-debug.log*
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Local-only consolidated docs (merges README/DEPLOYMENT/BACKUP-DB/setup_summary + internal notes)
+SYSTEM-GUIDE.md
