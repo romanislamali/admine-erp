@@ -97,10 +97,10 @@ const nodemailer = require('nodemailer');
 // ==========================================
 // 1. HARDCODED OAUTH 2.0 CREDENTIALS
 // ==========================================
-const CLIENT_ID = '975649624878-c3927jie6dh9pc1bmcemulvu3lfi2lph.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REFRESH_TOKEN = '1//04bm5-Qw4rZ-MCgYIARAAGAQSNwF-L9IrCxkacADwtLLJ5WBsCuQz6mJi58h2qjx_VZhIZ5v3O3GRlJ-w1y8pUIEVk8uyCVFtV2o';
-const FOLDER_ID = '1VnnBGB8vS1p51qAqNxoesdknjOhMVdhE';
+const CLIENT_ID = 'your_google_client_id.apps.googleusercontent.com';
+const CLIENT_SECRET = 'your_google_client_secret';
+const REFRESH_TOKEN = 'your_google_refresh_token';
+const FOLDER_ID = 'your_google_drive_folder_id';
 
 // Initialize the Google OAuth2 Client
 const oauth2Client = new google.auth.OAuth2(
