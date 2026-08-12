@@ -63,11 +63,18 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/letsencrypt:ro
       - ./nginx/certbot-www:/var/www/certbot:ro
+      - ./website:/usr/share/nginx/website:ro
     networks:
       - erp_network
     depends_on:
       - frontend
       - backend
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/certbot-www:/var/www/certbot
 
 volumes:
   pgdata:
