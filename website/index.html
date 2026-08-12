@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admine Advertising</title>
+    <style>
+        :root {
+            --bg-dark: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-surface-light: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            line-height: 1.6;
+            background-color: var(--bg-dark);
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Dynamic Navigation Bar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 50px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-main);
+        }
+        .logo img {
+            width: 150px;
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .logo span.logo-sub-text{
+            color: rgb(238, 34, 3);
+        }
+
+        .logo a {
+            margin-top: 10px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+            align-items: center;
+        }
+
+        /* Hidden on desktop view by default */
+        .mobile-menu-header {
+            display: none;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.3s ease, transform 0.2s ease;
+            display: inline-block;
+        }
+
+        nav ul li a:hover {
+            color: rgb(238, 34, 3);
+            transform: translateY(-1px);
+        }
+
+        /* Hamburger Button (Hidden on Desktop) */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 26px;
+            height: 18px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 1001;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: var(--text-main);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 40%, rgba(0, 102, 204, 0.1)), 
+                        url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1600&auto=format&fit=crop') no-repeat center center/cover;
+            padding: 12rem 8% 10rem 8%;
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            max-width: 900px;
+            letter-spacing: -1.5px;
+            color: var(--text-main);
+        }
+
+        .hero h1 span {
+            color: rgb(238, 34, 3);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            max-width: 680px;
+            margin-bottom: 3rem;
+        }
+
+        /* Interactive Dynamic Button */
+        .btn {
+            display: inline-block;
+            background: var(--text-main);
+            color: #ffffff;
+            padding: 1rem 2.5rem;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            box-shadow: 0 4px 20px rgba(0, 102, 204, 0.2);
+            align-self: flex-start;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            background: rgb(238, 34, 3);
+        }
+
+        /* Sections Structure */
+        .section {
+            padding: 7rem 8%;
+        }
+
+        .bg-surface {
+            background-color: var(--bg-surface);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 5rem auto;
+        }
+
+        .section h2 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            color: var(--text-main);
+        }
+
+        .section h2 span {
+            color: rgb(238, 34, 3);
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+            background: var(--bg-surface);
+            padding: 4rem 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-top: -4rem;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-card h3 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        /* Services Grid */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .service-card {
+            background: var(--bg-surface);
+            padding: 3rem 2rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: rgb(238, 34, 3);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            background: var(--bg-surface-light);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .service-card:hover::before {
+            opacity: 1;
+        }
+
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .service-card p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Partners / Logo Strip */
+        .logo-wrapper {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 3rem;
+            border-radius: 8px;
+        }
+
+        .client-logo {
+            max-width: 240px;
+            min-height: 240px; 
+            border: 1px solid var(--border);
+            box-shadow: 0 5px 5px gray;
+            transition: all 0.3s ease;
+        }
+
+        .client-logo:hover {
+            filter: grayscale(0%) brightness(1);
+            opacity: 1;
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 50px rgba(96, 89, 89, 0.08);
+            transform: scale(1.05);
+        }
+
+        .client-logo img {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Campaigns Section */
+        .project-card {
+            background: var(--bg-surface);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+        }
+
+        .project-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0, 102, 204, 0.2);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .img-container {
+            position: relative;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        .project-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .project-card:hover .project-img {
+            transform: scale(1.04);
+        }
+
+        .tag {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgb(238, 34, 3);
+            color: #ffffff;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        .project-info {
+            padding: 2rem;
+        }
+
+        .sector-badge {
+            font-size: 0.8rem;
+            color: rgb(238, 34, 3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .project-info h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .project-info p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Framework Process Section */
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+        }
+
+        .step-node {
+            transition: opacity 0.3s;
+            padding: 2.5rem 2rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .step-node:hover {
+            transform: translateY(-6px);
+            background: var(--bg-surface-light);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-node:hover::before {
+            opacity: 1;
+        }
+
+        .step-num {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: rgba(0, 102, 204, 0.08);
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            line-height: 1;
+        }
+
+        .step-node h4 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .step-node p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Contact & Form Section */
+        .contact-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 60px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .info-pane {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .pane-card {
+            margin-bottom: 2rem;
+        }
+
+        .pane-card h4 {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            margin-bottom: 0.4rem;
+        }
+
+        .pane-card p {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .contact-form {
+            background: var(--bg-surface);
+            padding: 3rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+
+        .form-block {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-block input, .form-block textarea {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 4px;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-block input:focus, .form-block textarea:focus {
+            border-color: var(--text-main);
+            background: var(--bg-surface);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--text-main);
+            color: #ffffff;
+            border: none;
+            padding: 1.1rem;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover {
+            background: rgb(238, 34, 3);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--text-main);
+            color: #94a3b8;
+            padding: 4rem 8% 2rem 8%;
+            text-align: center;
+        }
+
+        .footer-text {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+        }
+
+        /* Added: Social Icons Styling */
+        .footer-socials {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .footer-socials a {
+            color: #94a3b8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .footer-socials a:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .footer-copyright {
+            font-size: 0.8rem;
+            color: #64748b;
+            border-top: 1px solid #1e293b;
+            padding-top: 1.5rem;
+        }
+
+        /* Mobile and Tablet Responsiveness */
+        @media (max-width: 1024px) {
+            .hero h1 { font-size: 3.2rem; }
+            .section { padding: 5rem 6%; }
+            .contact-layout { gap: 40px; }
+        }
+
+        /* Responsive Breakpoint for Mobile Layout Styles */
+        @media (max-width: 992px) {
+            nav {
+                padding: 1.2rem 5%;
+            }
+
+            /* HIDES ONLY THE TEXT TITLE FROM THE NAVBAR ROW */
+            nav .logo .logo-text {
+                display: none;
+            }
+
+            /* Visible on all screen sizes below 992px */
+            .hamburger {
+                display: flex;
+            }
+
+            /* Hamburger Animation to Cross Icon ('X') */
+            .hamburger.active span:nth-child(1) {
+                transform: translateY(7px) rotate(45deg);
+            }
+            .hamburger.active span:nth-child(2) {
+                opacity: 0;
+            }
+            .hamburger.active span:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+
+            /* Title node setup exclusively inside the side nav bar */
+            .mobile-menu-header {
+                display: block;
+                width: 100%;
+                padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+                margin-bottom: 1rem;
+                border-bottom: 1px solid var(--border);
+                font-size: 1rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--text-main);
+            }
+            .mobile-menu-header span {
+                color: rgb(238, 34, 3);
+            }
+
+            /* Left-Side Sliding Navigation Drawer */
+            nav ul {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: flex-start;
+                position: fixed;
+                top: 0;
+                left: -300px; 
+                width: 280px;
+                height: 100vh;
+                background: #ffffff;
+                padding: 2rem 0;
+                gap: 5px;
+                box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
+                transition: left 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                z-index: 999;
+            }
+
+            /* Toggle Navbar from left side when active */
+            nav ul.active {
+                left: 0;
+            }
+
+            nav ul li {
+                width: 100%;
+                text-align: left;
+            }
+
+            nav ul li a {
+                font-size: 1rem;
+                padding: 0.7rem 1.5rem;
+                width: 100%;
+                display: block;
+            }
+
+            .hero {
+                padding: 8rem 5% 6rem 5%;
+                text-align: center;
+            }
+
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { margin-left: auto; margin-right: auto; }
+            .btn { align-self: center; }
+
+            .stats-grid {
+                margin-top: 0;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+
+            .section h2 { font-size: 2.2rem; }
+            .contact-layout { grid-template-columns: 1fr; }
+            .contact-form { padding: 2rem; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .section { padding: 4rem 4%; }
+
+            .logo-wrapper {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                padding: 1.5rem 0.5rem;
+            }
+
+            .client-logo {
+                max-width: 100%;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dynamic Header Space -->
+    <nav>
+        <div class="logo">
+            <a href="#home">
+                <img src="logo.png" alt="Admine">
+            </a>
+            <!-- Fixed text separation with original formatting intact -->
+            <span class="logo-text">Admine <span class="logo-sub-text">Advertising</span></span>
+        </div>
+
+        <!-- Hamburger Icon Button -->
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <ul>
+            <!-- Mobile Navigation Small Font Branding Header (ONLY PLACE IT SHOWS ON MOBILE) -->
+            <div class="mobile-menu-header">Admine <span>Advertising</span></div>
+            
+            <li><a href="#home">Home</a></li>
+            <li><a href="#capabilities">Capabilities</a></li>
+            <li><a href="#partners">Partners</a></li>
+            <li><a href="#framework">Framework</a></li>
+            <li><a href="#work">Projects</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Infrastructure -->
+    <header id="home" class="hero">
+        <h1>Enterprise Outdoor <span>Branding Solutions</span></h1>
+        <p>Engineered visibility arrays for Heavy Industries. Delivering unmatched structural billboard footprints, multi-acre boundary painting, and high-durability tower wall media wrappers.</p>
+        <a href="#contact" class="btn">Contact Us</a>
+    </header>
+
+    <!-- Stats Highlight Ribbon -->
+    <section class="section" style="padding-top: 0; padding-bottom: 0;">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>450k+</h3>
+                <p>Sq. Ft. Painted</p>
+            </div>
+            <div class="stat-card">
+                <h3>120+</h3>
+                <p>Mega Billboard Hubs</p>
+            </div>
+            <div class="stat-card">
+                <h3>100%</h3>
+                <p>Industrial Compliance</p>
+            </div>
+            <div class="stat-card">
+                <h3>64</h3>
+                <p>Districts Operational</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities / Services -->
+    <section id="capabilities" class="section">
+        <div class="section-header">
+            <h2>Industrial <span>Core Competencies</span></h2>
+            <p class="section-subtitle">Heavy structural out-of-home visibility options custom configured to weather environments and capture cross-country transit corridors.</p>
+        </div>
+        <div class="grid-layout">
+            <div class="service-card">
+                <h3>Mega Highway Billboards</h3>
+                <p>End-to-end structural site configuration, permit blueprints, and ultra-high gauge foundation arrays engineered for high wind zones and absolute visibility.</p>
+            </div>
+            <div class="service-card">
+                <h3>Boundary Wall Painting</h3>
+                <p>High-volume protective weather coatings layered with pristine corporate stencil branding across major highway parameters and industrial parks.</p>
+            </div>
+            <div class="service-card">
+                <h3>High-Rise Facade Wraps</h3>
+                <p>Multi-story outer structural surface paintings executed via certified rigging assets and high-adhesion elastomeric paints.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Partners Network Strip -->
+    <section id="partners" class="section bg-surface">
+        <div class="section-header">
+            <h2>Enterprise <span>Partnerships</span></h2>
+            <p class="section-subtitle">Architecting the physical outdoor market presence for heavy manufacturers, energy producers, and national steel grids.</p>
+        </div>
+        <div class="logo-wrapper">
+             <div class="client-logo">
+                <img src="partner_aks.jpg" alt="AKS">
+            </div>
+             <div class="client-logo">
+                <img src="partner_meghna.png" alt="Meghna Cement">
+            </div>
+             <div class="client-logo">
+                <img src="partner_shah.jpg" alt="Shah Cement">
+            </div>
+             <div class="client-logo">
+                <img src="partner_csrm.png" alt="CSRM">
+            </div>
+             <div class="client-logo">
+                <img src="partner_lafarge.jpg" alt="Lafarge Cement">
+            </div>
+            <div class="client-logo">
+                <img src="partner_salam.jpg" alt="Salam Steel">
+            </div>
+            <div class="client-logo">
+                <img src="partner_rahima.jpg" alt="Rahima Group">
+            </div>
+            <div class="client-logo">
+                <img src="partner_remarks.jpg" alt="Remark Group">
+            </div>
+            <div class="client-logo">
+                <img src="partner_gazi.jpg" alt="Gazi Group">
+            </div>
+            <div class="client-logo">
+                <img src="partner_omera.jpg" alt="Omera LPG">
+            </div>
+            <div class="client-logo">
+                <img src="partner_asha.png" alt="Asha Group">
+            </div>
+        </div>
+    </section>
+
+    <!-- Campaign Execution Process -->
+    <section id="framework" class="section">
+        <div class="section-header">
+            <h2>Execution <span>Framework</span></h2>
+            <p class="section-subtitle">How we convert blueprint requests into resilient structural advertisements down the line.</p>
+        </div>
+        <div class="steps-container">
+            <div class="step-node">
+                <div class="step-num">01</div>
+                <h4>Site Mapping</h4>
+                <p>Precision geolocational plotting across transport lanes ensuring maximum traffic frequency matrices.</p>
+            </div>
+            <div class="step-node">
+                <div class="step-num">02</div>
+                <h4>Surface Prep</h4>
+                <p>High-pressure sand/hydro-blasting treatments on building substrates ensuring absolute coat bonding longevity.</p>
+            </div>
+            <div class="step-node">
+                <div class="step-num">03</div>
+                <h4>Precision Layering</h4>
+                <p>High-solids mechanical spray system integration guaranteeing chemical resilience against structural weathering.</p>
+            </div>
+            <div class="step-node">
+                <div class="step-num">04</div>
+                <h4>Handoff & Audit</h4>
+                <p>Complete closeout photo matrices with high-altitude drone tracking documentation for validation assets.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Campaigns Showcase -->
+    <section id="work" class="section bg-surface">
+        <div class="section-header">
+            <h2>Our <span>Projects</span></h2>
+            <p class="section-subtitle">Real architectural proofing executed flawlessly across major distribution pathways.</p>
+        </div>
+        <div class="grid-layout">
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">Shah Cement</span>
+                    <img class="project-img" src="project_shah.jpg" alt="Shah Cement">
+                </div>
+                <div class="project-info">
+                    <h3>High-Load Freeway Billboard</h3>
+                    <p>Heavy reinforced girder setup displaying core asset lines along commercial arterial routes.</p>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">AKS Steel</span>
+                    <img class="project-img" src="project_aks.jpeg" alt="AKS">
+                </div>
+                <div class="project-info">
+                    <h3>Multi-Acre Outer Facility Treatment</h3>
+                    <p>Complete outer wall high-grade structural treatment wrapping warehouse infrastructure systems.</p>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">RICL Steel</span>
+                    <img class="project-img" src="project_ricl.png" alt="RICL">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">Salam Steel</span>
+                    <img class="project-img" src="project_salam.jpg" alt="Salam Cement">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">Gazi Tyres</span>
+                    <img class="project-img" src="project_gazi.jpg" alt="Gazi Cement">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">MTF Tyre</span>
+                    <img class="project-img" src="project_meghna.jfif" alt="Meghna Cement">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">CSRM Steel</span>
+                    <img class="project-img" src="project_csrm.jpg" alt="CSRM">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">Orix Ditergent</span>
+                    <img class="project-img" src="project_remark.jfif" alt="Remark">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+            <div class="project-card">
+                <div class="img-container">
+                    <span class="tag">Asha Cement</span>
+                    <img class="project-img" src="project_asha.jpg" alt="Asha Cement">
+                </div>
+                <div class="project-info">
+                    <h3>Urban Grid Premium Board</h3>
+                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feasibility Form & Contact Infrastructure -->
+    <section id="contact" class="section">
+        <div class="contact-layout">
+            <div class="info-pane">
+                <h2>Engineer <span>Your Domination</span></h2>
+                <p style="color: var(--text-muted); margin-bottom: 3rem;">Connect directly with our corporate logistics office to schedule raw asset structural briefings and geographic lane scheduling availability models.</p>
+                
+                <div class="pane-card">
+                    <h4>Direct Logistics Line</h4>
+                    <p>+880 1911-096390,  +8801710-661972</p>
+                </div>
+                <div class="pane-card">
+                    <h4>Operations Dispatch</h4>
+                    <p>info.addmineadvert@gmail.com</p>
+                </div>
+                <div class="pane-card">
+                    <h4>Central Office Hub</h4>
+                    <p>148/01, West Dholaipar, Dhaka-1204</p>
+                </div>
+            </div>
+
+            <form class="contact-form" action="mailto:info.addmineadvert@gmail.com">
+                <div class="form-block">
+                    <input type="text" placeholder="Enterprise / Corporate Entity Name" required>
+                </div>
+                <div class="form-block">
+                    <input type="email" placeholder="Corporate Contact Email" required>
+                </div>
+                <div class="form-block">
+                    <textarea rows="4" placeholder="Campaign specifications (e.g., Target Corridor, Wall Scale, Structural Typology)" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer Layout -->
+    <footer>
+        <p class="footer-text">Admine Advertising Ltd. Structural outdoor infrastructure deployment partners across regional
+            commercial networks.</p>
+    
+        <!-- Social Media Icons -->
+        <div class="footer-socials">
+            <a href="https://www.facebook.com/Admineadvert" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                </svg>
+            </a>
+            <a href="https://www.instagram.com/Admineadvert" target="_blank" rel="noopener noreferrer"
+                aria-label="Instagram">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+            </a>
+            <a href="https://www.linkedin.com/company/Admineadvert" target="_blank" rel="noopener noreferrer"
+                aria-label="LinkedIn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                    <rect x="2" y="9" width="4" height="12"></rect>
+                    <circle cx="4" cy="4" r="2"></circle>
+                </svg>
+            </a>
+        </div>
+    
+        <p class="footer-copyright">&copy; 2026 Admine Advertising. Engineered for high-scale enterprise operations. All
+            rights reserved.</p>
+    </footer>
+
+    <!-- Interactive Navigation Controller Scripts -->
+    <script>
+        const hamburgerBtn = document.querySelector('.hamburger');
+        const navDropdown = document.querySelector('nav ul');
+
+        // Toggle left-sliding dropdown display and button animation states
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = hamburgerBtn.classList.toggle('active');
+            navDropdown.classList.toggle('active');
+            hamburgerBtn.setAttribute('aria-expanded', isOpen);
+        });
+
+        // Implicit close actions when targeting interior page anchors
+        document.querySelectorAll('nav ul li a').forEach(anchorNode => {
+            anchorNode.addEventListener('click', () => {
+                hamburgerBtn.classList.remove('active');
+                navDropdown.classList.remove('active');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Close menu if user clicks anywhere outside the navigation drawer
+        document.addEventListener('click', (e) => {
+            if (!navDropdown.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                hamburgerBtn.classList.remove('active');
+                navDropdown.classList.remove('active');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    </script>
+
+</body>
+</html>
