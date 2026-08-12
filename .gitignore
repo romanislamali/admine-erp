@@ -45,3 +45,11 @@ Desktop.ini
 
 # Local-only consolidated docs (merges README/DEPLOYMENT/BACKUP-DB/setup_summary + internal notes)
 SYSTEM-GUIDE.md
+
+# Let's Encrypt certs/keys - never commit private keys
+nginx/ssl/
+
+# Stray env backups
+.env.save
+.env.bak
+*.env.bak
