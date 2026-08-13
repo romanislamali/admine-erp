@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const tokenBlacklist = require('../utils/tokenBlacklist');
 
 const getAllUsers = async (req, res) => {
   try {
@@ -118,9 +120,10 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password.' });
     }
 
-    // Sign JWT
+    // jti keeps each login's token unique even if issued in the same second for the
+    // same user, so revoking one session's token can never collide with another's.
     const token = jwt.sign(
-      { id: user.id, username: user.username, name: user.name, role: user.role },
+      { id: user.id, username: user.username, name: user.name, role: user.role, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -137,6 +140,13 @@ const loginUser = async (req, res) => {
   }
 };
 
+const logoutUser = async (req, res) => {
+  const decoded = jwt.decode(req.token);
+  const expiresAt = decoded && decoded.exp ? decoded.exp : Date.now() / 1000 + 24 * 60 * 60;
+  tokenBlacklist.revoke(req.token, expiresAt);
+  res.json({ message: 'Logged out successfully.' });
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -144,5 +154,6 @@ module.exports = {
   updateUser,
   deleteUser,
   loginUser,
+  logoutUser,
 };
 

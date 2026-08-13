@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,7 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const token = localStorage.getItem('admine_token');
+    if (token) {
+      try {
+        await originalFetch('/api/users/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Backend unreachable — still proceed to clear the local session.
+      }
+    }
     localStorage.removeItem('admine_token');
     localStorage.removeItem('admine_user');
     setUser(null);

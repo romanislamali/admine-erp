@@ -130,10 +130,10 @@ export default function Header() {
                   <div className="flex flex-col gap-0.5">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setIsDropdownOpen(false);
-                        if (logout) logout();
-                        navigate('/login');
+                        await logout();
+                        navigate('/login', { replace: true });
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left font-semibold"
                     >
