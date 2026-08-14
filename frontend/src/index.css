@@ -3,6 +3,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 @theme {
+  --breakpoint-xs: 30rem;
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
   --color-bg-light: #ffffff;

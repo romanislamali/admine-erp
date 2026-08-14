@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../public/logo.png';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,7 @@ export default function Header() {
   const { user, logout } = useAuth();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +32,11 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close the mobile nav whenever the route changes (e.g. after tapping a link)
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   if (!user) return null;
 
@@ -92,7 +98,7 @@ export default function Header() {
           </div>
 
           {/* Right Section: Actions & Profile Dropdown Container */}
-          <div className="relative flex items-center gap-4" ref={dropdownRef}>
+          <div className="relative flex items-center gap-3 sm:gap-4" ref={dropdownRef}>
             {/* Trigger Button */}
             <button
               type="button"
@@ -101,6 +107,17 @@ export default function Header() {
               className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all hover:scale-105 active:scale-95 cursor-pointer focus:outline-none"
             >
               {initials}
+            </button>
+
+            {/* Mobile Nav Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              className="md:hidden h-8 w-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {/* Floating Dropdown Menu Panel */}
@@ -147,6 +164,39 @@ export default function Header() {
           </div>
 
         </div>
+
+        {/* Mobile Navigation Panel */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.nav
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="md:hidden overflow-hidden border-t border-slate-100"
+            >
+              <div className="flex flex-col gap-1 py-3">
+                {filteredNavigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                        ? 'text-primary bg-primary/5'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                    >
+                      <item.icon size={18} className={isActive ? 'text-primary' : ''} />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );
