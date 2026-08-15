@@ -23,7 +23,7 @@ nginx-reload:
 	docker compose --env-file ./backend/.env exec nginx nginx -s reload
 
 deploy:
-	git pull
+	git pull origin prod
 	docker compose --env-file ./backend/.env build backend frontend
 	docker compose --env-file ./backend/.env up -d --no-deps backend frontend
 	docker compose --env-file ./backend/.env exec nginx nginx -t
