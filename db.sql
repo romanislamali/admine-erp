@@ -80,6 +80,22 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes: foreign keys are not auto-indexed by Postgres, and every list query below
+-- filters on deleted=false ordered by created_at DESC, so cover that access pattern too.
+CREATE INDEX IF NOT EXISTS idx_contractors_deleted_created_at ON contractors (deleted, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_projects_contractor_id ON projects (contractor_id);
+CREATE INDEX IF NOT EXISTS idx_projects_deleted_created_at ON projects (deleted, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_bills_contractor_id ON bills (contractor_id);
+CREATE INDEX IF NOT EXISTS idx_bills_project_id ON bills (project_id);
+CREATE INDEX IF NOT EXISTS idx_bills_deleted_created_at ON bills (deleted, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_payments_contractor_id ON payments (contractor_id);
+CREATE INDEX IF NOT EXISTS idx_payments_project_id ON payments (project_id);
+CREATE INDEX IF NOT EXISTS idx_payments_bill_id ON payments (bill_id);
+CREATE INDEX IF NOT EXISTS idx_payments_deleted_created_at ON payments (deleted, created_at DESC);
+
 -- PL/pgSQL Trigger Functions for Contractors Balance Sync
 -- 1. Sync Contractor Balance on Bill Changes
 CREATE OR REPLACE FUNCTION trg_fn_sync_contractor_bills()

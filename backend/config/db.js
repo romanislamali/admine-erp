@@ -27,6 +27,25 @@ const initDb = async () => {
       ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
     `);
 
+    // Foreign keys aren't auto-indexed by Postgres, and every list query filters
+    // deleted=false ordered by created_at DESC — index that access pattern too.
+    // (Mirrors db.sql for existing databases whose init script already ran.)
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_contractors_deleted_created_at ON contractors (deleted, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS idx_projects_contractor_id ON projects (contractor_id);
+      CREATE INDEX IF NOT EXISTS idx_projects_deleted_created_at ON projects (deleted, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS idx_bills_contractor_id ON bills (contractor_id);
+      CREATE INDEX IF NOT EXISTS idx_bills_project_id ON bills (project_id);
+      CREATE INDEX IF NOT EXISTS idx_bills_deleted_created_at ON bills (deleted, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS idx_payments_contractor_id ON payments (contractor_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_project_id ON payments (project_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_bill_id ON payments (bill_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_deleted_created_at ON payments (deleted, created_at DESC);
+    `);
+
     console.log('Database schema up to date.');
 
     // 2. Seed/sync a hidden system admin account: full (ADMIN) access, but excluded from
