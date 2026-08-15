@@ -26,7 +26,10 @@ const authenticateToken = (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ message: 'Session expired. Please log in again.' });
     }
-    return res.status(403).json({ message: 'Invalid token. Authorization denied.' });
+    // A malformed/tampered token is an authentication failure too (401), not an
+    // authorization one — 403 stays reserved for requireRole's "wrong role" case below,
+    // so the frontend's single "session is invalid, log out" check keeps working.
+    return res.status(401).json({ message: 'Invalid token. Authorization denied.' });
   }
 };
 

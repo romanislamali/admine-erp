@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 export interface User {
   id: string;
@@ -19,7 +19,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Globals fetch interceptor to automatically hook credentials to every outgoing api lookup.
+// Fired by the fetch interceptor below (which runs outside React) so AuthProvider can
+// react to an invalidated session the same way everywhere: clear state, and let the
+// existing <Navigate> in ProtectedLayout send the user to /login on next render.
+const SESSION_INVALID_EVENT = 'admine:session-invalid';
+
+// Reads a JWT's `exp` claim (seconds since epoch) without verifying the signature —
+// only used client-side to schedule a proactive logout; the server still enforces it.
+function getTokenExpiryMs(token: string): number | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+// Global fetch interceptor to automatically hook credentials to every outgoing api lookup.
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
   let url = '';
@@ -44,14 +60,9 @@ window.fetch = async (input, init) => {
 
   const response = await originalFetch(input, init);
 
-  // Auto clean stale session on 401 Authorization failure
+  // Session is no longer valid (expired, tampered, or revoked) — notify AuthProvider.
   if (response.status === 401 && !url.includes('/api/users/login')) {
-    localStorage.removeItem('admine_token');
-    localStorage.removeItem('admine_user');
-    // Use timeout to prevent rendering cycle issues in React router
-    setTimeout(() => {
-      window.location.href = '/login';
-    }, 100);
+    window.dispatchEvent(new Event(SESSION_INVALID_EVENT));
   }
 
   return response;
@@ -60,15 +71,46 @@ window.fetch = async (input, init) => {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearSession = () => {
+    if (expiryTimer.current) {
+      clearTimeout(expiryTimer.current);
+      expiryTimer.current = null;
+    }
+    localStorage.removeItem('admine_token');
+    localStorage.removeItem('admine_user');
+    setUser(null);
+  };
+
+  // Proactively end the session the moment the token's own exp claim elapses, even if
+  // the tab is left idle and never fires another API call to discover it reactively.
+  const armExpiryTimer = (token: string) => {
+    if (expiryTimer.current) clearTimeout(expiryTimer.current);
+    const expiresAt = getTokenExpiryMs(token);
+    if (expiresAt === null) return;
+    const delay = expiresAt - Date.now();
+    if (delay <= 0) {
+      clearSession();
+      return;
+    }
+    expiryTimer.current = setTimeout(clearSession, delay);
+  };
+
+  useEffect(() => {
+    window.addEventListener(SESSION_INVALID_EVENT, clearSession);
+    return () => window.removeEventListener(SESSION_INVALID_EVENT, clearSession);
+  }, []);
 
   useEffect(() => {
     // Check if user is stored in local storage
     const storedUser = localStorage.getItem('admine_user');
     const token = localStorage.getItem('admine_token');
-    
+
     if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
+        armExpiryTimer(token);
       } catch (err) {
         localStorage.removeItem('admine_user');
         localStorage.removeItem('admine_token');
@@ -99,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('admine_token', token);
     localStorage.setItem('admine_user', JSON.stringify(userData));
     setUser(userData);
+    armExpiryTimer(token);
   };
 
   const logout = async () => {
@@ -113,9 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Backend unreachable — still proceed to clear the local session.
       }
     }
-    localStorage.removeItem('admine_token');
-    localStorage.removeItem('admine_user');
-    setUser(null);
+    clearSession();
   };
 
   return (
