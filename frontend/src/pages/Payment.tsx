@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, Loader2, ArrowUpRight, Pencil, Trash2 } from 'lucide-react';
+import { X, Wallet, Loader2, ArrowUpRight, Pencil, Trash2, FileText } from 'lucide-react';
 import Table, { Column } from '../components/Table';
 import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
@@ -311,11 +311,14 @@ export default function Payment() {
       key: 'bill_invoice',
       sortable: true,
       render: (p: Payment) => (
-        p.bill_invoice ? (
-          <span className="font-semibold text-slate-700">{p.bill_invoice}</span>
-        ) : (
-          <span className="text-amber-700 bg-amber-50/70 px-2.5 py-1 rounded-lg text-xs border border-amber-200/50 font-bold whitespace-nowrap">Unlinked / Advance</span>
-        )
+        <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+          <FileText size={16} className="text-slate-400 shrink-0" />
+          {p.bill_invoice ? (
+            <span className="font-semibold text-slate-700">{p.bill_invoice}</span>
+          ) : (
+            <span>N/A</span>
+          )}
+        </div>
       )
     },
     {
@@ -473,7 +476,7 @@ export default function Payment() {
                       <option value="">-- Unlinked / Advance Payment --</option>
                       {filteredBills.map((b) => (
                         <option key={b.id} value={b.id}>
-                          {b.invoice_number || `INV-${b.id.slice(0, 8)}`} ({formatCurrency(b.amount)})
+                          {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})
                         </option>
                       ))}
                     </select>

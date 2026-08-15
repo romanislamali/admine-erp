@@ -263,7 +263,11 @@ export default function Billing() {
       render: (b: Bill) => (
         <div className="flex items-center gap-2">
           <FileText size={16} className="text-slate-400 shrink-0" />
-          <span className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id.slice(0, 8)}`}</span>
+          {b.invoice_number ? (
+            <span className="font-medium text-slate-700">{b.invoice_number}</span>
+          ) : (
+            <span className="text-slate-400 text-xs italic">N/A</span>
+          )}
         </div>
       )
     },
@@ -437,7 +441,7 @@ export default function Billing() {
                       type="text"
                       value={formData.invoice_number}
                       onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                      placeholder="e.g. INV-2024-001"
+                      placeholder="Invoice number"
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     />
                   </div>

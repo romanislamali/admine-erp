@@ -453,8 +453,13 @@ export default function ContractorDetails() {
             key: 'invoice_number',
             sortable: true,
             render: (b: Bill) => (
-                <div className="font-mono">
-                    <div className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id.slice(0, 8)}`}</div>
+                <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-slate-400 shrink-0" />
+                    {b.invoice_number ? (
+                    <span className="font-medium text-slate-700">{b.invoice_number}</span>
+                    ) : (
+                    <span className="text-slate-400 text-xs italic">N/A</span>
+                    )}
                 </div>
             )
         },
@@ -547,8 +552,13 @@ export default function ContractorDetails() {
             key: 'bill_invoice',
             sortable: true,
             render: (p: Payment) => (
-                <div className="items-center gap-1.5 text-slate-600 text-xs">
-                    <span className="font-mono font-medium">{p.bill_invoice || `INV-${p.bill_id?.slice(0, 8)}`}</span>
+                <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+                    <FileText size={16} className="text-slate-400 shrink-0" />
+                    {p.bill_invoice || p.bill_id ? (
+                        <span className="font-mono font-medium">{p.bill_invoice || `INV-${p.bill_id?.slice(0, 8)}`}</span>
+                    ) : (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                    )}
                 </div>
             )
         },
@@ -946,20 +956,13 @@ export default function ContractorDetails() {
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Invoice (Optional)</label>
                                     <select
                                         value={paymentFormData.bill_id}
-                                        onChange={(e) => {
-                                            const selectedBill = bills.find((b) => b.id === e.target.value);
-                                            setPaymentFormData({
-                                                ...paymentFormData,
-                                                bill_id: e.target.value,
-                                                amount: selectedBill ? selectedBill.amount.toString() : paymentFormData.amount
-                                            });
-                                        }}
+                                        onChange={(e) => setPaymentFormData({...paymentFormData, bill_id: e.target.value})}
                                         className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
                                     >
                                         <option value="">-- No Direct Link (Advance Payment) --</option>
                                         {bills.map((b) => (
                                             <option key={b.id} value={b.id}>
-                                                {b.invoice_number || `INV-${b.id.slice(0, 8)}`} ({formatCurrency(b.amount)})
+                                                {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})
                                             </option>
                                         ))}
                                     </select>
