@@ -454,7 +454,7 @@ export default function ContractorDetails() {
             sortable: true,
             render: (b: Bill) => (
                 <div className="font-mono">
-                    <div className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id}`}</div>
+                    <div className="font-semibold text-slate-900">{b.invoice_number || `INV-${b.id.slice(0, 8)}`}</div>
                 </div>
             )
         },
@@ -543,12 +543,12 @@ export default function ContractorDetails() {
             }
         },
         {
-            header: 'Linked Invoice',
+            header: 'Invoice',
             key: 'bill_invoice',
             sortable: true,
             render: (p: Payment) => (
                 <div className="items-center gap-1.5 text-slate-600 text-xs">
-                    <span className="font-mono font-medium">{p.bill_invoice || `INV-${p.bill_id}`}</span>
+                    <span className="font-mono font-medium">{p.bill_invoice || `INV-${p.bill_id?.slice(0, 8)}`}</span>
                 </div>
             )
         },
@@ -563,7 +563,7 @@ export default function ContractorDetails() {
             )
         },
         {
-            header: 'Paid Amount',
+            header: 'Amount',
             key: 'amount',
             align: 'right' as const,
             sortable: true,
@@ -696,7 +696,7 @@ export default function ContractorDetails() {
                                 }`}>
                                 <div className="text-[16px] font-semibold uppercase opacity-75 flex items-center gap-1.5 mb-2">
                                     <CreditCard size={14} className="shrink-0" />
-                                    <span className="truncate">Balance</span> {balanceNum < 0 ? '(Advance)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
+                                    <span className="truncate">Balance</span> {balanceNum < 0 ? '(Adv)' : balanceNum > 0 ? '(Due)' : '(Settled)'}
                                 </div>
                                 <div className="space-y-1">
                                     <div className="text-sm sm:text-base lg:text-lg font-bold break-all leading-tight">
@@ -711,10 +711,10 @@ export default function ContractorDetails() {
                 </div>
 
                 {/* Main Ledger Split Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 mt-5">
 
                     {/* Bills Column */}
-                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">Billing & Invoices</h2>
                             <div className='flex items-center gap-2'>
@@ -730,15 +730,15 @@ export default function ContractorDetails() {
                         <Table
                             data={bills}
                             columns={columnsForBills}
-                            searchKeys={['invoice_number', 'project_name']}
-                            searchPlaceholder="Search bills by invoice # or project..."
+                            searchKeys={['invoice_number', 'project_name', 'amount']}
+                            searchPlaceholder="Search by invoice no, project or amount"
                             keyExtractor={(b) => b.id}
                             emptyMessage="No logged bills found for this contractor."
                         />
                     </div>
 
                     {/* Payments Column */}
-                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">Payments Ledger</h2>
                             <div className='flex items-center gap-2'>
@@ -754,8 +754,8 @@ export default function ContractorDetails() {
                         <Table
                             data={payments}
                             columns={columnsForPayments}
-                            searchKeys={['bill_invoice']}
-                            searchPlaceholder="Search payments by invoice ref..."
+                            searchKeys={['bill_invoice', 'project_name', 'amount']}
+                            searchPlaceholder="Search by project, invoice no or amount"
                             keyExtractor={(p) => p.id}
                             emptyMessage="No logged payments found for this contractor."
                         />
@@ -959,7 +959,7 @@ export default function ContractorDetails() {
                                         <option value="">-- No Direct Link (Advance Payment) --</option>
                                         {bills.map((b) => (
                                             <option key={b.id} value={b.id}>
-                                                {b.invoice_number || `INV-${b.id}`} ({formatCurrency(b.amount)})
+                                                {b.invoice_number || `INV-${b.id.slice(0, 8)}`} ({formatCurrency(b.amount)})
                                             </option>
                                         ))}
                                     </select>

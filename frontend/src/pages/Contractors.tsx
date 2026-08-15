@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Phone, Mail, MapPin, X, Loader2, Eye, Pencil, Trash2 } from 'lucide-react';
+import { UserPlus, Phone, Mail, MapPin, X, Loader2, Expand, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Table from '../components/Table';
 import { useAuth } from '../context/AuthContext';
@@ -195,10 +195,10 @@ export default function Contractors() {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleViewBillsAndPayments(c.id)}
-            title="View bills and payments"
+            title="Bills and Payments"
             className="p-1 px-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded transition-colors"
           >
-            <Eye size={16} />
+            <Expand size={16} />
           </button>
           <button
             onClick={() => handleEdit(c)}
@@ -356,7 +356,7 @@ export default function Contractors() {
               data={contractors}
               columns={columns}
               searchKeys={['name', 'email', 'phone', 'address']}
-              searchPlaceholder="Search contractors by name, email, phone or address..."
+              searchPlaceholder="Search by name, email, phone or address"
               keyExtractor={(c) => c.id}
               emptyMessage="No contractors found in database. Get started by adding one above."
             />

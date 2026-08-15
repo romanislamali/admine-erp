@@ -366,7 +366,7 @@ export default function Billing() {
               data={bills}
               columns={columns}
               searchKeys={['invoice_number', 'contractor_name', 'project_name', 'amount']}
-              searchPlaceholder="Search bills by invoice number, contractor, project..."
+              searchPlaceholder="Search by invoice, contractor, project or ammount"
               keyExtractor={(b) => b.id}
               emptyMessage="No bills found in database. Get started by creating one above."
             />

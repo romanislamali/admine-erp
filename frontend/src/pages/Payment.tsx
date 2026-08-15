@@ -397,7 +397,7 @@ export default function Payment() {
               data={payments}
               columns={columns}
               searchKeys={['id', 'contractor_name', 'project_name', 'bill_invoice', 'amount']}
-              searchPlaceholder="Search payments by reference, contractor, project..."
+              searchPlaceholder="Search by ID, contractor, project, Invoice or ammount"
               keyExtractor={(p) => p.id}
               emptyMessage="No payments found in database. Get started by recording one above."
             />
@@ -473,7 +473,7 @@ export default function Payment() {
                       <option value="">-- Unlinked / Advance Payment --</option>
                       {filteredBills.map((b) => (
                         <option key={b.id} value={b.id}>
-                          {b.invoice_number || `INV-${b.id}`} ({formatCurrency(b.amount)})
+                          {b.invoice_number || `INV-${b.id.slice(0, 8)}`} ({formatCurrency(b.amount)})
                         </option>
                       ))}
                     </select>

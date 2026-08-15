@@ -104,7 +104,7 @@ export default function Dashboard() {
     }
     if (outstandingBalance < 0) {
       return {
-        value: `${formatCurrency(Math.abs(outstandingBalance))} (ADVANCE)`,
+        value: `${formatCurrency(Math.abs(outstandingBalance))} (ADV)`,
         color: 'text-green-700 border-emerald-100'
       };
     }
