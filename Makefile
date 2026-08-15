@@ -26,5 +26,5 @@ deploy:
 	git pull
 	docker compose --env-file ./backend/.env build backend frontend
 	docker compose --env-file ./backend/.env up -d --no-deps backend frontend
-	sudo nginx -t
-	sudo systemctl restart nginx
+	docker compose --env-file ./backend/.env exec nginx nginx -t
+	docker compose --env-file ./backend/.env exec nginx nginx -s reload
