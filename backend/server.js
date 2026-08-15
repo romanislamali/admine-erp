@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const logger = require('./utils/logger');
+
 // For Google Drive DB Backup
 require('./backupScheduler.js');
 
@@ -10,6 +12,15 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Log every request once it finishes, with the status code and how long it took.
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`);
+  });
+  next();
+});
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -30,7 +41,14 @@ app.use('/api/bills', authenticateToken, billRoutes);
 app.use('/api/payments', authenticateToken, paymentRoutes);
 app.use('/api/users', userRoutes);
 
+// Catch-all: anything that reaches here escaped a route's own try/catch
+// (e.g. malformed JSON body, a thrown error outside an async handler).
+app.use((err, req, res, next) => {
+  logger.error(`Unhandled error on ${req.method} ${req.originalUrl}`, err);
+  res.status(500).json({ message: 'Internal server error' });
+});
+
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info(`Server is running on port ${port}`);
 });
 

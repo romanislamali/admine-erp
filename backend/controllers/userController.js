@@ -3,12 +3,14 @@ const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const tokenBlacklist = require('../utils/tokenBlacklist');
+const logger = require('../utils/logger');
 
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.getAll();
     res.json(users);
   } catch (error) {
+    logger.error('Failed to fetch users', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -19,6 +21,7 @@ const getUserById = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (error) {
+    logger.error(`Failed to fetch user ${req.params.id}`, error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -48,6 +51,7 @@ const createUser = async (req, res) => {
       }
       return res.status(400).json({ message: 'A user with these unique credentials already exists' });
     }
+    logger.error('Failed to create user', error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -84,6 +88,7 @@ const updateUser = async (req, res) => {
       }
       return res.status(400).json({ message: 'A user with these unique credentials already exists' });
     }
+    logger.error(`Failed to update user ${req.params.id}`, error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -98,6 +103,7 @@ const deleteUser = async (req, res) => {
     await User.delete(id);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
+    logger.error(`Failed to delete user ${req.params.id}`, error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -136,6 +142,7 @@ const loginUser = async (req, res) => {
       token
     });
   } catch (error) {
+    logger.error('Login failed unexpectedly', error);
     res.status(500).json({ message: error.message });
   }
 };

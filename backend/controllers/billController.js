@@ -1,4 +1,5 @@
 const Bill = require('../models/bill');
+const logger = require('../utils/logger');
 
 const getAllBills = async (req, res) => {
   try {
@@ -6,6 +7,7 @@ const getAllBills = async (req, res) => {
     const bills = await Bill.getAll(contractor_id || null);
     res.json(bills);
   } catch (error) {
+    logger.error('Failed to fetch bills', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -19,6 +21,7 @@ const createBill = async (req, res) => {
     const bill = await Bill.create(req.body, req.user.name);
     res.status(201).json(bill);
   } catch (error) {
+    logger.error('Failed to create bill', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -34,6 +37,7 @@ const updateBill = async (req, res) => {
     if (!bill) return res.status(404).json({ message: 'Bill not found' });
     res.json(bill);
   } catch (error) {
+    logger.error(`Failed to update bill ${req.params.id}`, error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -45,6 +49,7 @@ const deleteBill = async (req, res) => {
     if (!bill) return res.status(404).json({ message: 'Bill not found' });
     res.json({ message: 'Bill deleted successfully' });
   } catch (error) {
+    logger.error(`Failed to delete bill ${req.params.id}`, error);
     res.status(500).json({ message: error.message });
   }
 };

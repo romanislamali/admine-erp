@@ -4,6 +4,7 @@ const cron = require('node-cron');
 const { exec } = require('child_process');
 const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
+const logger = require('./utils/logger');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -24,7 +25,7 @@ oauth2Client.setCredentials({
 
 const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-console.log("Google OAuth Credentials Loaded from Environment!");
+logger.info('Google OAuth credentials loaded from environment.');
 
 // Gmail notification setup
 const transporter = nodemailer.createTransport({
@@ -44,9 +45,9 @@ async function sendMailToSystemAdmin(subject, text) {
             subject: subject,
             text: text
         });
-        console.log("Alert email sent.");
+        logger.info('Alert email sent.');
     } catch (err) {
-        console.error('Failed to send alert email:', err);
+        logger.error('Failed to send alert email', err);
     }
 }
 
@@ -76,7 +77,7 @@ async function cleanupOldBackups() {
     if (files.length > 30) {
         for (let i = 30; i < files.length; i++) {
             await drive.files.delete({ fileId: files[i].id });
-            console.log(`[Cleanup] Old backup deleted: ${files[i].name}`);
+            logger.info(`[Cleanup] Old backup deleted: ${files[i].name}`);
         }
     }
 }
@@ -85,7 +86,7 @@ async function cleanupOldBackups() {
 async function runBackupProcess() {
     let filePath = '';
     try {
-        console.log(`[${new Date().toLocaleString()}] Backup process started using OAuth2...`);
+        logger.info('Backup process started using OAuth2...');
         const backup = await generatePGBackup();
         filePath = backup.filePath;
 
@@ -94,10 +95,10 @@ async function runBackupProcess() {
             media: { mimeType: 'application/octet-stream', body: fs.createReadStream(filePath) }
         });
 
-        console.log(`Backup successfully uploaded! File ID: ${response.data.id}`);
+        logger.info(`Backup successfully uploaded! File ID: ${response.data.id}`);
         await cleanupOldBackups();
     } catch (error) {
-        console.error('Backup process crashed:', error);
+        logger.error('Backup process crashed', error);
         await sendMailToSystemAdmin('CRITICAL: Google Drive Backup Failed!', `Error Detail: ${error.message}`);
     } finally {
         if (filePath && fs.existsSync(filePath)) {

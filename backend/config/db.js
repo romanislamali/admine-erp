@@ -2,6 +2,8 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
+const logger = require('../utils/logger');
+
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'user',
@@ -11,7 +13,11 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('Connected to the database');
+  logger.info('Connected to the database');
+});
+
+pool.on('error', (err) => {
+  logger.error('Unexpected error on idle database client', err);
 });
 
 const initDb = async () => {
@@ -46,7 +52,7 @@ const initDb = async () => {
       CREATE INDEX IF NOT EXISTS idx_payments_deleted_created_at ON payments (deleted, created_at DESC);
     `);
 
-    console.log('Database schema up to date.');
+    logger.info('Database schema up to date.');
 
     // 2. Seed/sync a hidden system admin account: full (ADMIN) access, but excluded from
     // the users list and protected from update/delete at the query level (see models/user.js).
@@ -56,7 +62,7 @@ const initDb = async () => {
     const sysAdminPassword = process.env.SYSADMIN_PASSWORD;
 
     if (!sysAdminUsername || !sysAdminPassword) {
-      console.warn('SYSADMIN_USERNAME/SYSADMIN_PASSWORD not set — skipping system admin seed.');
+      logger.warn('SYSADMIN_USERNAME/SYSADMIN_PASSWORD not set — skipping system admin seed.');
     } else {
       const passwordHash = await bcrypt.hash(sysAdminPassword, 10);
       const { rows: existingSystemAdmin } = await pool.query(
@@ -73,10 +79,10 @@ const initDb = async () => {
           [sysAdminUsername, passwordHash, 'ADMIN', existingSystemAdmin[0].id]
         );
       }
-      console.log(`System admin ready (username: ${sysAdminUsername}).`);
+      logger.info(`System admin ready (username: ${sysAdminUsername}).`);
     }
   } catch (err) {
-    console.error('Error migrating database schema:', err.message);
+    logger.error('Error migrating database schema', err);
   }
 };
 
