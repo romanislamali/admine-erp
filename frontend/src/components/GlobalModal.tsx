@@ -95,7 +95,7 @@ export const GlobalModal: React.FC = () => {
     return (
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed top-5 right-5 z-[200] w-full max-w-sm pointer-events-auto">
+          <div className="fixed top-5 right-5 z-[200] w-[calc(100%-2.5rem)] max-w-[290px] pointer-events-auto">
             <motion.div
               initial={{ opacity: 0, x: 80, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
