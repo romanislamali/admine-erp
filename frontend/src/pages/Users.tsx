@@ -53,7 +53,7 @@ export default function Users() {
     employee: 0
   });
 
-  const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
+  const { showSuccess, showError, confirmDelete } = useModal();
 
   // Modal control states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -138,11 +138,7 @@ export default function Users() {
       return;
     }
 
-    const confirmed = await confirmSave(
-      'Register Staff Member?',
-      `Are you sure you want to add ${formData.name} to the system credentials database?`
-    );
-    if (!confirmed) return;
+
 
     try {
       setSubmitting(true);
@@ -164,20 +160,29 @@ export default function Users() {
         throw new Error(data.message || 'Failed to create user');
       }
 
-      await showSuccess(
-        'User Created',
-        `User "${formData.name}" has been created successfully.`
-      );
-      setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
+      // Close modal immediately
       setIsAddModalOpen(false);
-      refreshUsers();
-    } catch (err: any) {
-      await showError(
-        'Registration Failed',
-        err.message || 'Unable to create user. Please try again.'
-      );
-    } finally {
+      setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setSubmitting(false);
+      refreshUsers();
+
+      // Show success toast with 1-second auto dismiss race
+      await Promise.race([
+        showSuccess(
+          'User Created',
+          `User "${formData.name}" has been created successfully.`
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Registration Failed',
+          err.message || 'Unable to create user. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -206,11 +211,7 @@ export default function Users() {
       return;
     }
 
-    const confirmed = await confirmSave(
-      'Save Account Updates?',
-      'Are you sure you want to save the new credentials and authorization details?'
-    );
-    if (!confirmed) return;
+
 
     try {
       setSubmitting(true);
@@ -236,21 +237,30 @@ export default function Users() {
         throw new Error(data.message || 'Failed to update user');
       }
 
-      await showSuccess(
-        'User Updated',
-        `User "${formData.name}" has been updated successfully.`
-      );
+      // Close modal immediately
+      setIsEditModalOpen(false);
       setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setSelectedUserId(null);
-      setIsEditModalOpen(false);
-      refreshUsers();
-    } catch (err: any) {
-      await showError(
-        'Database Sync Failed',
-        err.message || 'Unable to store changes. Please try again.'
-      );
-    } finally {
       setSubmitting(false);
+      refreshUsers();
+
+      // Show success toast with 1-second auto dismiss race
+      await Promise.race([
+        showSuccess(
+          'User Updated',
+          `User "${formData.name}" has been updated successfully.`
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
+    } catch (err: any) {
+      setSubmitting(false);
+      await Promise.race([
+        showError(
+          'Database Sync Failed',
+          err.message || 'Unable to store changes. Please try again.'
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1000))
+      ]);
     }
   };
 
@@ -694,7 +704,7 @@ export default function Users() {
                 className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Modify User Account</h3>
+                  <h3 className="text-xl font-bold text-slate-900">Edit User Account</h3>
                   <button
                     onClick={() => setIsEditModalOpen(false)}
                     className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"

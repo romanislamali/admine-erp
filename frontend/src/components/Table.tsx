@@ -175,7 +175,7 @@ export default function Table<T>({
               <button
                 onClick={() => onEdit(row)}
                 title="Edit record"
-                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-lg transition-all border border-transparent hover:border-indigo-100/50 active:scale-95"
+                className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-slate-50 rounded transition-colors"
               >
                 <Edit2 size={15} />
               </button>
