@@ -322,7 +322,7 @@ export default function Users() {
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${row.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' :
-              row.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
+            row.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
             }`}>
             {row.name.substring(0, 2)}
           </div>
@@ -405,7 +405,7 @@ export default function Users() {
         </div>
 
         {/* Stats Counter Cards Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4 mt-2">
           {/* Total Users card */}
           <motion.div
             whileHover={{ y: -2 }}

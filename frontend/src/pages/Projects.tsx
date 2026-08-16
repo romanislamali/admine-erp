@@ -382,7 +382,7 @@ export default function Projects() {
           </button>
         </div>
 
-        <div className='mt-6'>
+        <div className='mt-2'>
           {error && (
             <div className="bg-rose-50 border border-rose-200 text-rose-600 p-4 rounded-xl text-sm mb-4">
               {error}
