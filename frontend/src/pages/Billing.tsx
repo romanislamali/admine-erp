@@ -38,10 +38,23 @@ export default function Billing() {
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [lazyParams, setLazyParams] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    sortField: null as string | null,
+    sortOrder: null as 'asc' | 'desc' | null
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshBills = () => setRefreshTrigger((prev) => prev + 1);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -52,34 +65,57 @@ export default function Billing() {
     bill_date: ''
   });
 
-  const fetchData = async () => {
+  const fetchDropdownData = async () => {
     try {
-      setLoading(true);
-      const [billRes, contRes, projRes] = await Promise.all([
-        fetch('/api/bills'),
+      const [contRes, projRes] = await Promise.all([
         fetch('/api/contractors'),
         fetch('/api/projects')
       ]);
 
-      if (!billRes.ok || !contRes.ok || !projRes.ok) throw new Error('Failed to fetch data');
+      if (!contRes.ok || !projRes.ok) throw new Error('Failed to fetch dropdown options');
 
-      const billsData = await billRes.json();
       const contsData = await contRes.json();
       const projsData = await projRes.json();
 
-      setBills(billsData);
       setContractors(contsData);
       setProjects(projsData);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'An error occurred while fetching dropdown data');
+    }
+  };
+
+  const fetchBills = async (params: typeof lazyParams) => {
+    try {
+      setTableLoading(true);
+      const query = new URLSearchParams({
+        page: params.page.toString(),
+        limit: params.limit.toString(),
+        search: params.search,
+        ...(params.sortField ? { sortField: params.sortField } : {}),
+        ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+      });
+
+      const res = await fetch(`/api/bills?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch bills');
+
+      const resData = await res.json();
+      setBills(resData.data);
+      setTotalRecords(resData.total);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while fetching bills');
     } finally {
+      setTableLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchDropdownData();
   }, []);
+
+  useEffect(() => {
+    fetchBills(lazyParams);
+  }, [lazyParams, refreshTrigger]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -126,7 +162,7 @@ export default function Billing() {
       setSubmitting(false);
 
       // Refresh data
-      fetchData();
+      refreshBills();
 
       // Show success modal and automatically close it after 1 second
       await Promise.race([
@@ -184,7 +220,7 @@ export default function Billing() {
       setSubmitting(false);
 
       // Refresh table data
-      fetchData();
+      refreshBills();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -257,7 +293,7 @@ export default function Billing() {
       )
     },
     {
-      header: 'Invoice #',
+      header: 'Invoice',
       key: 'invoice_number',
       sortable: true,
       render: (b: Bill) => (
@@ -300,7 +336,7 @@ export default function Billing() {
       )
     },
     {
-      header: 'Invoice Amount',
+      header: 'Amount',
       key: 'amount',
       align: 'right',
       sortable: true,
@@ -366,13 +402,16 @@ export default function Billing() {
               <Loader2 className="animate-spin text-primary" size={32} />
             </div>
           ) : (
-            <Table
+            <Table<Bill>
               data={bills}
               columns={columns}
-              searchKeys={['invoice_number', 'contractor_name', 'project_name', 'amount']}
-              searchPlaceholder="Search by invoice, contractor, project or ammount"
               keyExtractor={(b) => b.id}
               emptyMessage="No bills found in database. Get started by creating one above."
+              lazy
+              totalRecords={totalRecords}
+              loading={tableLoading}
+              onLazyLoad={(params) => setLazyParams(params)}
+              searchPlaceholder="Search by invoice, contractor, project or amount"
             />
           )}
         </div>

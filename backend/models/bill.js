@@ -20,6 +20,64 @@ const Bill = {
     const { rows } = await db.query(queryText, params);
     return rows;
   },
+
+  getPaginated: async ({ contractorId, limit, offset, search, sortField, sortOrder }) => {
+    let queryText = `
+      SELECT b.*, c.name as contractor_name, p.name as project_name
+      FROM bills b
+      LEFT JOIN contractors c ON b.contractor_id = c.id
+      LEFT JOIN projects p ON b.project_id = p.id
+      WHERE b.deleted = false
+    `;
+    const params = [];
+    let paramCount = 0;
+
+    if (contractorId) {
+      paramCount++;
+      queryText += ` AND b.contractor_id = $${paramCount}`;
+      params.push(contractorId);
+    }
+
+    if (search) {
+      paramCount++;
+      queryText += ` AND (
+        b.invoice_number ILIKE $${paramCount} OR 
+        c.name ILIKE $${paramCount} OR 
+        p.name ILIKE $${paramCount} OR 
+        CAST(b.amount AS TEXT) ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    const countQueryText = `SELECT COUNT(*) FROM (${queryText}) AS temp`;
+    const countResult = await db.query(countQueryText, params);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    const allowedSortFields = {
+      'invoice_number': 'b.invoice_number',
+      'contractor_name': 'c.name',
+      'project_name': 'p.name',
+      'bill_date': 'b.bill_date',
+      'amount': 'b.amount',
+      'created_at': 'b.created_at'
+    };
+    
+    const dbSortField = allowedSortFields[sortField] || 'b.created_at';
+    const dbSortOrder = sortOrder === 'asc' ? 'ASC' : 'DESC';
+    
+    queryText += ` ORDER BY ${dbSortField} ${dbSortOrder}`;
+
+    paramCount++;
+    queryText += ` LIMIT $${paramCount}`;
+    params.push(limit);
+
+    paramCount++;
+    queryText += ` OFFSET $${paramCount}`;
+    params.push(offset);
+
+    const { rows } = await db.query(queryText, params);
+    return { rows, total };
+  },
   
   create: async (billData, createdBy) => {
     const { contractor_id, project_id, amount, invoice_number, bill_date } = billData;

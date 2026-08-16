@@ -27,10 +27,23 @@ export default function Contractors() {
 
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  const [lazyParams, setLazyParams] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    sortField: null as string | null,
+    sortOrder: null as 'asc' | 'desc' | null
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshContractors = () => setRefreshTrigger((prev) => prev + 1);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -40,23 +53,34 @@ export default function Contractors() {
     address: ''
   });
 
-  const fetchContractors = async () => {
+  const fetchContractors = async (params: typeof lazyParams) => {
     try {
-      setLoading(true);
-      const res = await fetch('/api/contractors');
+      setTableLoading(true);
+      const query = new URLSearchParams({
+        page: params.page.toString(),
+        limit: params.limit.toString(),
+        search: params.search,
+        ...(params.sortField ? { sortField: params.sortField } : {}),
+        ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+      });
+
+      const res = await fetch(`/api/contractors?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch contractors');
-      const data = await res.json();
-      setContractors(data);
+
+      const resData = await res.json();
+      setContractors(resData.data);
+      setTotalRecords(resData.total);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'An error occurred while fetching contractors');
     } finally {
+      setTableLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchContractors();
-  }, []);
+    fetchContractors(lazyParams);
+  }, [lazyParams, refreshTrigger]);
 
   const handleViewBillsAndPayments = (contractorId: string) => {
     navigate(`/contractor-details/${contractorId}`);
@@ -102,7 +126,7 @@ export default function Contractors() {
         new Promise((resolve) => setTimeout(resolve, 1000))
       ]);
 
-      fetchContractors();
+      refreshContractors();
     } catch (err: any) {
       setSubmitting(false);
       await Promise.race([
@@ -152,7 +176,7 @@ export default function Contractors() {
       setSubmitting(false);
 
       // Refresh list
-      fetchContractors();
+      refreshContractors();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -294,7 +318,7 @@ export default function Contractors() {
               : 'bg-slate-50 text-slate-600 border border-slate-200/50'
             }`}>
             {formatCurrency(Math.abs(balanceNum))}
-            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">(Advance)</span>}
+            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">(Adv)</span>}
             {balanceNum > 0 && <span className="text-[10px] uppercase font-bold tracking-tight">(Due)</span>}
           </div>
         );
@@ -352,13 +376,16 @@ export default function Contractors() {
               <Loader2 className="animate-spin text-primary" size={32} />
             </div>
           ) : (
-            <Table
+            <Table<Contractor>
               data={contractors}
               columns={columns}
-              searchKeys={['name', 'email', 'phone', 'address']}
-              searchPlaceholder="Search by name, email, phone or address"
               keyExtractor={(c) => c.id}
               emptyMessage="No contractors found in database. Get started by adding one above."
+              lazy
+              totalRecords={totalRecords}
+              loading={tableLoading}
+              onLazyLoad={(params) => setLazyParams(params)}
+              searchPlaceholder="Search by name, email, phone or address"
             />
           )}
         </div>

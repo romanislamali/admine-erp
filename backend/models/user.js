@@ -43,6 +43,62 @@ const User = {
   delete: async (id) => {
     const { rows } = await db.query('DELETE FROM users WHERE id = $1 AND is_system = FALSE RETURNING id, name, username, phone, email, role, created_at, updated_at', [id]);
     return rows[0];
+  },
+  getPaginated: async ({ limit, offset, search, role, sortField, sortOrder }) => {
+    let queryText = `
+      SELECT id, name, username, phone, email, role, created_at, updated_at
+      FROM users
+      WHERE is_system = FALSE
+    `;
+    const params = [];
+    let paramCount = 0;
+
+    if (role && role !== 'ALL') {
+      paramCount++;
+      queryText += ` AND role = $${paramCount}`;
+      params.push(role);
+    }
+
+    if (search) {
+      paramCount++;
+      queryText += ` AND (
+        name ILIKE $${paramCount} OR 
+        username ILIKE $${paramCount} OR 
+        email ILIKE $${paramCount} OR 
+        phone ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    const countQueryText = `SELECT COUNT(*) FROM (${queryText}) AS temp`;
+    const countResult = await db.query(countQueryText, params);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    const allowedSortFields = {
+      'id': 'id',
+      'name': 'name',
+      'username': 'username',
+      'email': 'email',
+      'phone': 'phone',
+      'role': 'role',
+      'created_at': 'created_at'
+    };
+    
+    const dbSortField = allowedSortFields[sortField] || 'created_at';
+    const dbSortOrder = sortOrder === 'asc' ? 'ASC' : 'DESC';
+    
+    queryText += ` ORDER BY ${dbSortField} ${dbSortOrder}`;
+
+    paramCount++;
+    queryText += ` LIMIT $${paramCount}`;
+    params.push(limit);
+
+    paramCount++;
+    queryText += ` OFFSET $${paramCount}`;
+    params.push(offset);
+
+    const { rows } = await db.query(queryText, params);
+    return { rows, total };
   }
 };
 

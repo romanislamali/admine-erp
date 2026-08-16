@@ -3,6 +3,21 @@ const logger = require('../utils/logger');
 
 const getAllContractors = async (req, res) => {
   try {
+    const { page, limit, search, sortField, sortOrder } = req.query;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const offsetNum = (pageNum - 1) * limitNum;
+
+      const { rows, total } = await Contractor.getPaginated({
+        limit: limitNum,
+        offset: offsetNum,
+        search: search || '',
+        sortField: sortField || 'created_at',
+        sortOrder: sortOrder || 'desc'
+      });
+      return res.json({ data: rows, total });
+    }
     const contractors = await Contractor.getAll();
     res.json(contractors);
   } catch (error) {

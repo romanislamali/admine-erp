@@ -47,10 +47,23 @@ export default function Payment() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [lazyParams, setLazyParams] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    sortField: null as string | null,
+    sortOrder: null as 'asc' | 'desc' | null
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshPayments = () => setRefreshTrigger((prev) => prev + 1);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -61,23 +74,19 @@ export default function Payment() {
     payment_date: ''
   });
 
-  const fetchData = async () => {
+  const fetchDropdownData = async () => {
     try {
-      setLoading(true);
-      const [payRes, contRes, billRes, projRes] = await Promise.all([
-        fetch('/api/payments'),
+      const [contRes, billRes, projRes] = await Promise.all([
         fetch('/api/contractors'),
         fetch('/api/bills'),
         fetch('/api/projects')
       ]);
 
-      if (!payRes.ok || !contRes.ok || !billRes.ok) throw new Error('Failed to fetch data');
+      if (!contRes.ok || !billRes.ok) throw new Error('Failed to fetch dropdown options');
 
-      const paysData = await payRes.json();
       const contsData = await contRes.json();
       const billsData = await billRes.json();
 
-      setPayments(paysData);
       setContractors(contsData);
       setBills(billsData);
 
@@ -86,15 +95,42 @@ export default function Payment() {
         setProjects(projsData);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'An error occurred while fetching dropdown data');
+    }
+  };
+
+  const fetchPayments = async (params: typeof lazyParams) => {
+    try {
+      setTableLoading(true);
+      const query = new URLSearchParams({
+        page: params.page.toString(),
+        limit: params.limit.toString(),
+        search: params.search,
+        ...(params.sortField ? { sortField: params.sortField } : {}),
+        ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+      });
+
+      const res = await fetch(`/api/payments?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch payments');
+
+      const resData = await res.json();
+      setPayments(resData.data);
+      setTotalRecords(resData.total);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while fetching payments');
     } finally {
+      setTableLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchDropdownData();
   }, []);
+
+  useEffect(() => {
+    fetchPayments(lazyParams);
+  }, [lazyParams, refreshTrigger]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -141,7 +177,7 @@ export default function Payment() {
       setSubmitting(false);
 
       // Refresh payments list
-      fetchData();
+      refreshPayments();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -199,7 +235,7 @@ export default function Payment() {
       setSubmitting(false);
 
       // Refresh table data
-      fetchData();
+      refreshPayments();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -396,13 +432,16 @@ export default function Payment() {
               <Loader2 className="animate-spin text-primary" size={32} />
             </div>
           ) : (
-            <Table
+            <Table<Payment>
               data={payments}
               columns={columns}
-              searchKeys={['id', 'contractor_name', 'project_name', 'bill_invoice', 'amount']}
-              searchPlaceholder="Search by ID, contractor, project, Invoice or ammount"
               keyExtractor={(p) => p.id}
               emptyMessage="No payments found in database. Get started by recording one above."
+              lazy
+              totalRecords={totalRecords}
+              loading={tableLoading}
+              onLazyLoad={(params) => setLazyParams(params)}
+              searchPlaceholder="Search by ID, contractor, project, Invoice or amount"
             />
           )}
         </div>
@@ -473,7 +512,7 @@ export default function Payment() {
                       onChange={(e) => setFormData({ ...formData, bill_id: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
                     >
-                      <option value="">-- Unlinked / Advance Payment --</option>
+                      <option value="">-- No Invoice Link --</option>
                       {filteredBills.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})

@@ -456,9 +456,9 @@ export default function ContractorDetails() {
                 <div className="flex items-center gap-2">
                     <FileText size={16} className="text-slate-400 shrink-0" />
                     {b.invoice_number ? (
-                    <span className="font-medium text-slate-700">{b.invoice_number}</span>
+                        <span className="font-medium text-slate-700">{b.invoice_number}</span>
                     ) : (
-                    <span className="text-slate-400 text-xs italic">N/A</span>
+                        <span className="text-slate-400 text-xs italic">N/A</span>
                     )}
                 </div>
             )
@@ -548,7 +548,7 @@ export default function ContractorDetails() {
             }
         },
         {
-            header: 'Invoice',
+            header: 'Linked Invoice',
             key: 'bill_invoice',
             sortable: true,
             render: (p: Payment) => (
@@ -956,10 +956,10 @@ export default function ContractorDetails() {
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Invoice (Optional)</label>
                                     <select
                                         value={paymentFormData.bill_id}
-                                        onChange={(e) => setPaymentFormData({...paymentFormData, bill_id: e.target.value})}
+                                        onChange={(e) => setPaymentFormData({ ...paymentFormData, bill_id: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
                                     >
-                                        <option value="">-- No Direct Link (Advance Payment) --</option>
+                                        <option value="">-- No Invoice Link --</option>
                                         {bills.map((b) => (
                                             <option key={b.id} value={b.id}>
                                                 {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})

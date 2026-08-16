@@ -6,9 +6,6 @@ import {
   Briefcase,
   User as UserIcon,
   Plus,
-  Search,
-  Edit2,
-  Trash2,
   Loader2,
   X,
   Mail,
@@ -18,6 +15,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useModal } from '../context/ModalContext';
+import Table, { Column } from '../components/Table';
 
 interface User {
   id: string;
@@ -32,9 +30,28 @@ interface User {
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
+
+  const [lazyParams, setLazyParams] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    sortField: null as string | null,
+    sortOrder: null as 'asc' | 'desc' | null
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshUsers = () => setRefreshTrigger((prev) => prev + 1);
+
+  const [stats, setStats] = useState({
+    total: 0,
+    admin: 0,
+    manager: 0,
+    employee: 0
+  });
 
   const { showSuccess, showError, confirmSave, confirmDelete } = useModal();
 
@@ -57,24 +74,59 @@ export default function Users() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Fetch all users
-  const fetchUsers = async () => {
+  const fetchStats = async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/users');
+      if (!res.ok) throw new Error('Failed to fetch stats');
+      const allUsers = await res.json();
+      setStats({
+        total: allUsers.length,
+        admin: allUsers.filter((u: any) => u.role === 'ADMIN').length,
+        manager: allUsers.filter((u: any) => u.role === 'MANAGER').length,
+        employee: allUsers.filter((u: any) => u.role === 'EMPLOYEE').length
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchUsers = async (params: typeof lazyParams) => {
+    try {
+      setTableLoading(true);
+      const query = new URLSearchParams({
+        page: params.page.toString(),
+        limit: params.limit.toString(),
+        search: params.search,
+        role: selectedRoleFilter,
+        ...(params.sortField ? { sortField: params.sortField } : {}),
+        ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+      });
+
+      const res = await fetch(`/api/users?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch users');
-      const data = await res.json();
-      setUsers(data);
+
+      const resData = await res.json();
+      setUsers(resData.data);
+      setTotalRecords(resData.total);
     } catch (err: any) {
-      setError(err.message || 'An error occurred while loading staff members.');
+      setError(err.message || 'An error occurred while fetching users');
     } finally {
+      setTableLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchStats();
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    fetchUsers(lazyParams);
+  }, [lazyParams, refreshTrigger]);
+
+  useEffect(() => {
+    setLazyParams((prev) => ({ ...prev, page: 1 }));
+  }, [selectedRoleFilter]);
 
   // Handle create user
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -118,7 +170,7 @@ export default function Users() {
       );
       setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setIsAddModalOpen(false);
-      fetchUsers();
+      refreshUsers();
     } catch (err: any) {
       await showError(
         'Registration Failed',
@@ -191,7 +243,7 @@ export default function Users() {
       setFormData({ name: '', username: '', phone: '', email: '', role: 'EMPLOYEE', password: '', confirmPassword: '' });
       setSelectedUserId(null);
       setIsEditModalOpen(false);
-      fetchUsers();
+      refreshUsers();
     } catch (err: any) {
       await showError(
         'Database Sync Failed',
@@ -225,7 +277,7 @@ export default function Users() {
         'User Deleted',
         `User "${formData.name}" has been deleted successfully.`
       );
-      fetchUsers();
+      refreshUsers();
     } catch (err: any) {
       await showError(
         'Action Deauthorized',
@@ -236,26 +288,11 @@ export default function Users() {
     }
   };
 
-  // Filter logic
-  const filteredUsers = users.filter(user => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.username && user.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.phone && user.phone.includes(searchQuery));
-
-    const matchesRole =
-      selectedRoleFilter === 'ALL' ||
-      user.role === selectedRoleFilter;
-
-    return matchesSearch && matchesRole;
-  });
-
   // Role Statistics calculation
-  const totalCount = users.length;
-  const adminCount = users.filter(u => u.role === 'ADMIN').length;
-  const managerCount = users.filter(u => u.role === 'MANAGER').length;
-  const employeeCount = users.filter(u => u.role === 'EMPLOYEE').length;
+  const totalCount = stats.total;
+  const adminCount = stats.admin;
+  const managerCount = stats.manager;
+  const employeeCount = stats.employee;
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'N/A';
@@ -277,6 +314,68 @@ export default function Users() {
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200/50';
     }
   };
+
+  const columns: Column<User>[] = [
+    {
+      header: 'Full Name',
+      key: 'name',
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${row.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' :
+              row.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
+            }`}>
+            {row.name.substring(0, 2)}
+          </div>
+          <div>
+            <div className="font-semibold text-slate-900">{row.name}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Username',
+      key: 'username',
+      render: (row) => (
+        <span className="text-slate-700 font-mono text-xs font-medium">@{row.username}</span>
+      )
+    },
+    {
+      header: 'Contact Information',
+      key: 'email',
+      render: (row) => (
+        <div className="space-y-1">
+          {row.email ? (
+            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+              <Mail size={12} className="text-slate-400 shrink-0" />
+              <span>{row.email}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400 italic">No email</span>
+          )}
+          {row.phone && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Phone size={12} className="text-slate-400 shrink-0" />
+              <span>{row.phone}</span>
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      header: 'Role Permission',
+      key: 'role',
+      render: (row) => (
+        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${getRoleBadgeStyle(row.role)}`}>
+          {row.role}
+        </span>
+      )
+    },
+    {
+      header: 'Date Joined',
+      key: 'created_at',
+      render: (row) => formatDate(row.created_at)
+    }
+  ];
 
   return (
     <motion.div
@@ -364,21 +463,10 @@ export default function Users() {
           </motion.div>
         </div>
 
-        {/* Filter and Search Bar Section */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm mb-4">
-          <div className="relative w-full md:w-80">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, username, email..."
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-            />
-          </div>
-
-          <div className="flex gap-2 w-full md:w-auto items-center">
-            <span className="text-slate-400 text-xs font-medium uppercase shrink-0 whitespace-nowrap">Filter Role:</span>
+        {/* Filter Bar Section */}
+        <div className="flex justify-end items-center bg-white border border-slate-200 p-4 rounded-2xl shadow-sm mb-4">
+          <div className="flex gap-2 w-full md:w-auto items-center justify-end">
+            <span className="text-slate-400 text-xs font-semibold uppercase shrink-0 whitespace-nowrap">Filter Role:</span>
             <select
               value={selectedRoleFilter}
               onChange={(e) => setSelectedRoleFilter(e.target.value)}
@@ -405,109 +493,21 @@ export default function Users() {
           <div className="flex justify-center items-center py-20">
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="glass-card py-20 flex flex-col items-center justify-center text-slate-500 border-dashed bg-slate-50/30">
-            <UsersIcon size={48} className="text-slate-300 mb-3" />
-            <p className="text-lg font-medium text-slate-600">No users found</p>
-            <p className="text-sm">Try clearing your filters or create a new user profile above.</p>
-          </div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                    <th className="px-6 py-4">Full Name</th>
-                    <th className="px-6 py-4">Username</th>
-                    <th className="px-6 py-4">Contact Information</th>
-                    <th className="px-6 py-4">Role Permission</th>
-                    <th className="px-6 py-4">Date Joined</th>
-                    <th className="px-6 py-4 text-center">Modify</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {filteredUsers.map((user) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      {/* User name with initials badge */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-8 w-8 rounded-full border border-slate-200 font-bold text-xs uppercase flex items-center justify-center ${user.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' :
-                            user.role === 'MANAGER' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'
-                            }`}>
-                            {user.name.substring(0, 2)}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-slate-900">{user.name}</div>
-                            <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{user.id}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Username */}
-                      <td className="px-6 py-4 text-slate-700 font-mono text-xs font-medium">
-                        @{user.username}
-                      </td>
-
-                      {/* Contact Info (Email & Phone optional) */}
-                      <td className="px-6 py-4 text-slate-600 space-y-1">
-                        {user.email ? (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Mail size={12} className="text-slate-400 shrink-0" />
-                            <span>{user.email}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">No email</span>
-                        )}
-                        {user.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <Phone size={12} className="text-slate-400 shrink-0" />
-                            <span>{user.phone}</span>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Role Permission Badge */}
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${getRoleBadgeStyle(user.role)}`}>
-                          {user.role}
-                        </span>
-                      </td>
-
-                      {/* Created Date */}
-                      <td className="px-6 py-4 text-slate-500 font-medium">
-                        {formatDate(user.created_at)}
-                      </td>
-
-                      {/* Action buttons (Edit & Delete) */}
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex gap-2 justify-center items-center">
-                          <button
-                            onClick={() => openEditModal(user)}
-                            title="Edit staff details"
-                            className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteConfirm(user.id)}
-                            title="Delete staff account"
-                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Table<User>
+            data={users}
+            columns={columns}
+            lazy={true}
+            totalRecords={totalRecords}
+            loading={tableLoading}
+            onLazyLoad={(params) => setLazyParams(params)}
+            actionsPosition="first"
+            searchPlaceholder="Search by name, username, email or phone"
+            keyExtractor={(row) => row.id}
+            onEdit={openEditModal}
+            onDelete={(row) => handleDeleteConfirm(row.id)}
+            emptyMessage="No users match your criteria."
+          />
         )}
 
         {/* CREATE STAFF MODAL */}

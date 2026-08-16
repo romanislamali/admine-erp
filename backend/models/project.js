@@ -12,6 +12,57 @@ const Project = {
     return rows;
   },
 
+  getPaginated: async ({ limit, offset, search, sortField, sortOrder }) => {
+    let queryText = `
+      SELECT p.*, c.name as contractor_name
+      FROM projects p
+      LEFT JOIN contractors c ON p.contractor_id = c.id
+      WHERE p.deleted = false
+    `;
+    const params = [];
+    let paramCount = 0;
+
+    if (search) {
+      paramCount++;
+      queryText += ` AND (
+        p.name ILIKE $${paramCount} OR 
+        c.name ILIKE $${paramCount} OR 
+        p.status ILIKE $${paramCount} OR 
+        p.description ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    const countQueryText = `SELECT COUNT(*) FROM (${queryText}) AS temp`;
+    const countResult = await db.query(countQueryText, params);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    const allowedSortFields = {
+      'name': 'p.name',
+      'contractor_name': 'c.name',
+      'start_date': 'p.start_date',
+      'end_date': 'p.end_date',
+      'status': 'p.status',
+      'created_at': 'p.created_at'
+    };
+    
+    const dbSortField = allowedSortFields[sortField] || 'p.created_at';
+    const dbSortOrder = sortOrder === 'asc' ? 'ASC' : 'DESC';
+    
+    queryText += ` ORDER BY ${dbSortField} ${dbSortOrder}`;
+
+    paramCount++;
+    queryText += ` LIMIT $${paramCount}`;
+    params.push(limit);
+
+    paramCount++;
+    queryText += ` OFFSET $${paramCount}`;
+    params.push(offset);
+
+    const { rows } = await db.query(queryText, params);
+    return { rows, total };
+  },
+
   getById: async (id) => {
     const { rows } = await db.query('SELECT * FROM projects WHERE id = $1 AND deleted = false', [id]);
     return rows[0];

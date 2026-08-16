@@ -27,6 +27,8 @@ export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -35,6 +37,17 @@ export default function Projects() {
   const isAdmin = user?.role === 'ADMIN';
 
   const { confirmDelete, showSuccess, showError } = useModal();
+
+  const [lazyParams, setLazyParams] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    sortField: null as string | null,
+    sortOrder: null as 'asc' | 'desc' | null
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshProjects = () => setRefreshTrigger((prev) => prev + 1);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -46,31 +59,50 @@ export default function Projects() {
     status: 'Planned'
   });
 
-  const fetchData = async () => {
+  const fetchDropdownData = async () => {
     try {
-      setLoading(true);
-      const [projRes, contRes] = await Promise.all([
-        fetch('/api/projects'),
-        fetch('/api/contractors')
-      ]);
+      const contRes = await fetch('/api/contractors');
+      if (!contRes.ok) throw new Error('Failed to fetch contractor options');
 
-      if (!projRes.ok || !contRes.ok) throw new Error('Failed to fetch data');
-
-      const projs = await projRes.json();
       const conts = await contRes.json();
-
-      setProjects(projs);
       setContractors(conts);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'An error occurred while fetching dropdown data');
+    }
+  };
+
+  const fetchProjects = async (params: typeof lazyParams) => {
+    try {
+      setTableLoading(true);
+      const query = new URLSearchParams({
+        page: params.page.toString(),
+        limit: params.limit.toString(),
+        search: params.search,
+        ...(params.sortField ? { sortField: params.sortField } : {}),
+        ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+      });
+
+      const res = await fetch(`/api/projects?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch projects');
+
+      const resData = await res.json();
+      setProjects(resData.data);
+      setTotalRecords(resData.total);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while fetching projects');
     } finally {
+      setTableLoading(false);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchDropdownData();
   }, []);
+
+  useEffect(() => {
+    fetchProjects(lazyParams);
+  }, [lazyParams, refreshTrigger]);
 
   const handleEdit = (project: Project) => {
     setEditId(project.id);
@@ -106,7 +138,7 @@ export default function Projects() {
       setSubmitting(false);
 
       // Refresh project list
-      fetchData();
+      refreshProjects();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -175,7 +207,7 @@ export default function Projects() {
       setSubmitting(false);
 
       // Refresh list
-      fetchData();
+      refreshProjects();
 
       // Show success popup with automatic 1-second dismiss
       await Promise.race([
@@ -276,7 +308,7 @@ export default function Projects() {
       )
     },
     {
-      header: 'Expected End Date',
+      header: 'End Date',
       key: 'end_date',
       sortable: true,
       render: (p: Project) => (
@@ -365,11 +397,13 @@ export default function Projects() {
             <Table<Project>
               data={projects}
               columns={columns}
-              searchKeys={['name', 'contractor_name', 'status', 'description']}
-              searchPlaceholder="Search projects by name, contractor, status..."
-              initialItemsPerPage={10}
               keyExtractor={(row) => row.id}
               emptyMessage="No projects found."
+              lazy
+              totalRecords={totalRecords}
+              loading={tableLoading}
+              onLazyLoad={(params) => setLazyParams(params)}
+              searchPlaceholder="Search projects by name, contractor, status..."
             />
           )}
         </div>
@@ -442,7 +476,7 @@ export default function Projects() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Expected End Date</label>
+                      <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">End Date</label>
                       <input
                         type="date"
                         value={formData.end_date}

@@ -7,6 +7,22 @@ const logger = require('../utils/logger');
 
 const getAllUsers = async (req, res) => {
   try {
+    const { page, limit, search, role, sortField, sortOrder } = req.query;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const offsetNum = (pageNum - 1) * limitNum;
+
+      const { rows, total } = await User.getPaginated({
+        limit: limitNum,
+        offset: offsetNum,
+        search: search || '',
+        role: role || 'ALL',
+        sortField: sortField || 'created_at',
+        sortOrder: sortOrder || 'desc'
+      });
+      return res.json({ data: rows, total });
+    }
     const users = await User.getAll();
     res.json(users);
   } catch (error) {
