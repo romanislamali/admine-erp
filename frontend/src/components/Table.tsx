@@ -312,7 +312,7 @@ export default function Table<T>({
     <div className="space-y-4">
       {/* Top Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm">
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full sm:w-100">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"

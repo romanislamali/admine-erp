@@ -403,7 +403,7 @@ export default function Projects() {
               totalRecords={totalRecords}
               loading={tableLoading}
               onLazyLoad={(params) => setLazyParams(params)}
-              searchPlaceholder="Search projects by name, contractor, status..."
+              searchPlaceholder="Search projects by name, contractor or status"
             />
           )}
         </div>
