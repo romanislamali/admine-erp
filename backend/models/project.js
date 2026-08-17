@@ -6,7 +6,7 @@ const Project = {
       SELECT p.*, c.name as contractor_name
       FROM projects p
       LEFT JOIN contractors c ON p.contractor_id = c.id
-      WHERE p.deleted = false
+      WHERE p.deleted = false AND c.deleted IS NOT TRUE
       ORDER BY p.created_at DESC
     `);
     return rows;
@@ -17,7 +17,7 @@ const Project = {
       SELECT p.*, c.name as contractor_name
       FROM projects p
       LEFT JOIN contractors c ON p.contractor_id = c.id
-      WHERE p.deleted = false
+      WHERE p.deleted = false AND c.deleted IS NOT TRUE
     `;
     const params = [];
     let paramCount = 0;

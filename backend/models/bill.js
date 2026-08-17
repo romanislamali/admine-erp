@@ -10,10 +10,10 @@ const Bill = {
     `;
     const params = [];
     if (contractorId) {
-      queryText += ` WHERE b.contractor_id = $1 AND b.deleted = false`;
+      queryText += ` WHERE b.contractor_id = $1 AND b.deleted = false AND c.deleted IS NOT TRUE AND p.deleted IS NOT TRUE`;
       params.push(contractorId);
     } else {
-      queryText += ` WHERE b.deleted = false`;
+      queryText += ` WHERE b.deleted = false AND c.deleted IS NOT TRUE AND p.deleted IS NOT TRUE`;
     }
     queryText += ` ORDER BY b.created_at DESC`;
 
@@ -27,7 +27,7 @@ const Bill = {
       FROM bills b
       LEFT JOIN contractors c ON b.contractor_id = c.id
       LEFT JOIN projects p ON b.project_id = p.id
-      WHERE b.deleted = false
+      WHERE b.deleted = false AND c.deleted IS NOT TRUE AND p.deleted IS NOT TRUE
     `;
     const params = [];
     let paramCount = 0;

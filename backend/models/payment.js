@@ -11,10 +11,10 @@ const Payment = {
     `;
     const params = [];
     if (contractorId) {
-      queryText += ` WHERE p.contractor_id = $1 AND p.deleted = false`;
+      queryText += ` WHERE p.contractor_id = $1 AND p.deleted = false AND c.deleted IS NOT TRUE AND b.deleted IS NOT TRUE AND pr.deleted IS NOT TRUE`;
       params.push(contractorId);
     } else {
-      queryText += ` WHERE p.deleted = false`;
+      queryText += ` WHERE p.deleted = false AND c.deleted IS NOT TRUE AND b.deleted IS NOT TRUE AND pr.deleted IS NOT TRUE`;
     }
     queryText += ` ORDER BY p.created_at DESC`;
 
@@ -29,7 +29,7 @@ const Payment = {
       LEFT JOIN contractors c ON p.contractor_id = c.id
       LEFT JOIN bills b ON p.bill_id = b.id
       LEFT JOIN projects pr ON p.project_id = pr.id
-      WHERE p.deleted = false
+      WHERE p.deleted = false AND c.deleted IS NOT TRUE AND b.deleted IS NOT TRUE AND pr.deleted IS NOT TRUE
     `;
     const params = [];
     let paramCount = 0;

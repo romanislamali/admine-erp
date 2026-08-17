@@ -70,7 +70,7 @@ const Contractor = {
   update: async (id, contractor, updatedBy) => {
     const { name, phone, email, address } = contractor;
     const { rows } = await db.query(
-      'UPDATE contractors SET name = $1, phone = $2, email = $3, address = $4, updated_by = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
+      'UPDATE contractors SET name = $1, phone = $2, email = $3, address = $4, updated_by = $5, updated_at = NOW() WHERE id = $6 AND deleted = false RETURNING *',
       [name, phone, email, address, updatedBy, id]
     );
     return rows[0];
