@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users as UsersIcon,
@@ -124,7 +124,10 @@ export default function Users() {
     fetchUsers(lazyParams);
   }, [lazyParams, refreshTrigger]);
 
+  const lastProcessedRoleFilterRef = useRef(selectedRoleFilter);
   useEffect(() => {
+    if (lastProcessedRoleFilterRef.current === selectedRoleFilter) return;
+    lastProcessedRoleFilterRef.current = selectedRoleFilter;
     setLazyParams((prev) => ({ ...prev, page: 1 }));
   }, [selectedRoleFilter]);
 
