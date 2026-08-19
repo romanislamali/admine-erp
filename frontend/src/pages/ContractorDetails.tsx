@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X, Wallet, ReceiptText, Pencil, Trash2 } from 'lucide-react';
+import { Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X, Wallet, ReceiptText, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import Table from '../components/Table';
+import Dropdown from '../components/Dropdown';
 import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -900,28 +901,29 @@ export default function ContractorDetails() {
                             <form onSubmit={handleBillSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
-                                    <select
-                                        required
-                                        value={contractor?.id}
-                                        disabled
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                                    >
-                                        <option value={contractor?.id}>{contractor?.name}</option>
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            required
+                                            value={contractor?.id}
+                                            disabled
+                                            className="w-full appearance-none px-3 pr-9 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                                        >
+                                            <option value={contractor?.id}>{contractor?.name}</option>
+                                        </select>
+                                        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Link (Optional)</label>
-                                    <select
+                                    <Dropdown
+                                        options={[
+                                            { value: '', label: '-- No Project Link --' },
+                                            ...filteredProjects.map((p) => ({ value: p.id, label: p.name }))
+                                        ]}
                                         value={billFormData.project_id}
-                                        onChange={(e) => setBillFormData({ ...billFormData, project_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
-                                    >
-                                        <option value="">-- No Project Link --</option>
-                                        {filteredProjects.map((p) => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(v) => setBillFormData({ ...billFormData, project_id: v })}
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
@@ -1022,44 +1024,44 @@ export default function ContractorDetails() {
                             <form onSubmit={handlePaymentSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
-                                    <select
-                                        required
-                                        value={contractor?.id}
-                                        disabled
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                                    >
-                                        <option value={contractor?.id}>{contractor?.name}</option>
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            required
+                                            value={contractor?.id}
+                                            disabled
+                                            className="w-full appearance-none px-3 pr-9 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                                        >
+                                            <option value={contractor?.id}>{contractor?.name}</option>
+                                        </select>
+                                        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Link (Optional)</label>
-                                    <select
+                                    <Dropdown
+                                        options={[
+                                            { value: '', label: '-- No Project Link --' },
+                                            ...filteredProjects.map((p) => ({ value: p.id, label: p.name }))
+                                        ]}
                                         value={paymentFormData.project_id}
-                                        onChange={(e) => setPaymentFormData({ ...paymentFormData, project_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                                    >
-                                        <option value="">-- No Project Link --</option>
-                                        {filteredProjects.map((p) => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(v) => setPaymentFormData({ ...paymentFormData, project_id: v })}
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Invoice (Optional)</label>
-                                    <select
+                                    <Dropdown
+                                        options={[
+                                            { value: '', label: '-- No Invoice Link --' },
+                                            ...billsForDropdown.map((b) => ({
+                                                value: b.id,
+                                                label: `${b.invoice_number || 'N/A'} (${formatCurrency(b.amount)})`
+                                            }))
+                                        ]}
                                         value={paymentFormData.bill_id}
-                                        onChange={(e) => setPaymentFormData({ ...paymentFormData, bill_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
-                                    >
-                                        <option value="">-- No Invoice Link --</option>
-                                        {billsForDropdown.map((b) => (
-                                            <option key={b.id} value={b.id}>
-                                                {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(v) => setPaymentFormData({ ...paymentFormData, bill_id: v })}
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">

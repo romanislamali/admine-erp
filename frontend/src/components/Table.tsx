@@ -5,6 +5,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Eye,
   Edit2,
   Trash2,
@@ -337,18 +338,21 @@ export default function Table<T>({
         {/* Right side page size selector */}
         <div className="flex gap-2 w-full sm:w-auto items-center justify-end">
           <span className="text-slate-400 text-xs font-semibold uppercase shrink-0 whitespace-nowrap">Page Size:</span>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-            }}
-            className="px-3 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-xs bg-slate-50 focus:bg-white transition-all text-slate-900"
-          >
-            <option value={5}>5 records</option>
-            <option value={10}>10 records</option>
-            <option value={15}>15 records</option>
-            <option value={20}>20 records</option>
-          </select>
+          <div className="relative">
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+              }}
+              className="appearance-none pl-3 pr-8 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-xs bg-slate-50 focus:bg-white transition-all text-slate-900"
+            >
+              <option value={5}>5 records</option>
+              <option value={10}>10 records</option>
+              <option value={15}>15 records</option>
+              <option value={20}>20 records</option>
+            </select>
+            <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          </div>
         </div>
       </div>
 

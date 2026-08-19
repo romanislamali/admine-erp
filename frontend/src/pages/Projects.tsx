@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FolderKanban, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { X, FolderKanban, Loader2, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import Table, { Column } from '../components/Table';
+import Dropdown from '../components/Dropdown';
 import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -452,17 +453,12 @@ export default function Projects() {
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor Link *</label>
-                    <select
-                      required
+                    <Dropdown
+                      options={contractors.map((c) => ({ value: c.id, label: c.name }))}
                       value={formData.contractor_id}
-                      onChange={(e) => setFormData({ ...formData, contractor_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                    >
-                      <option value="" disabled>-- Select Contractor --</option>
-                      {contractors.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setFormData({ ...formData, contractor_id: v })}
+                      placeholder="-- Select Contractor --"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
@@ -489,16 +485,19 @@ export default function Projects() {
                   <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Status</label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                      >
-                        <option value="Planned">Planned</option>
-                        <option value="Active">Active</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Suspended">Suspended</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={formData.status}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          className="w-full appearance-none px-3 pr-9 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
+                        >
+                          <option value="Planned">Planned</option>
+                          <option value="Active">Active</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Suspended">Suspended</option>
+                        </select>
+                        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      </div>
                     </div>
                   </div>
 

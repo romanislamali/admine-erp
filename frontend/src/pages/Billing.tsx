@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ReceiptText, Loader2, FileText, Pencil, Trash2 } from 'lucide-react';
 import Table, { Column } from '../components/Table';
+import Dropdown from '../components/Dropdown';
 import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -446,32 +447,25 @@ export default function Billing() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
-                    <select
-                      required
+                    <Dropdown
+                      options={contractors.map((c) => ({ value: c.id, label: c.name }))}
                       value={formData.contractor_id}
-                      onChange={(e) => setFormData({ ...formData, contractor_id: e.target.value, project_id: '' })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
-                    >
-                      <option value="" disabled>-- Select Contractor --</option>
-                      {contractors.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setFormData({ ...formData, contractor_id: v, project_id: '' })}
+                      placeholder="-- Select Contractor --"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Link to Project (Optional)</label>
-                    <select
+                    <Dropdown
+                      options={[
+                        { value: '', label: '-- No Project Link --' },
+                        ...filteredProjects.map((p) => ({ value: p.id, label: p.name }))
+                      ]}
                       value={formData.project_id}
+                      onChange={(v) => setFormData({ ...formData, project_id: v })}
                       disabled={!formData.contractor_id}
-                      onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
-                    >
-                      <option value="">-- No Project Link --</option>
-                      {filteredProjects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
