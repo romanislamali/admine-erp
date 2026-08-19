@@ -446,7 +446,7 @@ export default function Billing() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor <span className='text-red-600'>*</span></label>
                     <Dropdown
                       options={contractors.map((c) => ({ value: c.id, label: c.name }))}
                       value={formData.contractor_id}
@@ -490,7 +490,7 @@ export default function Billing() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Bill Amount *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Amount <span className='text-red-600'>*</span></label>
                     <input
                       type="number"
                       step="0.01"

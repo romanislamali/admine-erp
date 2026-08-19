@@ -423,7 +423,7 @@ export default function Contractors() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Company / Contractor Name *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor Name <span className='text-red-600'>*</span></label>
                     <input
                       type="text"
                       required

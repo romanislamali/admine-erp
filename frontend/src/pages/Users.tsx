@@ -558,7 +558,7 @@ export default function Users() {
 
                 <form onSubmit={handleAddSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name <span className='text-red-600'>*</span></label>
                     <input
                       type="text"
                       required
@@ -570,7 +570,7 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Username *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Username <span className='text-red-600'>*</span></label>
                     <input
                       type="text"
                       required
@@ -604,7 +604,7 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Select Role <span className='text-red-600'>*</span></label>
                     <div className="relative">
                       <select
                         value={formData.role}
@@ -620,7 +620,7 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Secret Password <span className='text-red-600'>*</span></label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -642,7 +642,7 @@ export default function Users() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Confirm Secret Password <span className='text-red-600'>*</span></label>
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}

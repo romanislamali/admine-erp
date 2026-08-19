@@ -900,7 +900,7 @@ export default function ContractorDetails() {
 
                             <form onSubmit={handleBillSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor</label>
                                     <div className="relative">
                                         <select
                                             required
@@ -949,7 +949,7 @@ export default function ContractorDetails() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Invoice Amount *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Amount <span className='text-red-600'>*</span></label>
                                     <div className="relative">
                                         <input
                                             type="number"
@@ -1023,7 +1023,7 @@ export default function ContractorDetails() {
 
                             <form onSubmit={handlePaymentSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor</label>
                                     <div className="relative">
                                         <select
                                             required
@@ -1077,7 +1077,7 @@ export default function ContractorDetails() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Paid Amount *</label>
+                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Payment Amount <span className='text-red-600'>*</span></label>
                                     <div className="relative">
                                         <input
                                             type="number"

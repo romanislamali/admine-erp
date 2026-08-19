@@ -440,7 +440,7 @@ export default function Projects() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Name *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Project Name <span className='text-red-600'>*</span></label>
                     <input
                       type="text"
                       required
@@ -452,7 +452,7 @@ export default function Projects() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor Link *</label>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Contractor Link <span className='text-red-600'>*</span></label>
                     <Dropdown
                       options={contractors.map((c) => ({ value: c.id, label: c.name }))}
                       value={formData.contractor_id}
