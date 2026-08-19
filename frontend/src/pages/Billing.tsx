@@ -452,6 +452,7 @@ export default function Billing() {
                       value={formData.contractor_id}
                       onChange={(v) => setFormData({ ...formData, contractor_id: v, project_id: '' })}
                       placeholder="-- Select Contractor --"
+                      required
                     />
                   </div>
 

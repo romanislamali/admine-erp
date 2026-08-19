@@ -458,6 +458,7 @@ export default function Projects() {
                       value={formData.contractor_id}
                       onChange={(v) => setFormData({ ...formData, contractor_id: v })}
                       placeholder="-- Select Contractor --"
+                      required
                     />
                   </div>
 

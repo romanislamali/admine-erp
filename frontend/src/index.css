@@ -17,6 +17,18 @@
   body {
     @apply font-outfit bg-bg-page text-text-main antialiased transition-colors duration-300;
   }
+
+  /* :user-invalid only matches a required field once it's actually failed validation
+     (a submit attempt or blur) — never on a fresh, untouched form — so every required
+     input/select/textarea site-wide gets a red border on failure with no per-field code.
+     !important because the browser focuses the invalid field on a blocked submit, and
+     `focus:border-primary` utilities (higher specificity: class+pseudo vs type+pseudo)
+     would otherwise paint over this with the focus color. */
+  input:user-invalid,
+  select:user-invalid,
+  textarea:user-invalid {
+    border-color: #fb7185 !important;
+  }
 }
 
 @layer components {

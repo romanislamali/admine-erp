@@ -482,6 +482,7 @@ export default function Payment() {
                       value={formData.contractor_id}
                       onChange={(v) => setFormData({ ...formData, contractor_id: v, project_id: '', bill_id: '' })}
                       placeholder="-- Select Contractor --"
+                      required
                     />
                   </div>
 
