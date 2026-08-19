@@ -218,9 +218,9 @@ export default function Dashboard() {
                         </div>
                         <div className={`text-sm font-extrabold ${bal < 0 ? 'text-green-700' : bal > 0 ? 'text-rose-800' : 'text-slate-500'
                           }`}>
-                          {bal < 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">ADV</span>
-                           : bal > 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">DUE</span>
-                           : <span></span>}
+                          {bal < 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-green-50 mr-1.5 border border-green-500/50">ADV</span>
+                            : bal > 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-red-50 mr-1.5 border border-red-500/50">DUE</span>
+                              : <span></span>}
                           {formatCurrency(Math.abs(bal))}
                         </div>
                       </div>
@@ -247,7 +247,7 @@ export default function Dashboard() {
               ) : (
                 recentActivities.map(act => (
                   <div key={act.id} className="flex gap-3 text-xs p-3 rounded-xl border border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${act.type.includes('Bill') ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-slate-300 ${act.type.includes('Bill') ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
                       }`}>
                       <span className="font-bold text-[10px] uppercase">{act.type.includes('Bill') ? 'INV' : 'PAY'}</span>
                     </div>
