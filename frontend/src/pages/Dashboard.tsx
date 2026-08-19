@@ -99,18 +99,21 @@ export default function Dashboard() {
     if (outstandingBalance === 0) {
       return {
         value: formatCurrency(0),
-        color: 'text-slate-800 border-slate-100'
+        color: 'text-slate-800 border-slate-800',
+        iconBg: ''
       };
     }
     if (outstandingBalance < 0) {
       return {
         value: `${formatCurrency(Math.abs(outstandingBalance))} (ADV)`,
-        color: 'text-green-700 border-emerald-100'
+        color: 'text-green-700 border-emerald-700',
+        iconBg: ''
       };
     }
     return {
       value: `${formatCurrency(outstandingBalance)} (DUE)`,
-      color: 'text-rose-800 border-rose-100'
+      color: 'text-rose-800 border-rose-800',
+      iconBg: ''
     };
   };
 
@@ -137,15 +140,16 @@ export default function Dashboard() {
   ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
 
   const stats = [
-    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-amber-700 border-amber-100' },
-    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-green-600 border-emerald-100' },
+    { name: 'Total Invoiced (Bills)', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-amber-700 border-amber-700', iconBg: '' },
+    { name: 'Total Disbursed (Payments)', value: formatCurrency(totalPaid), icon: Wallet, color: 'text-green-600 border-green-600', iconBg: '' },
     {
       name: 'Outstanding Liability',
       value: liabilityStat.value,
       icon: ArrowUpRight,
-      color: liabilityStat.color
+      color: liabilityStat.color,
+      iconBg: liabilityStat.iconBg
     },
-    { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-100' }
+    { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-700', iconBg: '' }
   ];
 
   return (
@@ -169,14 +173,14 @@ export default function Dashboard() {
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
           {stats.map((item) => (
-            <div key={item.name} className="bg-white border border-slate-200 rounded-xl p-6 shadow-lg flex items-center gap-4 hover:shadow-md transition-all">
+            <div key={item.name} className="glass-card flex items-center gap-4">
 
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${item.iconBg} ${item.color}`}>
                 <item.icon size={26} />
               </div>
 
               <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.name}</p>
                 <div className={`text-md font-bold mt-1 ${item.color}`}>{item.value}</div>
               </div>
 
@@ -188,7 +192,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
 
           {/* Contractor summaries */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-lg flex flex-col justify-between">
+          <div className="lg:col-span-2 glass-card flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -228,7 +232,7 @@ export default function Dashboard() {
           </div>
 
           {/* Latest Activity logs */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg flex flex-col">
+          <div className="glass-card flex flex-col">
             <div className="mb-6">
               <h3 className="font-bold text-slate-900 text-lg">Financial Event Stream</h3>
               <p className="text-slate-500 text-xs mt-0.5">
