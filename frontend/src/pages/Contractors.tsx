@@ -311,15 +311,15 @@ export default function Contractors() {
         const balanceNum = typeof c.balance === 'string' ? parseFloat(c.balance) : c.balance;
         const isNegative = balanceNum < 0;
         return (
-          <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs ${isNegative
-            ? 'bg-amber-50 text-emerald-600 border border-amber-200/50'
+          <div className={`font-semibold inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${isNegative
+            ? 'text-emerald-600'
             : balanceNum > 0
-              ? 'bg-rose-50 text-rose-700 border border-rose-200/50'
-              : 'bg-slate-50 text-slate-600 border border-slate-200/50'
+              ? 'text-rose-700'
+              : 'text-slate-600'
             }`}>
             {formatCurrency(Math.abs(balanceNum))}
-            {isNegative && <span className="text-[10px] uppercase font-bold tracking-tight">(Adv)</span>}
-            {balanceNum > 0 && <span className="text-[10px] uppercase font-bold tracking-tight">(Due)</span>}
+            {isNegative && <span className="uppercase font-semibold tracking-tight">(Adv)</span>}
+            {balanceNum > 0 && <span className="uppercase font-semibold tracking-tight">(Due)</span>}
           </div>
         );
       }
