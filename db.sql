@@ -102,27 +102,48 @@ CREATE OR REPLACE FUNCTION trg_fn_sync_contractor_bills()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (TG_OP = 'INSERT') THEN
-        UPDATE contractors
-        SET total_bills = total_bills + NEW.amount,
-            balance = balance + NEW.amount
-        WHERE id = NEW.contractor_id;
+        IF (NEW.deleted = false) THEN
+            UPDATE contractors
+            SET total_bills = total_bills + NEW.amount,
+                balance = balance + NEW.amount
+            WHERE id = NEW.contractor_id;
+        END IF;
     ELSIF (TG_OP = 'UPDATE') THEN
-        -- Revert old bill amount
-        UPDATE contractors
-        SET total_bills = total_bills - OLD.amount,
-            balance = balance - OLD.amount
-        WHERE id = OLD.contractor_id;
-        
-        -- Apply new bill amount
-        UPDATE contractors
-        SET total_bills = total_bills + NEW.amount,
-            balance = balance + NEW.amount
-        WHERE id = NEW.contractor_id;
+        -- Bills are soft-deleted (UPDATE ... SET deleted = true), so a delete/restore
+        -- arrives here as an UPDATE, not a DELETE — the deleted flag must gate whether
+        -- this row's amount is currently counted in the contractor's totals.
+        IF (OLD.deleted = false AND NEW.deleted = false) THEN
+            -- Revert old bill amount
+            UPDATE contractors
+            SET total_bills = total_bills - OLD.amount,
+                balance = balance - OLD.amount
+            WHERE id = OLD.contractor_id;
+
+            -- Apply new bill amount
+            UPDATE contractors
+            SET total_bills = total_bills + NEW.amount,
+                balance = balance + NEW.amount
+            WHERE id = NEW.contractor_id;
+        ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+            -- Soft-deleted: remove it from the totals
+            UPDATE contractors
+            SET total_bills = total_bills - OLD.amount,
+                balance = balance - OLD.amount
+            WHERE id = OLD.contractor_id;
+        ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+            -- Restored: add it back to the totals
+            UPDATE contractors
+            SET total_bills = total_bills + NEW.amount,
+                balance = balance + NEW.amount
+            WHERE id = NEW.contractor_id;
+        END IF;
     ELSIF (TG_OP = 'DELETE') THEN
-        UPDATE contractors
-        SET total_bills = total_bills - OLD.amount,
-            balance = balance - OLD.amount
-        WHERE id = OLD.contractor_id;
+        IF (OLD.deleted = false) THEN
+            UPDATE contractors
+            SET total_bills = total_bills - OLD.amount,
+                balance = balance - OLD.amount
+            WHERE id = OLD.contractor_id;
+        END IF;
     END IF;
     RETURN NEW;
 END;
@@ -133,27 +154,48 @@ CREATE OR REPLACE FUNCTION trg_fn_sync_contractor_payments()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (TG_OP = 'INSERT') THEN
-        UPDATE contractors
-        SET total_payments = total_payments + NEW.amount,
-            balance = balance - NEW.amount
-        WHERE id = NEW.contractor_id;
+        IF (NEW.deleted = false) THEN
+            UPDATE contractors
+            SET total_payments = total_payments + NEW.amount,
+                balance = balance - NEW.amount
+            WHERE id = NEW.contractor_id;
+        END IF;
     ELSIF (TG_OP = 'UPDATE') THEN
-        -- Revert old payment amount
-        UPDATE contractors
-        SET total_payments = total_payments - OLD.amount,
-            balance = balance + OLD.amount
-        WHERE id = OLD.contractor_id;
-        
-        -- Apply new payment amount
-        UPDATE contractors
-        SET total_payments = total_payments + NEW.amount,
-            balance = balance - NEW.amount
-        WHERE id = NEW.contractor_id;
+        -- Payments are soft-deleted (UPDATE ... SET deleted = true), so a delete/restore
+        -- arrives here as an UPDATE, not a DELETE — the deleted flag must gate whether
+        -- this row's amount is currently counted in the contractor's totals.
+        IF (OLD.deleted = false AND NEW.deleted = false) THEN
+            -- Revert old payment amount
+            UPDATE contractors
+            SET total_payments = total_payments - OLD.amount,
+                balance = balance + OLD.amount
+            WHERE id = OLD.contractor_id;
+
+            -- Apply new payment amount
+            UPDATE contractors
+            SET total_payments = total_payments + NEW.amount,
+                balance = balance - NEW.amount
+            WHERE id = NEW.contractor_id;
+        ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+            -- Soft-deleted: remove it from the totals
+            UPDATE contractors
+            SET total_payments = total_payments - OLD.amount,
+                balance = balance + OLD.amount
+            WHERE id = OLD.contractor_id;
+        ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+            -- Restored: add it back to the totals
+            UPDATE contractors
+            SET total_payments = total_payments + NEW.amount,
+                balance = balance - NEW.amount
+            WHERE id = NEW.contractor_id;
+        END IF;
     ELSIF (TG_OP = 'DELETE') THEN
-        UPDATE contractors
-        SET total_payments = total_payments - OLD.amount,
-            balance = balance + OLD.amount
-        WHERE id = OLD.contractor_id;
+        IF (OLD.deleted = false) THEN
+            UPDATE contractors
+            SET total_payments = total_payments - OLD.amount,
+                balance = balance + OLD.amount
+            WHERE id = OLD.contractor_id;
+        END IF;
     END IF;
     RETURN NEW;
 END;

@@ -52,6 +52,102 @@ const initDb = async () => {
       CREATE INDEX IF NOT EXISTS idx_payments_deleted_created_at ON payments (deleted, created_at DESC);
     `);
 
+    // Bills/payments are soft-deleted (UPDATE ... SET deleted = true), which fires these
+    // triggers' UPDATE branch, not DELETE. The previous version reverted OLD.amount and
+    // reapplied NEW.amount unconditionally — since a soft-delete only flips `deleted` and
+    // leaves amount/contractor_id unchanged, that netted to zero, so contractor totals never
+    // moved when a bill/payment was deleted (or restored). Re-running this on every backend
+    // start (CREATE OR REPLACE) patches any database that already ran the old db.sql version.
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION trg_fn_sync_contractor_bills()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          IF (TG_OP = 'INSERT') THEN
+              IF (NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_bills = total_bills + NEW.amount,
+                      balance = balance + NEW.amount
+                  WHERE id = NEW.contractor_id;
+              END IF;
+          ELSIF (TG_OP = 'UPDATE') THEN
+              IF (OLD.deleted = false AND NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_bills = total_bills - OLD.amount,
+                      balance = balance - OLD.amount
+                  WHERE id = OLD.contractor_id;
+
+                  UPDATE contractors
+                  SET total_bills = total_bills + NEW.amount,
+                      balance = balance + NEW.amount
+                  WHERE id = NEW.contractor_id;
+              ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+                  UPDATE contractors
+                  SET total_bills = total_bills - OLD.amount,
+                      balance = balance - OLD.amount
+                  WHERE id = OLD.contractor_id;
+              ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_bills = total_bills + NEW.amount,
+                      balance = balance + NEW.amount
+                  WHERE id = NEW.contractor_id;
+              END IF;
+          ELSIF (TG_OP = 'DELETE') THEN
+              IF (OLD.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_bills = total_bills - OLD.amount,
+                      balance = balance - OLD.amount
+                  WHERE id = OLD.contractor_id;
+              END IF;
+          END IF;
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE OR REPLACE FUNCTION trg_fn_sync_contractor_payments()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          IF (TG_OP = 'INSERT') THEN
+              IF (NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_payments = total_payments + NEW.amount,
+                      balance = balance - NEW.amount
+                  WHERE id = NEW.contractor_id;
+              END IF;
+          ELSIF (TG_OP = 'UPDATE') THEN
+              IF (OLD.deleted = false AND NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_payments = total_payments - OLD.amount,
+                      balance = balance + OLD.amount
+                  WHERE id = OLD.contractor_id;
+
+                  UPDATE contractors
+                  SET total_payments = total_payments + NEW.amount,
+                      balance = balance - NEW.amount
+                  WHERE id = NEW.contractor_id;
+              ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+                  UPDATE contractors
+                  SET total_payments = total_payments - OLD.amount,
+                      balance = balance + OLD.amount
+                  WHERE id = OLD.contractor_id;
+              ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_payments = total_payments + NEW.amount,
+                      balance = balance - NEW.amount
+                  WHERE id = NEW.contractor_id;
+              END IF;
+          ELSIF (TG_OP = 'DELETE') THEN
+              IF (OLD.deleted = false) THEN
+                  UPDATE contractors
+                  SET total_payments = total_payments - OLD.amount,
+                      balance = balance + OLD.amount
+                  WHERE id = OLD.contractor_id;
+              END IF;
+          END IF;
+          RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
     logger.info('Database schema up to date.');
 
     // 2. Seed/sync a hidden system admin account: full (ADMIN) access, but excluded from
