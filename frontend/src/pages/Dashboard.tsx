@@ -169,7 +169,7 @@ export default function Dashboard() {
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
           {stats.map((item) => (
-            <div key={item.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+            <div key={item.name} className="bg-white border border-slate-200 rounded-xl p-6 shadow-lg flex items-center gap-4 hover:shadow-md transition-all">
 
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
                 <item.icon size={26} />
@@ -188,7 +188,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
 
           {/* Contractor summaries */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-lg flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -228,7 +228,7 @@ export default function Dashboard() {
           </div>
 
           {/* Latest Activity logs */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg flex flex-col">
             <div className="mb-6">
               <h3 className="font-bold text-slate-900 text-lg">Financial Event Stream</h3>
               <p className="text-slate-500 text-xs mt-0.5">
