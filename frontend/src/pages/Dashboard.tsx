@@ -218,9 +218,11 @@ export default function Dashboard() {
                         <div>
                           <div className="font-bold text-slate-800">{c.name}</div>
                         </div>
-                        <div className={`text-sm font-extrabold ${bal < 0 ? 'text-amber-600' : bal > 0 ? 'text-rose-800' : 'text-slate-500'
+                        <div className={`text-sm font-extrabold ${bal < 0 ? 'text-green-700' : bal > 0 ? 'text-rose-800' : 'text-slate-500'
                           }`}>
-                          {bal < 0 && <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">ADV</span>}
+                          {bal < 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">ADV</span>
+                           : bal > 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-50 mr-1.5 border border-amber-200/50">DUE</span>
+                           : <span></span>}
                           {formatCurrency(Math.abs(bal))}
                         </div>
                       </div>
