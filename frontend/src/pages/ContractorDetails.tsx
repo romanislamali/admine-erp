@@ -55,10 +55,35 @@ export default function ContractorDetails() {
 
     const [contractor, setContractor] = useState<Contractor | null>(null);
     const [bills, setBills] = useState<Bill[]>([]);
+    const [billsForDropdown, setBillsForDropdown] = useState<Bill[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [billsTableLoading, setBillsTableLoading] = useState(false);
+    const [paymentsTableLoading, setPaymentsTableLoading] = useState(false);
+    const [totalBillRecords, setTotalBillRecords] = useState(0);
+    const [totalPaymentRecords, setTotalPaymentRecords] = useState(0);
     const [error, setError] = useState('');
+
+    const [billsLazyParams, setBillsLazyParams] = useState({
+        page: 1,
+        limit: 10,
+        search: '',
+        sortField: null as string | null,
+        sortOrder: null as 'asc' | 'desc' | null
+    });
+    const [paymentsLazyParams, setPaymentsLazyParams] = useState({
+        page: 1,
+        limit: 10,
+        search: '',
+        sortField: null as string | null,
+        sortOrder: null as 'asc' | 'desc' | null
+    });
+    const [billsRefreshTrigger, setBillsRefreshTrigger] = useState(0);
+    const [paymentsRefreshTrigger, setPaymentsRefreshTrigger] = useState(0);
+
+    const refreshBills = () => setBillsRefreshTrigger((prev) => prev + 1);
+    const refreshPayments = () => setPaymentsRefreshTrigger((prev) => prev + 1);
 
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -87,34 +112,33 @@ export default function ContractorDetails() {
         payment_date: ''
     });
 
-    const fetchData = async () => {
+    const fetchContractorData = async () => {
         if (!id) return;
         try {
             setLoading(true);
             setError('');
 
-            const [billsRes, paymentRes, contractorRes, projectsRes] = await Promise.all([
-                fetch(`/api/bills?contractor_id=${id}`),
-                fetch(`/api/payments?contractor_id=${id}`),
+            const [contractorRes, projectsRes, billsDropdownRes] = await Promise.all([
                 fetch(`/api/contractors/${id}`),
-                fetch('/api/projects')
+                fetch('/api/projects'),
+                fetch(`/api/bills?contractor_id=${id}`)
             ]);
 
-            if (!billsRes.ok || !paymentRes.ok || !contractorRes.ok) {
-                throw new Error('Failed to load contractor details records');
+            if (!contractorRes.ok) {
+                throw new Error('Failed to load contractor details');
             }
 
-            const billsData = await billsRes.json();
-            const paymentsData = await paymentRes.json();
             const contractorData = await contractorRes.json();
-
             setContractor(contractorData);
-            setBills(billsData);
-            setPayments(paymentsData);
 
             if (projectsRes.ok) {
                 const projectsData = await projectsRes.json();
                 setProjects(projectsData);
+            }
+
+            if (billsDropdownRes.ok) {
+                const billsDropdownData = await billsDropdownRes.json();
+                setBillsForDropdown(billsDropdownData);
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred while loading details');
@@ -123,9 +147,69 @@ export default function ContractorDetails() {
         }
     };
 
+    const fetchBills = async (params: typeof billsLazyParams) => {
+        if (!id) return;
+        try {
+            setBillsTableLoading(true);
+            const query = new URLSearchParams({
+                contractor_id: id,
+                page: params.page.toString(),
+                limit: params.limit.toString(),
+                search: params.search,
+                ...(params.sortField ? { sortField: params.sortField } : {}),
+                ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+            });
+
+            const res = await fetch(`/api/bills?${query.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch bills');
+
+            const resData = await res.json();
+            setBills(resData.data);
+            setTotalBillRecords(resData.total);
+        } catch (err: any) {
+            setError(err.message || 'An error occurred while fetching bills');
+        } finally {
+            setBillsTableLoading(false);
+        }
+    };
+
+    const fetchPayments = async (params: typeof paymentsLazyParams) => {
+        if (!id) return;
+        try {
+            setPaymentsTableLoading(true);
+            const query = new URLSearchParams({
+                contractor_id: id,
+                page: params.page.toString(),
+                limit: params.limit.toString(),
+                search: params.search,
+                ...(params.sortField ? { sortField: params.sortField } : {}),
+                ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
+            });
+
+            const res = await fetch(`/api/payments?${query.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch payments');
+
+            const resData = await res.json();
+            setPayments(resData.data);
+            setTotalPaymentRecords(resData.total);
+        } catch (err: any) {
+            setError(err.message || 'An error occurred while fetching payments');
+        } finally {
+            setPaymentsTableLoading(false);
+        }
+    };
+
     useEffect(() => {
-        fetchData();
+        fetchContractorData();
     }, [id]);
+
+    useEffect(() => {
+        fetchBills(billsLazyParams);
+    }, [id, billsLazyParams, billsRefreshTrigger]);
+
+    useEffect(() => {
+        fetchPayments(paymentsLazyParams);
+    }, [id, paymentsLazyParams, paymentsRefreshTrigger]);
 
     const formatCurrency = (val: string | number) => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -200,7 +284,8 @@ export default function ContractorDetails() {
             }
 
             // Refresh data
-            fetchData();
+            refreshBills();
+            fetchContractorData();
 
             // Show success popup with automatic 1-second dismiss
             await Promise.race([
@@ -258,7 +343,8 @@ export default function ContractorDetails() {
             setSubmittingBill(false);
 
             // Refresh table data
-            fetchData();
+            refreshBills();
+            fetchContractorData();
 
             // Show success popup with automatic 1-second dismiss
             await Promise.race([
@@ -339,7 +425,8 @@ export default function ContractorDetails() {
             }
 
             // Refresh data
-            fetchData();
+            refreshPayments();
+            fetchContractorData();
 
             // Show success popup with automatic 1-second dismiss
             await Promise.race([
@@ -397,7 +484,8 @@ export default function ContractorDetails() {
             setSubmittingPayment(false);
 
             // Refresh table data
-            fetchData();
+            refreshPayments();
+            fetchContractorData();
 
             // Show success popup with automatic 1-second dismiss
             await Promise.race([
@@ -740,7 +828,10 @@ export default function ContractorDetails() {
                         <Table
                             data={bills}
                             columns={columnsForBills}
-                            searchKeys={['invoice_number', 'project_name', 'amount']}
+                            lazy
+                            totalRecords={totalBillRecords}
+                            loading={billsTableLoading}
+                            onLazyLoad={(params) => setBillsLazyParams(params)}
                             searchPlaceholder="Search by invoice no, project or amount"
                             keyExtractor={(b) => b.id}
                             emptyMessage="No logged bills found for this contractor."
@@ -764,7 +855,10 @@ export default function ContractorDetails() {
                         <Table
                             data={payments}
                             columns={columnsForPayments}
-                            searchKeys={['bill_invoice', 'project_name', 'amount']}
+                            lazy
+                            totalRecords={totalPaymentRecords}
+                            loading={paymentsTableLoading}
+                            onLazyLoad={(params) => setPaymentsLazyParams(params)}
                             searchPlaceholder="Search by project, invoice no or amount"
                             keyExtractor={(p) => p.id}
                             emptyMessage="No logged payments found for this contractor."
@@ -960,7 +1054,7 @@ export default function ContractorDetails() {
                                         className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white focus:disabled:bg-slate-100 disabled:opacity-65 transition-all text-slate-900"
                                     >
                                         <option value="">-- No Invoice Link --</option>
-                                        {bills.map((b) => (
+                                        {billsForDropdown.map((b) => (
                                             <option key={b.id} value={b.id}>
                                                 {b.invoice_number || `N/A`} ({formatCurrency(b.amount)})
                                             </option>

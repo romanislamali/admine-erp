@@ -102,14 +102,23 @@ export default function Table<T>({
     setCurrentPage(1);
   }, [debouncedSearchQuery, itemsPerPage]);
 
-  // Keep track of the last lazy load params to prevent duplicate calls and infinite loops
+  // Keep track of the last lazy load params to prevent duplicate calls and infinite loops.
+  // Seeded with the table's own initial state (page 1, default page size, no search/sort) so the
+  // mount-time effect below doesn't echo those same defaults back to the parent as a "change" —
+  // the parent already fetches with its own matching initial state, so that echo was a pure duplicate.
   const lastParamsRef = useRef<{
     page: number;
     limit: number;
     search: string;
     sortField: string | null;
     sortOrder: 'asc' | 'desc' | null;
-  } | null>(null);
+  } | null>({
+    page: 1,
+    limit: initialItemsPerPage,
+    search: '',
+    sortField: null,
+    sortOrder: null
+  });
 
   // Trigger onLazyLoad when table parameters change
   useEffect(() => {
