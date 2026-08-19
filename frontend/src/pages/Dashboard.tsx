@@ -169,21 +169,15 @@ export default function Dashboard() {
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
           {stats.map((item) => (
-            <div key={item.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+            <div key={item.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
 
-              {/* Top Section: Icon and Name in a Row */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
-                  <item.icon size={16} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
-                </div>
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+                <item.icon size={26} />
               </div>
 
-              {/* Bottom Section: Value */}
-              <div>
-                <div className={`text-md font-bold ${item.color}`}>{item.value}</div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.name}</p>
+                <div className={`text-md font-bold mt-1 ${item.color}`}>{item.value}</div>
               </div>
 
             </div>
