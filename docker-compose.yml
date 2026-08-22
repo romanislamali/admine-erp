@@ -33,6 +33,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
       GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID}
+      ENABLE_DB_BACKUP: ${ENABLE_DB_BACKUP:-false}
     volumes:
       - ./backend:/app
       - /app/node_modules

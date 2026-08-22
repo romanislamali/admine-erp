@@ -10,6 +10,7 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
+const BACKUP_ENABLED = process.env.ENABLE_DB_BACKUP === 'true';
 
 // OAuth2 client setup
 const oauth2Client = new google.auth.OAuth2(
@@ -107,8 +108,13 @@ async function runBackupProcess() {
     }
 }
 
-// Cron job: Every day at 12 AM
-cron.schedule('0 0 * * *', runBackupProcess, { scheduled: true, timezone: "Asia/Dhaka" });
+// Cron job: Every day at 12 AM (only runs where ENABLE_DB_BACKUP=true, i.e. the server)
+if (BACKUP_ENABLED) {
+    cron.schedule('0 0 * * *', runBackupProcess, { scheduled: true, timezone: "Asia/Dhaka" });
+    logger.info('DB backup cron scheduled (ENABLE_DB_BACKUP=true).');
+} else {
+    logger.info('DB backup cron disabled (ENABLE_DB_BACKUP not set to true).');
+}
 
 // Run immediately for testing (remove this line after successful testing)
 runBackupProcess();
