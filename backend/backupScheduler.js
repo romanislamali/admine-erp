@@ -111,4 +111,4 @@ async function runBackupProcess() {
 cron.schedule('0 0 * * *', runBackupProcess, { scheduled: true, timezone: "Asia/Dhaka" });
 
 // Run immediately for testing (remove this line after successful testing)
-// runBackupProcess();
+runBackupProcess();
