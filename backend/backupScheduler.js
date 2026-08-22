@@ -117,4 +117,4 @@ if (BACKUP_ENABLED) {
 }
 
 // Run immediately for testing (remove this line after successful testing)
-if (BACKUP_ENABLED) runBackupProcess();
+// if (BACKUP_ENABLED) runBackupProcess();
