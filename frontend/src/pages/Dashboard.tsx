@@ -160,7 +160,7 @@ export default function Dashboard() {
     >
       <div className='bg-white shadow-sm shadow-amber-100 p-5 rounded-xl'>
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">ERP System Overview</h1>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">System Overview</h1>
           <p className="text-slate-500 mt-1">Real-time status updates and contractor outstanding balances.</p>
         </div>
 
