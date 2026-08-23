@@ -402,9 +402,9 @@ export default function Users() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className='mb-2'>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-              User Access Management
+              User Management
             </h1>
-            <p className="text-slate-500 mt-1">Configure credentials, roles, and authorization restrictions across the ERP.</p>
+            <p className="text-slate-500 mt-1">Configure credentials, roles, and authorization restrictions.</p>
           </div>
           <button
             onClick={() => {
