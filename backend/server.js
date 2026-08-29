@@ -32,6 +32,11 @@ const contractorRoutes = require('./routes/contractorRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const billRoutes = require('./routes/billRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const clientRoutes = require('./routes/clientRoutes');
+const clientPORoutes = require('./routes/clientPORoutes');
+const clientBillRoutes = require('./routes/clientBillRoutes');
+const clientBillScheduleRoutes = require('./routes/clientBillScheduleRoutes');
+const clientPaymentRoutes = require('./routes/clientPaymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const { authenticateToken } = require('./middlewares/auth');
 
@@ -39,6 +44,11 @@ app.use('/api/contractors', authenticateToken, contractorRoutes);
 app.use('/api/projects', authenticateToken, projectRoutes);
 app.use('/api/bills', authenticateToken, billRoutes);
 app.use('/api/payments', authenticateToken, paymentRoutes);
+app.use('/api/clients', authenticateToken, clientRoutes);
+app.use('/api/client-pos', authenticateToken, clientPORoutes);
+app.use('/api/client-bills', authenticateToken, clientBillRoutes);
+app.use('/api/client-bill-schedules', authenticateToken, clientBillScheduleRoutes);
+app.use('/api/client-payments', authenticateToken, clientPaymentRoutes);
 app.use('/api/users', userRoutes);
 
 // Catch-all: anything that reaches here escaped a route's own try/catch

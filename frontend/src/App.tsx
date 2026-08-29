@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { GlobalModal } from './components/GlobalModal';
 import { Loader2 } from 'lucide-react';
 import ContractorDetails from './pages/ContractorDetails';
+import Clients from './pages/Clients';
+import ClientDetails from './pages/ClientDetails';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -79,6 +81,8 @@ function AppContent() {
       <Route path="/contractor-details/:id" element={<ProtectedLayout><ContractorDetails /></ProtectedLayout>} />
       <Route path="/billing" element={<ProtectedLayout><Billing /></ProtectedLayout>} />
       <Route path="/payment" element={<ProtectedLayout><Payment /></ProtectedLayout>} />
+      <Route path="/clients" element={<ProtectedLayout><Clients /></ProtectedLayout>} />
+      <Route path="/client-details/:id" element={<ProtectedLayout><ClientDetails /></ProtectedLayout>} />
 
       {/* Admin-only restricted route */}
       <Route
