@@ -7,11 +7,11 @@ import { useAuth } from '../context/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Clients', href: '/clients', icon: Building2 },
   { name: 'Contractors', href: '/contractors', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Billing', href: '/billing', icon: ReceiptText },
   { name: 'Payment', href: '/payment', icon: BarChart3 },
-  { name: 'Clients', href: '/clients', icon: Building2 },
   { name: 'Users', href: '/users', icon: Users, roles: ['ADMIN'] },
 ];
 
