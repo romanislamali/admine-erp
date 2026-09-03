@@ -1,5 +1,17 @@
 const db = require('../config/db');
 
+// Amounts arrive from the client as strings/floats; tolerate cent-level rounding
+// rather than demanding an exact match when comparing a paid row's submitted
+// amount against what's already stored.
+const AMOUNT_TOLERANCE = 0.01;
+
+class ValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.status = 400;
+  }
+}
+
 const insertSchedules = async (client, billId, schedules, createdBy) => {
   for (const s of schedules) {
     await client.query(
@@ -142,20 +154,41 @@ const ClientBill = {
     }
   },
 
-  // Once a payment has been recorded against a bill, its billed amounts and milestone
-  // split are locked — only header/reference fields stay editable. Callers must check
-  // hasPayments (via ClientBill.paymentCount) before deciding whether to pass `schedules`.
-  update: async (id, billData, updatedBy, { locked }) => {
+  // Billed amount (gross/advance/net) is locked once ANY payment has been recorded
+  // against the bill (tied to a milestone or not) — callers must check `amountsLocked`
+  // (via ClientBill.paymentCount) before passing gross_amount/advance_deduction.
+  //
+  // Milestone rows are upserted in place (by id) rather than destroyed and recreated,
+  // because client_payments.schedule_id is a real FK into a specific row — recreating
+  // rows would orphan that link. A row that already has received_amount > 0 keeps its
+  // percentage/expected_amount fixed (only its label/due_date may change) and can never
+  // be removed; a row with nothing received against it is fully editable, and can be
+  // added or removed freely as long as the total still sums to net_payable.
+  update: async (id, billData, updatedBy) => {
     const { po_id, project_id, bill_number, gross_amount, advance_deduction, bill_date, area, remarks, schedules } = billData;
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
 
-      let rows;
-      if (!locked && Array.isArray(schedules)) {
-        const netPayable = Number(gross_amount) - Number(advance_deduction || 0);
+      const { rows: existingSchedules } = await client.query(
+        'SELECT id, expected_amount, received_amount FROM client_bill_schedules WHERE bill_id = $1 AND deleted = false FOR UPDATE',
+        [id]
+      );
 
+      // Mirrors the controller's own lock check (ClientBill.paymentCount): billed amount
+      // is locked by ANY payment on the bill, tied to a milestone or not. A per-row
+      // received_amount check alone would miss an untied "general" payment and wrongly
+      // treat gross/advance as still editable.
+      const { rows: paymentCountRows } = await client.query(
+        'SELECT COUNT(*) FROM client_payments WHERE bill_id = $1 AND deleted = false',
+        [id]
+      );
+      const amountsLocked = parseInt(paymentCountRows[0].count, 10) > 0;
+
+      let rows;
+      if (!amountsLocked) {
+        const netPayable = Number(gross_amount) - Number(advance_deduction || 0);
         ({ rows } = await client.query(
           `UPDATE client_bills
            SET po_id = $1, project_id = $2, bill_number = $3, gross_amount = $4, advance_deduction = $5,
@@ -165,14 +198,6 @@ const ClientBill = {
           [po_id || null, project_id || null, bill_number || null, gross_amount, advance_deduction || 0,
             netPayable, bill_date || new Date(), area || null, remarks || null, updatedBy, id]
         ));
-
-        if (rows[0]) {
-          await client.query(
-            'UPDATE client_bill_schedules SET deleted = true, updated_by = $1, updated_at = NOW() WHERE bill_id = $2 AND deleted = false',
-            [updatedBy, id]
-          );
-          await insertSchedules(client, id, schedules, updatedBy);
-        }
       } else {
         ({ rows } = await client.query(
           `UPDATE client_bills
@@ -181,6 +206,54 @@ const ClientBill = {
            RETURNING *`,
           [po_id || null, project_id || null, bill_number || null, bill_date || new Date(), area || null, remarks || null, updatedBy, id]
         ));
+      }
+
+      if (rows[0] && Array.isArray(schedules)) {
+        const existingById = new Map(existingSchedules.map((s) => [s.id, s]));
+        const incomingIds = new Set(schedules.filter((s) => s.id).map((s) => s.id));
+
+        for (const s of schedules) {
+          if (s.id && !existingById.has(s.id)) {
+            throw new ValidationError('One of the submitted milestones no longer exists');
+          }
+        }
+
+        for (const ex of existingSchedules) {
+          if (!incomingIds.has(ex.id)) {
+            if (Number(ex.received_amount) > 0) {
+              throw new ValidationError('Cannot remove a milestone that already has payments recorded against it');
+            }
+            await client.query(
+              'UPDATE client_bill_schedules SET deleted = true, updated_by = $1, updated_at = NOW() WHERE id = $2',
+              [updatedBy, ex.id]
+            );
+          }
+        }
+
+        for (const s of schedules) {
+          const ex = s.id ? existingById.get(s.id) : null;
+          const isPaid = ex && Number(ex.received_amount) > 0;
+
+          if (isPaid && Math.abs(Number(s.expected_amount) - Number(ex.expected_amount)) > AMOUNT_TOLERANCE) {
+            throw new ValidationError('Cannot change the amount of a milestone that already has payments recorded against it');
+          }
+
+          if (ex) {
+            if (isPaid) {
+              await client.query(
+                'UPDATE client_bill_schedules SET installment_label = $1, due_date = $2, updated_by = $3, updated_at = NOW() WHERE id = $4',
+                [s.installment_label, s.due_date || null, updatedBy, s.id]
+              );
+            } else {
+              await client.query(
+                'UPDATE client_bill_schedules SET installment_label = $1, percentage = $2, expected_amount = $3, due_date = $4, updated_by = $5, updated_at = NOW() WHERE id = $6',
+                [s.installment_label, s.percentage || null, s.expected_amount, s.due_date || null, updatedBy, s.id]
+              );
+            }
+          } else {
+            await insertSchedules(client, id, [s], updatedBy);
+          }
+        }
       }
 
       await client.query('COMMIT');

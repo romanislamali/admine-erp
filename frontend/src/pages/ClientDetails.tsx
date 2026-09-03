@@ -79,10 +79,12 @@ interface ClientPayment {
 }
 
 interface ScheduleRow {
+    id?: string;
     installment_label: string;
     percentage: string;
     expected_amount: string;
     due_date: string;
+    received_amount: number;
 }
 
 const ordinal = (n: number): string => {
@@ -133,13 +135,12 @@ export default function ClientDetails() {
 
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [editingBillId, setEditingBillId] = useState<string | null>(null);
-    const [billLocked, setBillLocked] = useState(false);
     const [submittingBill, setSubmittingBill] = useState(false);
     const [billFormData, setBillFormData] = useState({
         po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_deduction: '', bill_date: '', area: '', remarks: ''
     });
     const [schedules, setSchedules] = useState<ScheduleRow[]>([
-        { installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '' }
+        { installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }
     ]);
 
     // Milestones view modal
@@ -360,6 +361,7 @@ export default function ClientDetails() {
     const scheduleTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.expected_amount) || 0), 0);
     const percentageTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
     const isBalanced = netPayable > 0 && Math.abs(scheduleTotal - netPayable) < 0.01;
+    const hasPaidRows = schedules.some((r) => r.received_amount > 0);
 
     const recomputeFromNet = (newNet: number, rows: ScheduleRow[]) =>
         rows.map((r) => {
@@ -393,13 +395,15 @@ export default function ClientDetails() {
             installment_label: splits.length === 1 ? 'Full Payment (100%)' : computeLabel(i, String(pct)),
             percentage: String(pct),
             expected_amount: netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : '',
-            due_date: ''
+            due_date: '',
+            received_amount: 0
         })));
     };
 
     const updateRow = (idx: number, field: keyof ScheduleRow, value: string) => {
         setSchedules((prev) => prev.map((r, i) => {
             if (i !== idx) return r;
+            if (r.received_amount > 0) return field === 'due_date' ? { ...r, due_date: value } : r;
             if (field === 'percentage') {
                 const pct = parseFloat(value);
                 return { ...r, percentage: value, installment_label: computeLabel(idx, value), expected_amount: !isNaN(pct) && netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : r.expected_amount };
@@ -408,13 +412,15 @@ export default function ClientDetails() {
         }));
     };
 
-    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: computeLabel(prev.length, ''), percentage: '', expected_amount: '', due_date: '' }]);
-    const removeScheduleRow = (idx: number) => setSchedules((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx).map((r, i) => ({ ...r, installment_label: computeLabel(i, r.percentage) })) : prev);
+    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: computeLabel(prev.length, ''), percentage: '', expected_amount: '', due_date: '', received_amount: 0 }]);
+    const removeScheduleRow = (idx: number) => setSchedules((prev) => {
+        if (prev.length === 1 || prev[idx].received_amount > 0) return prev;
+        return prev.filter((_, i) => i !== idx).map((r, i) => ({ ...r, installment_label: computeLabel(i, r.percentage) }));
+    });
 
     const resetBillForm = () => {
         setBillFormData({ po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_deduction: '', bill_date: '', area: '', remarks: '' });
-        setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '' }]);
-        setBillLocked(false);
+        setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
     };
 
     const handleOpenCreateBill = () => {
@@ -443,23 +449,19 @@ export default function ClientDetails() {
         });
 
         try {
-            const [schedulesRes, paymentsRes] = await Promise.all([
-                fetch(`/api/client-bill-schedules?bill_id=${b.id}`),
-                fetch(`/api/client-payments?client_id=${id}`)
-            ]);
+            const schedulesRes = await fetch(`/api/client-bill-schedules?bill_id=${b.id}`);
             const schedulesData: ClientBillSchedule[] = schedulesRes.ok ? await schedulesRes.json() : [];
-            const paymentsData: ClientPayment[] = paymentsRes.ok ? await paymentsRes.json() : [];
 
             setSchedules(schedulesData.length > 0 ? schedulesData.map((s) => ({
+                id: s.id,
                 installment_label: s.installment_label,
                 percentage: s.percentage !== null ? s.percentage.toString() : '',
                 expected_amount: s.expected_amount.toString(),
-                due_date: s.due_date ? new Date(s.due_date).toISOString().split('T')[0] : ''
-            })) : [{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '' }]);
-
-            setBillLocked(paymentsData.some((p) => p.bill_id === b.id));
+                due_date: s.due_date ? new Date(s.due_date).toISOString().split('T')[0] : '',
+                received_amount: Number(s.received_amount) || 0
+            })) : [{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
         } catch {
-            setBillLocked(false);
+            setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
         }
 
         setIsBillModalOpen(true);
@@ -489,7 +491,7 @@ export default function ClientDetails() {
     const handleBillSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id || !billFormData.gross_amount) return;
-        if (!billLocked && !isBalanced) return;
+        if (!isBalanced) return;
 
         const isEditing = Boolean(editingBillId);
 
@@ -505,18 +507,19 @@ export default function ClientDetails() {
                 bill_number: billFormData.bill_number || null,
                 bill_date: billFormData.bill_date || null,
                 area: billFormData.area || null,
-                remarks: billFormData.remarks || null
-            };
-
-            if (!billLocked) {
-                payload.gross_amount = parseFloat(billFormData.gross_amount);
-                payload.advance_deduction = parseFloat(billFormData.advance_deduction) || 0;
-                payload.schedules = schedules.map((s) => ({
+                remarks: billFormData.remarks || null,
+                schedules: schedules.map((s) => ({
+                    id: s.id,
                     installment_label: s.installment_label,
                     percentage: s.percentage ? parseFloat(s.percentage) : null,
                     expected_amount: parseFloat(s.expected_amount),
                     due_date: s.due_date || null
-                }));
+                }))
+            };
+
+            if (!hasPaidRows) {
+                payload.gross_amount = parseFloat(billFormData.gross_amount);
+                payload.advance_deduction = parseFloat(billFormData.advance_deduction) || 0;
             }
 
             const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -900,7 +903,7 @@ export default function ClientDetails() {
                             </div>
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
                                 <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
-                                    <Coins size={14} className="shrink-0" /><span className="truncate">Received</span>
+                                    <Coins size={14} className="shrink-0" /><span className="truncate">Payment Received</span>
                                 </div>
                                 <div className="text-sm sm:text-base lg:text-md font-bold text-slate-900 break-all leading-tight">{formatCurrency(client.total_received)}</div>
                             </div>
@@ -1033,10 +1036,10 @@ export default function ClientDetails() {
                                 <button onClick={handleCloseBillModal} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"><X size={20} /></button>
                             </div>
 
-                            {billLocked && (
+                            {hasPaidRows && (
                                 <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold px-3 py-2 rounded-xl">
                                     <Lock size={14} className="shrink-0" />
-                                    Payments already recorded against this bill — billed amount and milestone split are locked.
+                                    Payments already recorded — billed amount is locked, and milestones with payments can no longer have their percentage/amount changed or be removed (due date can still be corrected).
                                 </div>
                             )}
 
@@ -1085,11 +1088,11 @@ export default function ClientDetails() {
                                 <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Gross Bill Amount <span className='text-red-600'>*</span></label>
-                                        <input type="number" step="0.01" min="0.01" required disabled={billLocked} value={billFormData.gross_amount} onChange={(e) => handleGrossChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
+                                        <input type="number" step="0.01" min="0.01" required disabled={hasPaidRows} value={billFormData.gross_amount} onChange={(e) => handleGrossChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Advance / Deduction</label>
-                                        <input type="number" step="0.01" min="0" disabled={billLocked} value={billFormData.advance_deduction} onChange={(e) => handleAdvanceChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
+                                        <input type="number" step="0.01" min="0" disabled={hasPaidRows} value={billFormData.advance_deduction} onChange={(e) => handleAdvanceChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
                                     </div>
                                 </div>
 
@@ -1102,7 +1105,7 @@ export default function ClientDetails() {
                                 <div className="border-t border-slate-100 pt-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <label className="block text-xs font-semibold uppercase text-slate-500">Payment Milestones</label>
-                                        {!billLocked && (
+                                        {!hasPaidRows && (
                                             <div className="flex items-center gap-1.5">
                                                 {PRESETS.map((preset) => (
                                                     <button key={preset.key} type="button" onClick={() => applyPreset(preset.splits)} className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:border-primary hover:text-primary transition-colors">
@@ -1114,67 +1117,72 @@ export default function ClientDetails() {
                                     </div>
 
                                     <div className="grid grid-cols-12 gap-2 px-0.5 mb-1">
-                                        <span className="col-span-4 text-[10px] font-semibold uppercase text-slate-400">Installment</span>
+                                        <span className="col-span-3 text-[10px] font-semibold uppercase text-slate-400">Installment</span>
                                         <span className="col-span-2 text-[10px] font-semibold uppercase text-slate-400">Percentage (%)</span>
                                         <span className="col-span-3 text-[10px] font-semibold uppercase text-slate-400">Amount</span>
-                                        <span className="col-span-2 text-[10px] font-semibold uppercase text-slate-400">Due Date</span>
+                                        <span className="col-span-3 text-[10px] font-semibold uppercase text-slate-400">Due Date</span>
                                         <span className="col-span-1"></span>
                                     </div>
 
                                     <div className="space-y-2">
-                                        {schedules.map((row, idx) => (
-                                            <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                                                <input
-                                                    type="text" disabled value={row.installment_label}
-                                                    readOnly
-                                                    placeholder="Label" className="col-span-4 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
-                                                />
-                                                <div className="col-span-2 relative">
+                                        {schedules.map((row, idx) => {
+                                            const rowLocked = row.received_amount > 0;
+                                            return (
+                                                <div key={row.id || idx} className="grid grid-cols-12 gap-2 items-center">
                                                     <input
-                                                        type="number" step="0.01" disabled={billLocked} value={row.percentage}
-                                                        onChange={(e) => updateRow(idx, 'percentage', e.target.value)}
-                                                        placeholder="%" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
+                                                        type="text" disabled value={row.installment_label}
+                                                        readOnly
+                                                        placeholder="Label" className="col-span-3 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
                                                     />
+                                                    <div className="col-span-2 relative">
+                                                        <input
+                                                            type="number" step="0.01" disabled={rowLocked} value={row.percentage}
+                                                            onChange={(e) => updateRow(idx, 'percentage', e.target.value)}
+                                                            placeholder="%" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
+                                                        />
+                                                    </div>
+                                                    <input
+                                                        type="number" step="0.01" required disabled value={row.expected_amount === '' ? '' : Number(row.expected_amount)}
+                                                        readOnly
+                                                        placeholder="Amount" className="col-span-3 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
+                                                    />
+                                                    <input
+                                                        type="date" value={row.due_date}
+                                                        onChange={(e) => updateRow(idx, 'due_date', e.target.value)}
+                                                        className="col-span-3 px-2 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900"
+                                                    />
+                                                    <div className="col-span-1 flex justify-center">
+                                                        {rowLocked ? (
+                                                            <span title="Payments recorded against this milestone — cannot be removed" className="p-1 text-slate-300">
+                                                                <Lock size={13} />
+                                                            </span>
+                                                        ) : (
+                                                            <button type="button" onClick={() => removeScheduleRow(idx)} disabled={schedules.length === 1} className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 disabled:cursor-not-allowed flex justify-center">
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <input
-                                                    type="number" step="0.01" required disabled value={row.expected_amount === '' ? '' : Number(row.expected_amount)}
-                                                    readOnly
-                                                    placeholder="Amount" className="col-span-3 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
-                                                />
-                                                <input
-                                                    type="date" disabled={billLocked} value={row.due_date}
-                                                    onChange={(e) => updateRow(idx, 'due_date', e.target.value)}
-                                                    className="col-span-2 px-2 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
-                                                />
-                                                {!billLocked && (
-                                                    <button type="button" onClick={() => removeScheduleRow(idx)} disabled={schedules.length === 1} className="col-span-1 p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30 disabled:cursor-not-allowed flex justify-center">
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
-                                    {!billLocked && (
-                                        <button type="button" onClick={addScheduleRow} className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-hover">
-                                            <Plus size={14} /> Add Installment
-                                        </button>
-                                    )}
+                                    <button type="button" onClick={addScheduleRow} className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary-hover">
+                                        <Plus size={14} /> Add Installment
+                                    </button>
 
-                                    {!billLocked && (
-                                        <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold ${isBalanced ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                                            <span className="flex items-center gap-1.5">
-                                                {isBalanced ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                                                Milestone Total: {formatCurrency(scheduleTotal)} ({Number(percentageTotal.toFixed(2))}%)
-                                            </span>
-                                            <span>Net Receivable: {formatCurrency(netPayable)}</span>
-                                        </div>
-                                    )}
+                                    <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold ${isBalanced ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                                        <span className="flex items-center gap-1.5">
+                                            {isBalanced ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                                            Milestone Total: {formatCurrency(scheduleTotal)} ({Number(percentageTotal.toFixed(2))}%)
+                                        </span>
+                                        <span>Net Receivable: {formatCurrency(netPayable)}</span>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                                     <button type="button" onClick={handleCloseBillModal} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
-                                    <button type="submit" disabled={submittingBill || (!billLocked && !isBalanced)} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50">
+                                    <button type="submit" disabled={submittingBill || !isBalanced} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50">
                                         {submittingBill ? <Loader2 size={16} className="animate-spin" /> : editingBillId ? 'Save Changes' : 'Submit'}
                                     </button>
                                 </div>
