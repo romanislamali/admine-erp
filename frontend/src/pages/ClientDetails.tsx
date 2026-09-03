@@ -85,6 +85,12 @@ interface ScheduleRow {
     due_date: string;
 }
 
+const ordinal = (n: number): string => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+};
+
 const PRESETS: { key: string; label: string; splits: number[] }[] = [
     { key: 'FULL', label: '100%', splits: [100] },
     { key: '80-20', label: '80 / 20', splits: [80, 20] },
@@ -352,6 +358,7 @@ export default function ClientDetails() {
 
     const netPayable = (Number(billFormData.gross_amount) || 0) - (Number(billFormData.advance_deduction) || 0);
     const scheduleTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.expected_amount) || 0), 0);
+    const percentageTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
     const isBalanced = netPayable > 0 && Math.abs(scheduleTotal - netPayable) < 0.01;
 
     const recomputeFromNet = (newNet: number, rows: ScheduleRow[]) =>
@@ -375,10 +382,15 @@ export default function ClientDetails() {
         setSchedules((prev) => recomputeFromNet(gross - advance, prev));
     };
 
+    const computeLabel = (idx: number, pct: string) => {
+        const label = `${ordinal(idx + 1)} Installment`;
+        const p = parseFloat(pct);
+        return !isNaN(p) && pct !== '' ? `${label} (${p}%)` : label;
+    };
+
     const applyPreset = (splits: number[]) => {
-        const ordinal = ['1st', '2nd', '3rd', '4th', '5th'];
         setSchedules(splits.map((pct, i) => ({
-            installment_label: splits.length === 1 ? 'Full Payment (100%)' : `${ordinal[i] || `${i + 1}th`} Installment (${pct}%)`,
+            installment_label: splits.length === 1 ? 'Full Payment (100%)' : computeLabel(i, String(pct)),
             percentage: String(pct),
             expected_amount: netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : '',
             due_date: ''
@@ -390,19 +402,14 @@ export default function ClientDetails() {
             if (i !== idx) return r;
             if (field === 'percentage') {
                 const pct = parseFloat(value);
-                return { ...r, percentage: value, expected_amount: !isNaN(pct) && netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : r.expected_amount };
-            }
-            if (field === 'expected_amount') {
-                const amt = parseFloat(value);
-                const pct = !isNaN(amt) && netPayable > 0 ? ((amt / netPayable) * 100).toFixed(2) : r.percentage;
-                return { ...r, expected_amount: value, percentage: pct };
+                return { ...r, percentage: value, installment_label: computeLabel(idx, value), expected_amount: !isNaN(pct) && netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : r.expected_amount };
             }
             return { ...r, [field]: value };
         }));
     };
 
-    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: `Installment ${prev.length + 1}`, percentage: '', expected_amount: '', due_date: '' }]);
-    const removeScheduleRow = (idx: number) => setSchedules((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
+    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: computeLabel(prev.length, ''), percentage: '', expected_amount: '', due_date: '' }]);
+    const removeScheduleRow = (idx: number) => setSchedules((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx).map((r, i) => ({ ...r, installment_label: computeLabel(i, r.percentage) })) : prev);
 
     const resetBillForm = () => {
         setBillFormData({ po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_deduction: '', bill_date: '', area: '', remarks: '' });
@@ -1121,12 +1128,20 @@ export default function ClientDetails() {
                                         )}
                                     </div>
 
+                                    <div className="grid grid-cols-12 gap-2 px-0.5 mb-1">
+                                        <span className="col-span-4 text-[10px] font-semibold uppercase text-slate-400">Installment</span>
+                                        <span className="col-span-2 text-[10px] font-semibold uppercase text-slate-400">Percentage (%)</span>
+                                        <span className="col-span-3 text-[10px] font-semibold uppercase text-slate-400">Amount</span>
+                                        <span className="col-span-2 text-[10px] font-semibold uppercase text-slate-400">Due Date</span>
+                                        <span className="col-span-1"></span>
+                                    </div>
+
                                     <div className="space-y-2">
                                         {schedules.map((row, idx) => (
                                             <div key={idx} className="grid grid-cols-12 gap-2 items-center">
                                                 <input
-                                                    type="text" disabled={billLocked} value={row.installment_label}
-                                                    onChange={(e) => updateRow(idx, 'installment_label', e.target.value)}
+                                                    type="text" disabled value={row.installment_label}
+                                                    readOnly
                                                     placeholder="Label" className="col-span-4 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
                                                 />
                                                 <div className="col-span-2 relative">
@@ -1137,8 +1152,8 @@ export default function ClientDetails() {
                                                     />
                                                 </div>
                                                 <input
-                                                    type="number" step="0.01" required disabled={billLocked} value={row.expected_amount}
-                                                    onChange={(e) => updateRow(idx, 'expected_amount', e.target.value)}
+                                                    type="number" step="0.01" required disabled value={row.expected_amount === '' ? '' : Number(row.expected_amount)}
+                                                    readOnly
                                                     placeholder="Amount" className="col-span-3 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900 disabled:opacity-60"
                                                 />
                                                 <input
@@ -1165,7 +1180,7 @@ export default function ClientDetails() {
                                         <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold ${isBalanced ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                                             <span className="flex items-center gap-1.5">
                                                 {isBalanced ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                                                Milestone Total: {formatCurrency(scheduleTotal)}
+                                                Milestone Total: {formatCurrency(scheduleTotal)} ({Number(percentageTotal.toFixed(2))}%)
                                             </span>
                                             <span>Net Receivable: {formatCurrency(netPayable)}</span>
                                         </div>
