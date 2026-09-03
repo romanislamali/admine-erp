@@ -288,7 +288,7 @@ CREATE TABLE client_bill_schedules (
     percentage NUMERIC,
     expected_amount NUMERIC NOT NULL,
     received_amount NUMERIC DEFAULT 0.00,
-    status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'APPROVED', 'PAID')),
+    status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
     due_date DATE,
     remarks TEXT,
     deleted BOOLEAN DEFAULT false,
@@ -493,8 +493,6 @@ $$ LANGUAGE plpgsql;
 -- 4. Derive installment status from received_amount whenever it changes.
 --    A schedule is only ever force-flipped to PAID (full receipt) or reverted
 --    from PAID back to DUE (a reversed/deleted payment drops it below full).
---    DUE <-> APPROVED is an app-level pre-payment approval step and is left
---    alone here so the trigger never fights a manual approval action.
 CREATE OR REPLACE FUNCTION trg_fn_set_schedule_status()
 RETURNS TRIGGER AS $$
 BEGIN

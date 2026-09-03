@@ -60,7 +60,7 @@ interface ClientBillSchedule {
     percentage: string | number | null;
     expected_amount: string | number;
     received_amount: string | number;
-    status: 'DUE' | 'APPROVED' | 'PAID';
+    status: 'DUE' | 'PAID';
     due_date: string | null;
 }
 
@@ -544,7 +544,6 @@ export default function ClientDetails() {
     const getScheduleStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'PAID': return 'bg-emerald-50 text-emerald-700 border border-emerald-250';
-            case 'APPROVED': return 'bg-sky-50 text-sky-700 border border-sky-250';
             case 'DUE':
             default: return 'bg-amber-50 text-amber-700 border border-amber-250';
         }
@@ -566,20 +565,6 @@ export default function ClientDetails() {
         setIsMilestonesModalOpen(false);
         setMilestonesBill(null);
         setMilestoneSchedules([]);
-    };
-
-    const handleApproveMilestone = async (scheduleId: string) => {
-        try {
-            const res = await fetch(`/api/client-bill-schedules/${scheduleId}/approve`, { method: 'PUT' });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to approve installment');
-            setMilestoneSchedules((prev) => prev.map((s) => s.id === scheduleId ? data : s));
-        } catch (err: any) {
-            await Promise.race([
-                showError('Approval Failed', err.message || 'Unable to approve this installment.'),
-                new Promise((resolve) => setTimeout(resolve, 1000))
-            ]);
-        }
     };
 
     const handleRecordPaymentForSchedule = (s: ClientBillSchedule) => {
@@ -1246,11 +1231,6 @@ export default function ClientDetails() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-3">
-                                                    {s.status === 'DUE' && (
-                                                        <button onClick={() => handleApproveMilestone(s.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-sky-200 text-sky-700 hover:bg-sky-50 transition-colors">
-                                                            <CheckCircle2 size={13} /> Approve
-                                                        </button>
-                                                    )}
                                                     {s.status !== 'PAID' && outstanding > 0 && (
                                                         <button onClick={() => handleRecordPaymentForSchedule(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-primary/30 text-primary hover:bg-primary/5 transition-colors">
                                                             <Wallet size={13} /> New Payment ({formatCurrency(outstanding)} due)

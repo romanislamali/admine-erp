@@ -212,7 +212,7 @@ const initDb = async () => {
           percentage NUMERIC,
           expected_amount NUMERIC NOT NULL,
           received_amount NUMERIC DEFAULT 0.00,
-          status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'APPROVED', 'PAID')),
+          status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
           due_date DATE,
           remarks TEXT,
           deleted BOOLEAN DEFAULT false,

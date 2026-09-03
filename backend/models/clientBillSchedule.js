@@ -18,19 +18,6 @@ const ClientBillSchedule = {
 
     const { rows } = await db.query(queryText, params);
     return rows;
-  },
-
-  // Only a DUE installment can be manually approved (a pre-payment sign-off step).
-  // PAID is only ever set by the trg_fn_set_schedule_status trigger on full receipt.
-  approve: async (id, updatedBy) => {
-    const { rows } = await db.query(
-      `UPDATE client_bill_schedules
-       SET status = 'APPROVED', updated_by = $1, updated_at = NOW()
-       WHERE id = $2 AND deleted = false AND status = 'DUE'
-       RETURNING *`,
-      [updatedBy, id]
-    );
-    return rows[0];
   }
 };
 
