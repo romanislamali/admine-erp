@@ -105,7 +105,7 @@ export default function Dropdown({
           {selected ? selected.label : placeholder}
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {selected && !disabled && (
+          {value && !disabled && (
             <button
               type="button"
               onClick={(e) => {
