@@ -492,6 +492,93 @@ const initDb = async () => {
       EXECUTE FUNCTION trg_fn_validate_bill_schedule_total();
     `);
 
+    // Website CMS module: public marketing-site content (clients/partners,
+    // portfolio projects, image galleries), namespaced `cms_` to avoid
+    // colliding with the existing clients/projects billing tables above.
+    // Mirrors db.sql — CREATE TABLE IF NOT EXISTS patches any database that
+    // ran an older db.sql without these tables.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cms_clients (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name VARCHAR(100) NOT NULL,
+          logo_path VARCHAR(255),
+          short_description TEXT,
+          detailed_description TEXT,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          deleted BOOLEAN DEFAULT false,
+          created_by VARCHAR(100),
+          updated_by VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS cms_projects (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          client_id UUID REFERENCES cms_clients(id),
+          name VARCHAR(150) NOT NULL,
+          thumbnail_path VARCHAR(255),
+          short_description TEXT,
+          detailed_description TEXT,
+          location VARCHAR(150),
+          completion_year INTEGER,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          is_featured BOOLEAN NOT NULL DEFAULT false,
+          deleted BOOLEAN DEFAULT false,
+          created_by VARCHAR(100),
+          updated_by VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- cms_projects existed before is_featured was added; patch it in for
+      -- any database that already ran the block above without this column.
+      ALTER TABLE cms_projects ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false;
+
+      CREATE TABLE IF NOT EXISTS cms_project_images (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID REFERENCES cms_projects(id),
+          image_path VARCHAR(255) NOT NULL,
+          alt_text VARCHAR(150),
+          display_order INTEGER NOT NULL DEFAULT 0,
+          is_primary BOOLEAN NOT NULL DEFAULT false,
+          deleted BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cms_clients_active_deleted_order ON cms_clients (is_active, deleted, display_order);
+
+      CREATE INDEX IF NOT EXISTS idx_cms_projects_client_id ON cms_projects (client_id);
+      CREATE INDEX IF NOT EXISTS idx_cms_projects_active_deleted_order ON cms_projects (is_active, deleted, display_order);
+
+      CREATE INDEX IF NOT EXISTS idx_cms_project_images_project_id ON cms_project_images (project_id);
+      CREATE INDEX IF NOT EXISTS idx_cms_project_images_deleted_order ON cms_project_images (deleted, display_order);
+    `);
+
+    // Backfill: is_featured is a new column, so every client's projects
+    // created before it existed have none marked. Every client with any
+    // project must always have exactly one featured (create/delete now
+    // maintain this going forward) — promote each such client's
+    // lowest-display_order project once. Naturally idempotent: once a
+    // client has a featured project, the NOT EXISTS guard skips it.
+    await pool.query(`
+      UPDATE cms_projects p
+      SET is_featured = true
+      WHERE p.deleted = false
+        AND p.id = (
+          SELECT id FROM cms_projects p2
+          WHERE p2.client_id = p.client_id AND p2.deleted = false
+          ORDER BY p2.display_order ASC, p2.created_at DESC
+          LIMIT 1
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM cms_projects p3
+          WHERE p3.client_id = p.client_id AND p3.deleted = false AND p3.is_featured = true
+        );
+    `);
+
     logger.info('Database schema up to date.');
 
     // 2. Seed/sync a hidden system admin account: full (ADMIN) access, but excluded from

@@ -30,6 +30,9 @@ pnpm-debug.log*
 
 # Docker
 .docker/
+
+# CMS-uploaded images (persisted on disk via the backend's bind mount, not committed)
+backend/uploads/
 # Optional: If you want to ignore the data volume backups
 # pgdata/ 
 

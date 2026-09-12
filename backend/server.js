@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const multer = require('multer');
 require('dotenv').config();
 
 const logger = require('./utils/logger');
@@ -12,6 +14,9 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Uploaded/optimized CMS images (logos, thumbnails, gallery photos).
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Log every request once it finishes, with the status code and how long it took.
 app.use((req, res, next) => {
@@ -38,6 +43,8 @@ const clientBillRoutes = require('./routes/clientBillRoutes');
 const clientBillScheduleRoutes = require('./routes/clientBillScheduleRoutes');
 const clientPaymentRoutes = require('./routes/clientPaymentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const cmsClientRoutes = require('./routes/cmsClientRoutes');
+const cmsProjectRoutes = require('./routes/cmsProjectRoutes');
 const { authenticateToken } = require('./middlewares/auth');
 
 app.use('/api/contractors', authenticateToken, contractorRoutes);
@@ -51,9 +58,21 @@ app.use('/api/client-bill-schedules', authenticateToken, clientBillScheduleRoute
 app.use('/api/client-payments', authenticateToken, clientPaymentRoutes);
 app.use('/api/users', userRoutes);
 
+// Website CMS: each router mixes public (unauthenticated) read routes with
+// admin-only write routes internally, same pattern as userRoutes' /login, so
+// no blanket authenticateToken wraps the mount here.
+app.use('/api/cms/clients', cmsClientRoutes);
+app.use('/api/cms/projects', cmsProjectRoutes);
+
 // Catch-all: anything that reaches here escaped a route's own try/catch
 // (e.g. malformed JSON body, a thrown error outside an async handler).
 app.use((err, req, res, next) => {
+  // Multer's own errors (file too large, etc.) and our fileFilter's
+  // rejection (unsupported type) are request/validation problems, not
+  // server faults — surface them as 400s instead of a generic 500.
+  if (err instanceof multer.MulterError || (err && /Unsupported file type/.test(err.message))) {
+    return res.status(400).json({ message: err.message });
+  }
   logger.error(`Unhandled error on ${req.method} ${req.originalUrl}`, err);
   res.status(500).json({ message: 'Internal server error' });
 });

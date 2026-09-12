@@ -14,6 +14,8 @@ import { Loader2 } from 'lucide-react';
 import ContractorDetails from './pages/ContractorDetails';
 import Clients from './pages/Clients';
 import ClientDetails from './pages/ClientDetails';
+import CmsClients from './pages/cms/CmsClients';
+import CmsClientProjects from './pages/cms/CmsClientProjects';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -59,6 +61,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Role-Guard Component for the Website CMS module (ADMIN and MANAGER)
+function CmsRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   return (
     <Routes>
@@ -83,6 +96,10 @@ function AppContent() {
       <Route path="/payment" element={<ProtectedLayout><Payment /></ProtectedLayout>} />
       <Route path="/clients" element={<ProtectedLayout><Clients /></ProtectedLayout>} />
       <Route path="/client-details/:id" element={<ProtectedLayout><ClientDetails /></ProtectedLayout>} />
+
+      {/* Website CMS (ADMIN + MANAGER only) */}
+      <Route path="/cms/clients" element={<ProtectedLayout><CmsRoute><CmsClients /></CmsRoute></ProtectedLayout>} />
+      <Route path="/cms/clients/:clientId/projects" element={<ProtectedLayout><CmsRoute><CmsClientProjects /></CmsRoute></ProtectedLayout>} />
 
       {/* Admin-only restricted route */}
       <Route

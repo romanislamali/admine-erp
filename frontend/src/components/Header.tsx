@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Building2 } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Building2, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../public/logo.png';
 import { useAuth } from '../context/AuthContext';
@@ -146,6 +146,16 @@ export default function Header() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-0.5">
+                    {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
+                      <Link
+                        to="/cms/clients"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left font-semibold"
+                      >
+                        <Globe size={16} />
+                        Manage Website
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={async () => {

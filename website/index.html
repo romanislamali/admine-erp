@@ -238,7 +238,10 @@
         /* Services Grid */
         .grid-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            /* min(300px, 100%) instead of a bare 300px: a fixed-px minimum in
+               auto-fit/minmax overflows any viewport narrower than that
+               (e.g. a 320px phone), since grid tracks can't shrink below it. */
+            grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
             gap: 30px;
         }
 
@@ -382,11 +385,15 @@
             font-size: 1.4rem;
             margin-bottom: 0.5rem;
             color: var(--text-main);
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .project-info p {
             color: var(--text-muted);
             font-size: 0.95rem;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .step-num {
@@ -397,6 +404,162 @@
             top: 10px;
             right: 20px;
             line-height: 1;
+        }
+
+        /* CMS-driven content: loading / empty / error states */
+        .cms-loading, .cms-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            width: 100%;
+        }
+
+        .cms-error {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            color: rgb(238, 34, 3);
+            background: rgba(238, 34, 3, 0.05);
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .client-logo, .project-card {
+            cursor: pointer;
+        }
+
+        /* CMS Detail Modals (client -> projects, project -> gallery) */
+        .cms-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .cms-modal-overlay.active {
+            display: flex;
+        }
+
+        .cms-modal {
+            background: var(--bg-surface);
+            border-radius: 8px;
+            max-width: 820px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            padding: 2.5rem;
+        }
+
+        .cms-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--bg-surface-light);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .cms-modal-close:hover {
+            background: var(--border);
+        }
+
+        .cms-modal h2 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            padding-right: 2rem;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .cms-modal-meta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .cms-modal-description {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            white-space: pre-line;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .cms-modal-image {
+            margin-top: 1.5rem;
+        }
+
+        .cms-modal-image img {
+            width: 100%;
+            max-height: 320px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .cms-client-projects {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 1.5rem;
+        }
+
+        .cms-client-project-card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+
+        .cms-client-project-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .cms-client-project-card img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+        }
+
+        .cms-client-project-card .cms-cp-info {
+            padding: 0.8rem;
+        }
+
+        .cms-client-project-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-main);
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .cms-client-project-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         /* Contact & Form Section */
@@ -646,6 +809,40 @@
                 min-height: auto;
             }
         }
+
+        /* CMS-driven modals and cards: not covered by the breakpoints above
+           since they were added after the original static layout. Generous
+           desktop padding (2.5rem) eats too much width once the viewport
+           itself is only ~500-600px, well before the 480px breakpoint. */
+        @media (max-width: 640px) {
+            .cms-modal-overlay {
+                padding: 1rem 0.6rem;
+            }
+
+            .cms-modal {
+                padding: 1.5rem;
+                max-height: 90vh;
+            }
+
+            .cms-modal h2 {
+                font-size: 1.4rem;
+                padding-right: 1.5rem;
+            }
+
+            .cms-modal-meta {
+                gap: 1rem;
+                font-size: 0.85rem;
+            }
+
+            .cms-modal-image img {
+                max-height: 200px;
+            }
+
+            .cms-client-projects {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -749,40 +946,8 @@
             <h2>Enterprise <span>Partnerships</span></h2>
             <p class="section-subtitle">Architecting the physical outdoor market presence for heavy manufacturers, energy producers, and national steel grids.</p>
         </div>
-        <div class="logo-wrapper">
-             <div class="client-logo">
-                <img src="partner_aks.jpg" alt="AKS">
-            </div>
-             <div class="client-logo">
-                <img src="partner_meghna.png" alt="Meghna Cement">
-            </div>
-             <div class="client-logo">
-                <img src="partner_shah.jpg" alt="Shah Cement">
-            </div>
-             <div class="client-logo">
-                <img src="partner_csrm.png" alt="CSRM">
-            </div>
-             <div class="client-logo">
-                <img src="partner_lafarge.jpg" alt="Lafarge Cement">
-            </div>
-            <div class="client-logo">
-                <img src="partner_salam.jpg" alt="Salam Steel">
-            </div>
-            <div class="client-logo">
-                <img src="partner_rahima.jpg" alt="Rahima Group">
-            </div>
-            <div class="client-logo">
-                <img src="partner_remarks.jpg" alt="Remark Group">
-            </div>
-            <div class="client-logo">
-                <img src="partner_gazi.jpg" alt="Gazi Group">
-            </div>
-            <div class="client-logo">
-                <img src="partner_omera.jpg" alt="Omera LPG">
-            </div>
-            <div class="client-logo">
-                <img src="partner_asha.png" alt="Asha Group">
-            </div>
+        <div class="logo-wrapper" id="clients-container">
+            <p class="cms-loading">Loading partners…</p>
         </div>
     </section>
 
@@ -792,99 +957,8 @@
             <h2>Our <span>Projects</span></h2>
             <p class="section-subtitle">Real architectural proofing executed flawlessly across major distribution pathways.</p>
         </div>
-        <div class="grid-layout">
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">Shah Cement</span>
-                    <img class="project-img" src="project_shah.jpg" alt="Shah Cement">
-                </div>
-                <div class="project-info">
-                    <h3>High-Load Freeway Billboard</h3>
-                    <p>Heavy reinforced girder setup displaying core asset lines along commercial arterial routes.</p>
-                </div>
-            </div>
-
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">AKS Steel</span>
-                    <img class="project-img" src="project_aks.jpeg" alt="AKS">
-                </div>
-                <div class="project-info">
-                    <h3>Multi-Acre Outer Facility Treatment</h3>
-                    <p>Complete outer wall high-grade structural treatment wrapping warehouse infrastructure systems.</p>
-                </div>
-            </div>
-
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">RICL Steel</span>
-                    <img class="project-img" src="project_ricl.png" alt="RICL">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">Salam Steel</span>
-                    <img class="project-img" src="project_salam.jpg" alt="Salam Cement">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">Gazi Tyres</span>
-                    <img class="project-img" src="project_gazi.jpg" alt="Gazi Cement">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">MTF Tyre</span>
-                    <img class="project-img" src="project_meghna.jfif" alt="Meghna Cement">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">CSRM Steel</span>
-                    <img class="project-img" src="project_csrm.jpg" alt="CSRM">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">Orix Ditergent</span>
-                    <img class="project-img" src="project_remark.jfif" alt="Remark">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
-            <div class="project-card">
-                <div class="img-container">
-                    <span class="tag">Asha Cement</span>
-                    <img class="project-img" src="project_asha.jpg" alt="Asha Cement">
-                </div>
-                <div class="project-info">
-                    <h3>Urban Grid Premium Board</h3>
-                    <p>Integrated back-lit framework matrix providing crisp legibility during nocturnal shifts.</p>
-                </div>
-            </div>
+        <div class="grid-layout" id="projects-container">
+            <p class="cms-loading">Loading projects…</p>
         </div>
     </section>
 
@@ -960,6 +1034,30 @@
         <p class="footer-copyright">&copy; 2026 Admine Advertising. Engineered for high-scale enterprise operations. All
             rights reserved.</p>
     </footer>
+
+    <!-- Client Details Modal: lists a client's active projects -->
+    <div class="cms-modal-overlay" id="client-modal-overlay">
+        <div class="cms-modal">
+            <button class="cms-modal-close" id="client-modal-close" aria-label="Close">&times;</button>
+            <h2 id="client-modal-name"></h2>
+            <p class="cms-modal-description" id="client-modal-description"></p>
+            <div class="cms-client-projects" id="client-modal-projects"></div>
+        </div>
+    </div>
+
+    <!-- Project Details Modal: full description + image gallery -->
+    <div class="cms-modal-overlay" id="project-modal-overlay">
+        <div class="cms-modal">
+            <button class="cms-modal-close" id="project-modal-close" aria-label="Close">&times;</button>
+            <h2 id="project-modal-name"></h2>
+            <div class="cms-modal-meta" id="project-modal-meta"></div>
+            <p class="cms-modal-description" id="project-modal-description"></p>
+            <div class="cms-modal-image" id="project-modal-image"></div>
+        </div>
+    </div>
+
+    <!-- CMS-driven dynamic content: fetches clients/projects from the Website CMS API -->
+    <script src="main.js"></script>
 
     <!-- Interactive Navigation Controller Scripts -->
     <script>

@@ -562,3 +562,74 @@ AFTER INSERT OR UPDATE OR DELETE ON client_bill_schedules
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION trg_fn_validate_bill_schedule_total();
+
+-- ============================================================================
+-- Website CMS Module
+-- Public marketing-site content (clients/partners, portfolio projects, and
+-- their image galleries), managed from the ERP and consumed read-only by the
+-- static website. Namespaced with a `cms_` prefix since `clients`/`projects`
+-- already exist above for the unrelated billing/contractor domain.
+-- is_active drives public visibility (the CMS admin/inactive toggle);
+-- `deleted` stays the usual soft-delete flag, same convention as every other
+-- table in this file.
+-- ============================================================================
+
+CREATE TABLE cms_clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    logo_path VARCHAR(255),
+    short_description TEXT,
+    detailed_description TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    deleted BOOLEAN DEFAULT false,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cms_projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES cms_clients(id),
+    name VARCHAR(150) NOT NULL,
+    thumbnail_path VARCHAR(255),
+    short_description TEXT,
+    detailed_description TEXT,
+    location VARCHAR(150),
+    completion_year INTEGER,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    -- The one project per client shown in the site-wide "Our Projects"
+    -- showcase (falls back to lowest display_order if none is marked yet).
+    -- Mirrors cms_project_images.is_primary below.
+    is_featured BOOLEAN NOT NULL DEFAULT false,
+    deleted BOOLEAN DEFAULT false,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- No created_by/updated_by/is_active here: gallery images are managed purely
+-- through their parent project (visibility follows cms_projects.is_active),
+-- so there's nothing for those columns to track beyond the project itself.
+CREATE TABLE cms_project_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES cms_projects(id),
+    image_path VARCHAR(255) NOT NULL,
+    alt_text VARCHAR(150),
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
+    deleted BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cms_clients_active_deleted_order ON cms_clients (is_active, deleted, display_order);
+
+CREATE INDEX IF NOT EXISTS idx_cms_projects_client_id ON cms_projects (client_id);
+CREATE INDEX IF NOT EXISTS idx_cms_projects_active_deleted_order ON cms_projects (is_active, deleted, display_order);
+
+CREATE INDEX IF NOT EXISTS idx_cms_project_images_project_id ON cms_project_images (project_id);
+CREATE INDEX IF NOT EXISTS idx_cms_project_images_deleted_order ON cms_project_images (deleted, display_order);
