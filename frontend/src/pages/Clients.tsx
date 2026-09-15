@@ -13,7 +13,8 @@ interface Client {
   email: string;
   address: string;
   total_billed: string | number;
-  total_advance_deduction: string | number;
+  total_advance: string | number;
+  total_deduction: string | number;
   total_received: string | number;
   total_due: string | number;
   created_by?: string;
@@ -287,14 +288,26 @@ export default function Clients() {
       )
     },
     {
-      header: 'Total Advance/Deduction',
-      key: 'total_advance_deduction',
+      header: 'Total Advance',
+      key: 'total_advance',
       align: 'right' as const,
       sortable: true,
       render: (c: Client) => {
-        const adv = typeof c.total_advance_deduction === 'string' ? parseFloat(c.total_advance_deduction) : c.total_advance_deduction;
+        const adv = typeof c.total_advance === 'string' ? parseFloat(c.total_advance) : c.total_advance;
         return adv > 0
           ? <span className="font-semibold text-green-600">{formatCurrency(adv)}</span>
+          : <span className="text-slate-400 text-xs italic">None</span>;
+      }
+    },
+    {
+      header: 'Total Deduction',
+      key: 'total_deduction',
+      align: 'right' as const,
+      sortable: true,
+      render: (c: Client) => {
+        const ded = typeof c.total_deduction === 'string' ? parseFloat(c.total_deduction) : c.total_deduction;
+        return ded > 0
+          ? <span className="font-semibold text-rose-600">{formatCurrency(ded)}</span>
           : <span className="text-slate-400 text-xs italic">None</span>;
       }
     },

@@ -49,11 +49,11 @@ const getAllClientBills = async (req, res) => {
 
 const createClientBill = async (req, res) => {
   try {
-    const { client_id, gross_amount, advance_deduction, schedules } = req.body;
+    const { client_id, gross_amount, advance_amount, schedules } = req.body;
     if (!client_id || !gross_amount || isNaN(gross_amount) || Number(gross_amount) <= 0) {
       return res.status(400).json({ message: 'Client ID and a positive numeric gross amount are required' });
     }
-    const netPayable = Number(gross_amount) - Number(advance_deduction || 0);
+    const netPayable = Number(gross_amount) - Number(advance_amount || 0);
     const scheduleError = validateSchedules(netPayable, schedules);
     if (scheduleError) {
       return res.status(400).json({ message: scheduleError });
@@ -72,14 +72,13 @@ const createClientBill = async (req, res) => {
 const updateClientBill = async (req, res) => {
   try {
     const { id } = req.params;
-    const { gross_amount, advance_deduction, schedules } = req.body;
+    const { gross_amount, advance_amount, schedules } = req.body;
 
-    const paidCount = await ClientBill.paymentCount(id);
-    const amountsLocked = paidCount > 0;
+    const amountsLocked = await ClientBill.hasSettledMilestones(id);
 
-    if (amountsLocked && (gross_amount !== undefined || advance_deduction !== undefined)) {
+    if (amountsLocked && (gross_amount !== undefined || advance_amount !== undefined)) {
       return res.status(400).json({
-        message: 'This bill already has payments recorded against it — billed amount is locked'
+        message: 'This bill already has a receipt recorded against it — billed amount is locked'
       });
     }
 
@@ -93,7 +92,7 @@ const updateClientBill = async (req, res) => {
         if (!gross_amount || isNaN(gross_amount) || Number(gross_amount) <= 0) {
           return res.status(400).json({ message: 'A positive numeric gross amount is required' });
         }
-        netPayable = Number(gross_amount) - Number(advance_deduction || 0);
+        netPayable = Number(gross_amount) - Number(advance_amount || 0);
       }
       const scheduleError = validateSchedules(netPayable, schedules);
       if (scheduleError) {

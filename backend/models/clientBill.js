@@ -115,8 +115,8 @@ const ClientBill = {
   // the deferred trg_client_bill_schedules_validate_total trigger only checks that
   // SUM(expected_amount) == net_payable once, at COMMIT.
   create: async (billData, createdBy) => {
-    const { client_id, po_id, project_id, bill_number, gross_amount, advance_deduction, bill_date, area, remarks, schedules } = billData;
-    const netPayable = Number(gross_amount) - Number(advance_deduction || 0);
+    const { client_id, po_id, project_id, bill_number, gross_amount, advance_amount, bill_date, area, remarks, schedules } = billData;
+    const netPayable = Number(gross_amount) - Number(advance_amount || 0);
     const client = await db.getClient();
 
     try {
@@ -124,7 +124,7 @@ const ClientBill = {
 
       const insertQuery = `
         INSERT INTO client_bills
-          (client_id, po_id, project_id, bill_number, gross_amount, advance_deduction, net_payable, bill_date, area, remarks, created_by, updated_by, created_at)
+          (client_id, po_id, project_id, bill_number, gross_amount, advance_amount, net_payable, bill_date, area, remarks, created_by, updated_by, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11, NOW())
         RETURNING *
       `;
@@ -134,7 +134,7 @@ const ClientBill = {
         project_id || null,
         bill_number || null,
         gross_amount,
-        advance_deduction || 0,
+        advance_amount || 0,
         netPayable,
         bill_date || new Date(),
         area || null,
@@ -154,48 +154,45 @@ const ClientBill = {
     }
   },
 
-  // Billed amount (gross/advance/net) is locked once ANY payment has been recorded
-  // against the bill (tied to a milestone or not) — callers must check `amountsLocked`
-  // (via ClientBill.paymentCount) before passing gross_amount/advance_deduction.
+  // Billed amount (gross/advance/net) is locked once ANY milestone has a receipt
+  // recorded against it (received_amount or deduction_amount > 0) — callers must check
+  // `amountsLocked` (via ClientBill.hasSettledMilestones) before passing
+  // gross_amount/advance_amount.
   //
   // Milestone rows are upserted in place (by id) rather than destroyed and recreated,
-  // because client_payments.schedule_id is a real FK into a specific row — recreating
-  // rows would orphan that link. A row that already has received_amount > 0 keeps its
-  // percentage/expected_amount fixed (only its label/due_date may change) and can never
-  // be removed; a row with nothing received against it is fully editable, and can be
-  // added or removed freely as long as the total still sums to net_payable.
+  // since a milestone row IS the payment record now — recreating rows would lose the
+  // receipt recorded on it. A row that already has received_amount/deduction_amount > 0
+  // keeps its percentage/expected_amount fixed (only its label/due_date may change) and
+  // can never be removed; a row with nothing recorded against it is fully editable, and
+  // can be added or removed freely as long as the total still sums to net_payable.
   update: async (id, billData, updatedBy) => {
-    const { po_id, project_id, bill_number, gross_amount, advance_deduction, bill_date, area, remarks, schedules } = billData;
+    const { po_id, project_id, bill_number, gross_amount, advance_amount, bill_date, area, remarks, schedules } = billData;
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
 
       const { rows: existingSchedules } = await client.query(
-        'SELECT id, expected_amount, received_amount FROM client_bill_schedules WHERE bill_id = $1 AND deleted = false FOR UPDATE',
+        'SELECT id, expected_amount, received_amount, deduction_amount FROM client_bill_schedules WHERE bill_id = $1 AND deleted = false FOR UPDATE',
         [id]
       );
 
-      // Mirrors the controller's own lock check (ClientBill.paymentCount): billed amount
-      // is locked by ANY payment on the bill, tied to a milestone or not. A per-row
-      // received_amount check alone would miss an untied "general" payment and wrongly
-      // treat gross/advance as still editable.
-      const { rows: paymentCountRows } = await client.query(
-        'SELECT COUNT(*) FROM client_payments WHERE bill_id = $1 AND deleted = false',
-        [id]
+      // Mirrors the controller's own lock check (ClientBill.hasSettledMilestones):
+      // billed amount is locked once any milestone has a receipt recorded against it.
+      const amountsLocked = existingSchedules.some(
+        (s) => Number(s.received_amount) > 0 || Number(s.deduction_amount) > 0
       );
-      const amountsLocked = parseInt(paymentCountRows[0].count, 10) > 0;
 
       let rows;
       if (!amountsLocked) {
-        const netPayable = Number(gross_amount) - Number(advance_deduction || 0);
+        const netPayable = Number(gross_amount) - Number(advance_amount || 0);
         ({ rows } = await client.query(
           `UPDATE client_bills
-           SET po_id = $1, project_id = $2, bill_number = $3, gross_amount = $4, advance_deduction = $5,
+           SET po_id = $1, project_id = $2, bill_number = $3, gross_amount = $4, advance_amount = $5,
                net_payable = $6, bill_date = $7, area = $8, remarks = $9, updated_by = $10, updated_at = NOW()
            WHERE id = $11 AND deleted = false
            RETURNING *`,
-          [po_id || null, project_id || null, bill_number || null, gross_amount, advance_deduction || 0,
+          [po_id || null, project_id || null, bill_number || null, gross_amount, advance_amount || 0,
             netPayable, bill_date || new Date(), area || null, remarks || null, updatedBy, id]
         ));
       } else {
@@ -220,8 +217,8 @@ const ClientBill = {
 
         for (const ex of existingSchedules) {
           if (!incomingIds.has(ex.id)) {
-            if (Number(ex.received_amount) > 0) {
-              throw new ValidationError('Cannot remove a milestone that already has payments recorded against it');
+            if (Number(ex.received_amount) > 0 || Number(ex.deduction_amount) > 0) {
+              throw new ValidationError('Cannot remove a milestone that already has a receipt recorded against it');
             }
             await client.query(
               'UPDATE client_bill_schedules SET deleted = true, updated_by = $1, updated_at = NOW() WHERE id = $2',
@@ -232,10 +229,10 @@ const ClientBill = {
 
         for (const s of schedules) {
           const ex = s.id ? existingById.get(s.id) : null;
-          const isPaid = ex && Number(ex.received_amount) > 0;
+          const isPaid = ex && (Number(ex.received_amount) > 0 || Number(ex.deduction_amount) > 0);
 
           if (isPaid && Math.abs(Number(s.expected_amount) - Number(ex.expected_amount)) > AMOUNT_TOLERANCE) {
-            throw new ValidationError('Cannot change the amount of a milestone that already has payments recorded against it');
+            throw new ValidationError('Cannot change the amount of a milestone that already has a receipt recorded against it');
           }
 
           if (ex) {
@@ -271,12 +268,14 @@ const ClientBill = {
     return rows[0];
   },
 
-  paymentCount: async (id) => {
+  hasSettledMilestones: async (id) => {
     const { rows } = await db.query(
-      'SELECT COUNT(*) FROM client_payments WHERE bill_id = $1 AND deleted = false',
+      `SELECT 1 FROM client_bill_schedules
+       WHERE bill_id = $1 AND deleted = false AND (received_amount > 0 OR deduction_amount > 0)
+       LIMIT 1`,
       [id]
     );
-    return parseInt(rows[0].count, 10);
+    return rows.length > 0;
   }
 };
 

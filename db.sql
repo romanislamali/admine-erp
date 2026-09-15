@@ -227,7 +227,8 @@ CREATE TABLE clients (
     email VARCHAR(100),
     address TEXT,
     total_billed NUMERIC DEFAULT 0.00,
-    total_advance_deduction NUMERIC DEFAULT 0.00,
+    total_advance NUMERIC DEFAULT 0.00,
+    total_deduction NUMERIC DEFAULT 0.00,
     total_received NUMERIC DEFAULT 0.00,
     total_due NUMERIC DEFAULT 0.00,
     deleted BOOLEAN DEFAULT false,
@@ -264,7 +265,7 @@ CREATE TABLE client_bills (
     project_id UUID REFERENCES projects(id),
     bill_number VARCHAR(50),
     gross_amount NUMERIC NOT NULL,
-    advance_deduction NUMERIC DEFAULT 0.00,
+    advance_amount NUMERIC DEFAULT 0.00,
     net_payable NUMERIC NOT NULL,
     bill_date DATE,
     area VARCHAR(100),
@@ -278,9 +279,11 @@ CREATE TABLE client_bills (
 );
 
 -- Client Bill Payment Schedules (dynamic milestone splits, e.g. 80/20, 50/25/25)
--- One row per installment. expected_amount is the app-computed slice of the
--- bill's net_payable; received_amount and status are kept in sync by triggers
--- as client_payments are recorded against a schedule row.
+-- One row per installment, and the installment IS the payment record (single-shot:
+-- one receipt event fully settles it). expected_amount is the app-computed slice of
+-- the bill's net_payable; received_amount/deduction_amount/status/bank details are
+-- filled in when a receipt is recorded against the row, and status is derived by
+-- trigger from received_amount + deduction_amount vs expected_amount.
 CREATE TABLE client_bill_schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bill_id UUID REFERENCES client_bills(id),
@@ -288,25 +291,9 @@ CREATE TABLE client_bill_schedules (
     percentage NUMERIC,
     expected_amount NUMERIC NOT NULL,
     received_amount NUMERIC DEFAULT 0.00,
-    status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
+    deduction_amount NUMERIC DEFAULT 0.00,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID')),
     due_date DATE,
-    remarks TEXT,
-    deleted BOOLEAN DEFAULT false,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Client Payments Table (receipts from clients, incl. bank advice references)
--- bill_id is kept even when schedule_id is set so payment listing/reporting
--- doesn't need to join through client_bill_schedules just to find the bill.
-CREATE TABLE client_payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    client_id UUID REFERENCES clients(id),
-    bill_id UUID REFERENCES client_bills(id),
-    schedule_id UUID REFERENCES client_bill_schedules(id),
-    amount NUMERIC NOT NULL,
     payment_date DATE,
     bank_name VARCHAR(100),
     advice_reference_number VARCHAR(100),
@@ -332,16 +319,11 @@ CREATE INDEX IF NOT EXISTS idx_client_bills_deleted_created_at ON client_bills (
 CREATE INDEX IF NOT EXISTS idx_client_bill_schedules_bill_id ON client_bill_schedules (bill_id);
 CREATE INDEX IF NOT EXISTS idx_client_bill_schedules_deleted_created_at ON client_bill_schedules (deleted, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_client_payments_client_id ON client_payments (client_id);
-CREATE INDEX IF NOT EXISTS idx_client_payments_bill_id ON client_payments (bill_id);
-CREATE INDEX IF NOT EXISTS idx_client_payments_schedule_id ON client_payments (schedule_id);
-CREATE INDEX IF NOT EXISTS idx_client_payments_deleted_created_at ON client_payments (deleted, created_at DESC);
-
 -- PL/pgSQL Trigger Functions for Client Balance Sync
 -- 1. Sync Client Balance on Bill Changes (mirrors trg_fn_sync_contractor_bills).
 --    total_billed tracks gross_amount — the actual invoiced/billed value — so it reads
---    as a real ledger: Billed - Advance/Deduction - Received = Due. total_due still
---    tracks net_payable (gross less advance/deduction) minus received, which is the
+--    as a real ledger: Billed - Advance - Deduction - Received = Due. total_due still
+--    tracks net_payable (gross less advance) minus received/deduction, which is the
 --    real amount currently owed; it's just no longer the same figure as total_billed.
 CREATE OR REPLACE FUNCTION trg_fn_sync_client_bills()
 RETURNS TRIGGER AS $$
@@ -350,7 +332,7 @@ BEGIN
         IF (NEW.deleted = false) THEN
             UPDATE clients
             SET total_billed = total_billed + NEW.gross_amount,
-                total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                 total_due = total_due + NEW.net_payable
             WHERE id = NEW.client_id;
         END IF;
@@ -361,25 +343,25 @@ BEGIN
         IF (OLD.deleted = false AND NEW.deleted = false) THEN
             UPDATE clients
             SET total_billed = total_billed - OLD.gross_amount,
-                total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                 total_due = total_due - OLD.net_payable
             WHERE id = OLD.client_id;
 
             UPDATE clients
             SET total_billed = total_billed + NEW.gross_amount,
-                total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                 total_due = total_due + NEW.net_payable
             WHERE id = NEW.client_id;
         ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
             UPDATE clients
             SET total_billed = total_billed - OLD.gross_amount,
-                total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                 total_due = total_due - OLD.net_payable
             WHERE id = OLD.client_id;
         ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
             UPDATE clients
             SET total_billed = total_billed + NEW.gross_amount,
-                total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                 total_due = total_due + NEW.net_payable
             WHERE id = NEW.client_id;
         END IF;
@@ -387,7 +369,7 @@ BEGIN
         IF (OLD.deleted = false) THEN
             UPDATE clients
             SET total_billed = total_billed - OLD.gross_amount,
-                total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                 total_due = total_due - OLD.net_payable
             WHERE id = OLD.client_id;
         END IF;
@@ -396,116 +378,85 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2. Sync Client Balance on Payment Changes (mirrors trg_fn_sync_contractor_payments)
-CREATE OR REPLACE FUNCTION trg_fn_sync_client_payments()
+-- 2. Sync Client Balance on Milestone Receipt Changes (mirrors trg_fn_sync_contractor_payments).
+--    A milestone row IS the payment record (single-shot receipt), so this fires directly
+--    off client_bill_schedules instead of a separate payments table. client_id is resolved
+--    via the parent bill, same lookup trg_fn_validate_bill_schedule_total already does.
+CREATE OR REPLACE FUNCTION trg_fn_sync_client_schedule_receipts()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_old_client_id UUID;
+    v_new_client_id UUID;
 BEGIN
     IF (TG_OP = 'INSERT') THEN
         IF (NEW.deleted = false) THEN
+            SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
             UPDATE clients
-            SET total_received = total_received + NEW.amount,
-                total_due = total_due - NEW.amount
-            WHERE id = NEW.client_id;
+            SET total_received = total_received + NEW.received_amount,
+                total_deduction = total_deduction + NEW.deduction_amount,
+                total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+            WHERE id = v_new_client_id;
         END IF;
     ELSIF (TG_OP = 'UPDATE') THEN
         IF (OLD.deleted = false AND NEW.deleted = false) THEN
+            SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
             UPDATE clients
-            SET total_received = total_received - OLD.amount,
-                total_due = total_due + OLD.amount
-            WHERE id = OLD.client_id;
+            SET total_received = total_received - OLD.received_amount,
+                total_deduction = total_deduction - OLD.deduction_amount,
+                total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+            WHERE id = v_old_client_id;
 
+            SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
             UPDATE clients
-            SET total_received = total_received + NEW.amount,
-                total_due = total_due - NEW.amount
-            WHERE id = NEW.client_id;
+            SET total_received = total_received + NEW.received_amount,
+                total_deduction = total_deduction + NEW.deduction_amount,
+                total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+            WHERE id = v_new_client_id;
         ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+            SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
             UPDATE clients
-            SET total_received = total_received - OLD.amount,
-                total_due = total_due + OLD.amount
-            WHERE id = OLD.client_id;
+            SET total_received = total_received - OLD.received_amount,
+                total_deduction = total_deduction - OLD.deduction_amount,
+                total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+            WHERE id = v_old_client_id;
         ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+            SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
             UPDATE clients
-            SET total_received = total_received + NEW.amount,
-                total_due = total_due - NEW.amount
-            WHERE id = NEW.client_id;
+            SET total_received = total_received + NEW.received_amount,
+                total_deduction = total_deduction + NEW.deduction_amount,
+                total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+            WHERE id = v_new_client_id;
         END IF;
     ELSIF (TG_OP = 'DELETE') THEN
         IF (OLD.deleted = false) THEN
+            SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
             UPDATE clients
-            SET total_received = total_received - OLD.amount,
-                total_due = total_due + OLD.amount
-            WHERE id = OLD.client_id;
+            SET total_received = total_received - OLD.received_amount,
+                total_deduction = total_deduction - OLD.deduction_amount,
+                total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+            WHERE id = v_old_client_id;
         END IF;
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 3. Sync installment received_amount on client_bill_schedules whenever a
---    payment referencing that schedule is inserted/updated/soft-deleted/deleted.
---    Mirrors the same INSERT/UPDATE(soft-delete transitions)/DELETE shape as
---    the two functions above, scoped to schedule_id instead of client_id.
-CREATE OR REPLACE FUNCTION trg_fn_sync_schedule_on_payment()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (TG_OP = 'INSERT') THEN
-        IF (NEW.deleted = false AND NEW.schedule_id IS NOT NULL) THEN
-            UPDATE client_bill_schedules
-            SET received_amount = received_amount + NEW.amount
-            WHERE id = NEW.schedule_id;
-        END IF;
-    ELSIF (TG_OP = 'UPDATE') THEN
-        IF (OLD.deleted = false AND NEW.deleted = false) THEN
-            IF (OLD.schedule_id IS NOT NULL) THEN
-                UPDATE client_bill_schedules
-                SET received_amount = received_amount - OLD.amount
-                WHERE id = OLD.schedule_id;
-            END IF;
-            IF (NEW.schedule_id IS NOT NULL) THEN
-                UPDATE client_bill_schedules
-                SET received_amount = received_amount + NEW.amount
-                WHERE id = NEW.schedule_id;
-            END IF;
-        ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
-            IF (OLD.schedule_id IS NOT NULL) THEN
-                UPDATE client_bill_schedules
-                SET received_amount = received_amount - OLD.amount
-                WHERE id = OLD.schedule_id;
-            END IF;
-        ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
-            IF (NEW.schedule_id IS NOT NULL) THEN
-                UPDATE client_bill_schedules
-                SET received_amount = received_amount + NEW.amount
-                WHERE id = NEW.schedule_id;
-            END IF;
-        END IF;
-    ELSIF (TG_OP = 'DELETE') THEN
-        IF (OLD.deleted = false AND OLD.schedule_id IS NOT NULL) THEN
-            UPDATE client_bill_schedules
-            SET received_amount = received_amount - OLD.amount
-            WHERE id = OLD.schedule_id;
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 4. Derive installment status from received_amount whenever it changes.
---    A schedule is only ever force-flipped to PAID (full receipt) or reverted
---    from PAID back to DUE (a reversed/deleted payment drops it below full).
+-- 3. Derive installment status from received_amount + deduction_amount whenever either
+--    changes. Receipts are single-shot (one row = one payment event), so status is a
+--    plain deterministic recompute — no need to track "was it previously PAID".
 CREATE OR REPLACE FUNCTION trg_fn_set_schedule_status()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF (NEW.expected_amount > 0 AND NEW.received_amount >= NEW.expected_amount) THEN
+    IF (NEW.expected_amount > 0 AND (NEW.received_amount + NEW.deduction_amount) >= NEW.expected_amount) THEN
         NEW.status := 'PAID';
-    ELSIF (TG_OP = 'UPDATE' AND OLD.status = 'PAID' AND NEW.received_amount < NEW.expected_amount) THEN
-        NEW.status := 'DUE';
+    ELSE
+        NEW.status := 'PENDING';
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. Guard the dynamic milestone split: whatever percentages/amounts the app
+-- 4. Guard the dynamic milestone split: whatever percentages/amounts the app
 --    breaks a bill into (80/20, 50/25/25, custom), the schedule rows for a
 --    bill must always sum exactly to that bill's net_payable. Deferred to
 --    COMMIT so a bill + all of its schedule rows can be inserted across
@@ -542,18 +493,13 @@ AFTER INSERT OR UPDATE OR DELETE ON client_bills
 FOR EACH ROW
 EXECUTE FUNCTION trg_fn_sync_client_bills();
 
-CREATE TRIGGER trg_client_payments_sync
-AFTER INSERT OR UPDATE OR DELETE ON client_payments
+CREATE TRIGGER trg_client_bill_schedules_receipts_sync
+AFTER INSERT OR UPDATE OR DELETE ON client_bill_schedules
 FOR EACH ROW
-EXECUTE FUNCTION trg_fn_sync_client_payments();
-
-CREATE TRIGGER trg_client_payments_schedule_sync
-AFTER INSERT OR UPDATE OR DELETE ON client_payments
-FOR EACH ROW
-EXECUTE FUNCTION trg_fn_sync_schedule_on_payment();
+EXECUTE FUNCTION trg_fn_sync_client_schedule_receipts();
 
 CREATE TRIGGER trg_client_bill_schedules_status
-BEFORE INSERT OR UPDATE OF received_amount ON client_bill_schedules
+BEFORE INSERT OR UPDATE OF received_amount, deduction_amount ON client_bill_schedules
 FOR EACH ROW
 EXECUTE FUNCTION trg_fn_set_schedule_status();
 

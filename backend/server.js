@@ -41,7 +41,6 @@ const clientRoutes = require('./routes/clientRoutes');
 const clientPORoutes = require('./routes/clientPORoutes');
 const clientBillRoutes = require('./routes/clientBillRoutes');
 const clientBillScheduleRoutes = require('./routes/clientBillScheduleRoutes');
-const clientPaymentRoutes = require('./routes/clientPaymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cmsClientRoutes = require('./routes/cmsClientRoutes');
 const cmsProjectRoutes = require('./routes/cmsProjectRoutes');
@@ -55,7 +54,6 @@ app.use('/api/clients', authenticateToken, clientRoutes);
 app.use('/api/client-pos', authenticateToken, clientPORoutes);
 app.use('/api/client-bills', authenticateToken, clientBillRoutes);
 app.use('/api/client-bill-schedules', authenticateToken, clientBillScheduleRoutes);
-app.use('/api/client-payments', authenticateToken, clientPaymentRoutes);
 app.use('/api/users', userRoutes);
 
 // Website CMS: each router mixes public (unauthenticated) read routes with

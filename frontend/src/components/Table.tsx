@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { Fragment, useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -57,6 +57,13 @@ interface TableProps<T> {
     sortOrder: 'asc' | 'desc' | null;
   }) => void;
   actionsPosition?: 'first' | 'last';
+
+  // Expandable rows: when a row is expanded (per isRowExpanded), renderExpanded's
+  // content is shown in a full-width row directly beneath it. The caller owns the
+  // expanded-state and the toggle control (e.g. a button in a column's render) —
+  // Table only renders the extra row.
+  renderExpanded?: (row: T) => React.ReactNode;
+  isRowExpanded?: (row: T) => boolean;
 }
 
 export default function Table<T>({
@@ -75,7 +82,9 @@ export default function Table<T>({
   totalRecords = 0,
   loading = false,
   onLazyLoad,
-  actionsPosition = 'last'
+  actionsPosition = 'last',
+  renderExpanded,
+  isRowExpanded
 }: TableProps<T>) {
   const { user } = useAuth();
 
@@ -419,30 +428,41 @@ export default function Table<T>({
                     </td>
                   </tr>
                 ) : (
-                  paginatedData.map((row) => (
-                    <motion.tr
-                      key={keyExtractor(row)}
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="hover:bg-slate-100/60 border-b border-slate-200 transition-colors"
-                      transition={{ duration: 0.15 }}
-                    >
-                      {actionsPosition === 'first' && renderActionsCell(row)}
-                      {columns.map((col, idx) => (
-                        <td
-                          key={idx}
-                          className={`px-6 py-3.5 text-slate-600 font-medium ${col.className || ''}`}
+                  paginatedData.map((row) => {
+                    const expanded = !!(renderExpanded && isRowExpanded?.(row));
+                    return (
+                      <Fragment key={keyExtractor(row)}>
+                        <motion.tr
+                          layout
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="hover:bg-slate-100/60 border-b border-slate-200 transition-colors"
+                          transition={{ duration: 0.15 }}
                         >
-                          <div className={`flex items-center ${getAlignClass(col.align)}`}>
-                            {col.render ? col.render(row) : (row as any)[col.key] ?? '—'}
-                          </div>
-                        </td>
-                      ))}
-                      {actionsPosition === 'last' && renderActionsCell(row)}
-                    </motion.tr>
-                  ))
+                          {actionsPosition === 'first' && renderActionsCell(row)}
+                          {columns.map((col, idx) => (
+                            <td
+                              key={idx}
+                              className={`px-6 py-3.5 text-slate-600 font-medium ${col.className || ''}`}
+                            >
+                              <div className={`flex items-center ${getAlignClass(col.align)}`}>
+                                {col.render ? col.render(row) : (row as any)[col.key] ?? '—'}
+                              </div>
+                            </td>
+                          ))}
+                          {actionsPosition === 'last' && renderActionsCell(row)}
+                        </motion.tr>
+                        {expanded && (
+                          <tr className="border-b border-slate-200 bg-slate-50/50">
+                            <td colSpan={columns.length + (showActions ? 1 : 0)} className="p-0">
+                              {renderExpanded!(row)}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })
                 )}
               </AnimatePresence>
             </tbody>

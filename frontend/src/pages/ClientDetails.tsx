@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X,
-    Wallet, ReceiptText, Pencil, Trash2, ChevronDown, ShoppingCart, ListChecks, Plus,
-    CheckCircle2, Lock, Landmark, MinusCircle
+    Wallet, ReceiptText, Pencil, Trash2, ShoppingCart, ChevronDown, Plus,
+    CheckCircle2, Lock, MinusCircle, PiggyBank
 } from 'lucide-react';
 import Table from '../components/Table';
 import Dropdown from '../components/Dropdown';
@@ -18,7 +18,8 @@ interface Client {
     email: string;
     address: string;
     total_billed: string | number;
-    total_advance_deduction: string | number;
+    total_advance: string | number;
+    total_deduction: string | number;
     total_received: string | number;
     total_due: string | number;
 }
@@ -46,13 +47,15 @@ interface ClientBill {
     project_name?: string;
     bill_number: string | null;
     gross_amount: string | number;
-    advance_deduction: string | number;
+    advance_amount: string | number;
     net_payable: string | number;
     bill_date: string;
     area: string | null;
     remarks: string | null;
 }
 
+// A milestone row IS the payment record now — single-shot: one receipt event fully
+// settles it (received_amount + deduction_amount >= expected_amount flips status to PAID).
 interface ClientBillSchedule {
     id: string;
     bill_id: string;
@@ -60,19 +63,10 @@ interface ClientBillSchedule {
     percentage: string | number | null;
     expected_amount: string | number;
     received_amount: string | number;
-    status: 'DUE' | 'PAID';
+    deduction_amount: string | number;
+    status: 'PENDING' | 'PAID';
     due_date: string | null;
-}
-
-interface ClientPayment {
-    id: string;
-    client_id: string;
-    bill_id: string | null;
-    bill_number?: string;
-    schedule_id: string | null;
-    installment_label?: string;
-    amount: string | number;
-    payment_date: string;
+    payment_date: string | null;
     bank_name: string | null;
     advice_reference_number: string | null;
     remarks: string | null;
@@ -85,6 +79,7 @@ interface ScheduleRow {
     expected_amount: string;
     due_date: string;
     received_amount: number;
+    deduction_amount: number;
 }
 
 const ordinal = (n: number): string => {
@@ -108,7 +103,6 @@ export default function ClientDetails() {
 
     const [client, setClient] = useState<Client | null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [billsForDropdown, setBillsForDropdown] = useState<ClientBill[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -137,33 +131,25 @@ export default function ClientDetails() {
     const [editingBillId, setEditingBillId] = useState<string | null>(null);
     const [submittingBill, setSubmittingBill] = useState(false);
     const [billFormData, setBillFormData] = useState({
-        po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_deduction: '', bill_date: '', area: '', remarks: ''
+        po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_amount: '', bill_date: '', area: '', remarks: ''
     });
     const [schedules, setSchedules] = useState<ScheduleRow[]>([
-        { installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }
+        { installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0, deduction_amount: 0 }
     ]);
 
-    // Milestones view modal
-    const [isMilestonesModalOpen, setIsMilestonesModalOpen] = useState(false);
-    const [milestonesBill, setMilestonesBill] = useState<ClientBill | null>(null);
-    const [milestoneSchedules, setMilestoneSchedules] = useState<ClientBillSchedule[]>([]);
-    const [milestonesLoading, setMilestonesLoading] = useState(false);
+    // Milestones — shown inline below each bill row (expand/collapse), also the
+    // payment-recording surface. Keyed by bill id so any number of bills can be
+    // expanded independently.
+    const [expandedBillIds, setExpandedBillIds] = useState<Set<string>>(new Set());
+    const [milestonesByBill, setMilestonesByBill] = useState<Record<string, ClientBillSchedule[]>>({});
+    const [milestonesLoadingByBill, setMilestonesLoadingByBill] = useState<Record<string, boolean>>({});
 
-    // Payments
-    const [payments, setPayments] = useState<ClientPayment[]>([]);
-    const [paymentsTableLoading, setPaymentsTableLoading] = useState(false);
-    const [totalPaymentRecords, setTotalPaymentRecords] = useState(0);
-    const [paymentsLazyParams, setPaymentsLazyParams] = useState({ page: 1, limit: 5, search: '', sortField: null as string | null, sortOrder: null as 'asc' | 'desc' | null });
-    const [paymentsRefreshTrigger, setPaymentsRefreshTrigger] = useState(0);
-    const refreshPayments = () => setPaymentsRefreshTrigger((p) => p + 1);
-
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
-    const [submittingPayment, setSubmittingPayment] = useState(false);
-    const [paymentFormData, setPaymentFormData] = useState({
-        bill_id: '', schedule_id: '', amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: ''
+    // Receipt recording (inline within a milestone row)
+    const [recordingReceiptFor, setRecordingReceiptFor] = useState<string | null>(null);
+    const [receiptFormData, setReceiptFormData] = useState({
+        received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: ''
     });
-    const [paymentScheduleOptions, setPaymentScheduleOptions] = useState<ClientBillSchedule[]>([]);
+    const [submittingReceipt, setSubmittingReceipt] = useState(false);
 
     const fetchClientData = async () => {
         if (!id) return;
@@ -171,10 +157,9 @@ export default function ClientDetails() {
             setLoading(true);
             setError('');
 
-            const [clientRes, projectsRes, billsDropdownRes] = await Promise.all([
+            const [clientRes, projectsRes] = await Promise.all([
                 fetch(`/api/clients/${id}`),
-                fetch('/api/projects'),
-                fetch(`/api/client-bills?client_id=${id}`)
+                fetch('/api/projects')
             ]);
 
             if (!clientRes.ok) throw new Error('Failed to load client details');
@@ -183,7 +168,6 @@ export default function ClientDetails() {
             setClient(clientData);
 
             if (projectsRes.ok) setProjects(await projectsRes.json());
-            if (billsDropdownRes.ok) setBillsForDropdown(await billsDropdownRes.json());
         } catch (err: any) {
             setError(err.message || 'An error occurred while loading details');
         } finally {
@@ -233,31 +217,9 @@ export default function ClientDetails() {
         }
     };
 
-    const fetchPayments = async (params: typeof paymentsLazyParams) => {
-        if (!id) return;
-        try {
-            setPaymentsTableLoading(true);
-            const query = new URLSearchParams({
-                client_id: id, page: params.page.toString(), limit: params.limit.toString(), search: params.search,
-                ...(params.sortField ? { sortField: params.sortField } : {}),
-                ...(params.sortOrder ? { sortOrder: params.sortOrder } : {})
-            });
-            const res = await fetch(`/api/client-payments?${query.toString()}`);
-            if (!res.ok) throw new Error('Failed to fetch payments');
-            const resData = await res.json();
-            setPayments(resData.data);
-            setTotalPaymentRecords(resData.total);
-        } catch (err: any) {
-            setError(err.message || 'An error occurred while fetching payments');
-        } finally {
-            setPaymentsTableLoading(false);
-        }
-    };
-
     useEffect(() => { fetchClientData(); }, [id]);
     useEffect(() => { fetchPOs(posLazyParams); }, [id, posLazyParams, posRefreshTrigger]);
     useEffect(() => { fetchBills(billsLazyParams); }, [id, billsLazyParams, billsRefreshTrigger]);
-    useEffect(() => { fetchPayments(paymentsLazyParams); }, [id, paymentsLazyParams, paymentsRefreshTrigger]);
 
     const formatCurrency = (val: string | number | null | undefined) => {
         const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -357,11 +319,11 @@ export default function ClientDetails() {
 
     // ---------------- Bills & Milestones ----------------
 
-    const netPayable = (Number(billFormData.gross_amount) || 0) - (Number(billFormData.advance_deduction) || 0);
+    const netPayable = (Number(billFormData.gross_amount) || 0) - (Number(billFormData.advance_amount) || 0);
     const scheduleTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.expected_amount) || 0), 0);
     const percentageTotal = schedules.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
     const isBalanced = netPayable > 0 && Math.abs(scheduleTotal - netPayable) < 0.01;
-    const hasPaidRows = schedules.some((r) => r.received_amount > 0);
+    const hasPaidRows = schedules.some((r) => r.received_amount > 0 || r.deduction_amount > 0);
 
     const recomputeFromNet = (newNet: number, rows: ScheduleRow[]) =>
         rows.map((r) => {
@@ -372,7 +334,7 @@ export default function ClientDetails() {
 
     const handleGrossChange = (value: string) => {
         const gross = parseFloat(value) || 0;
-        const advance = parseFloat(billFormData.advance_deduction) || 0;
+        const advance = parseFloat(billFormData.advance_amount) || 0;
         setBillFormData({ ...billFormData, gross_amount: value });
         setSchedules((prev) => recomputeFromNet(gross - advance, prev));
     };
@@ -380,7 +342,7 @@ export default function ClientDetails() {
     const handleAdvanceChange = (value: string) => {
         const advance = parseFloat(value) || 0;
         const gross = parseFloat(billFormData.gross_amount) || 0;
-        setBillFormData({ ...billFormData, advance_deduction: value });
+        setBillFormData({ ...billFormData, advance_amount: value });
         setSchedules((prev) => recomputeFromNet(gross - advance, prev));
     };
 
@@ -396,14 +358,15 @@ export default function ClientDetails() {
             percentage: String(pct),
             expected_amount: netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : '',
             due_date: '',
-            received_amount: 0
+            received_amount: 0,
+            deduction_amount: 0
         })));
     };
 
     const updateRow = (idx: number, field: keyof ScheduleRow, value: string) => {
         setSchedules((prev) => prev.map((r, i) => {
             if (i !== idx) return r;
-            if (r.received_amount > 0) return field === 'due_date' ? { ...r, due_date: value } : r;
+            if (r.received_amount > 0 || r.deduction_amount > 0) return field === 'due_date' ? { ...r, due_date: value } : r;
             if (field === 'percentage') {
                 const pct = parseFloat(value);
                 return { ...r, percentage: value, installment_label: computeLabel(idx, value), expected_amount: !isNaN(pct) && netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : r.expected_amount };
@@ -412,15 +375,15 @@ export default function ClientDetails() {
         }));
     };
 
-    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: computeLabel(prev.length, ''), percentage: '', expected_amount: '', due_date: '', received_amount: 0 }]);
+    const addScheduleRow = () => setSchedules((prev) => [...prev, { installment_label: computeLabel(prev.length, ''), percentage: '', expected_amount: '', due_date: '', received_amount: 0, deduction_amount: 0 }]);
     const removeScheduleRow = (idx: number) => setSchedules((prev) => {
-        if (prev.length === 1 || prev[idx].received_amount > 0) return prev;
+        if (prev.length === 1 || prev[idx].received_amount > 0 || prev[idx].deduction_amount > 0) return prev;
         return prev.filter((_, i) => i !== idx).map((r, i) => ({ ...r, installment_label: computeLabel(i, r.percentage) }));
     });
 
     const resetBillForm = () => {
-        setBillFormData({ po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_deduction: '', bill_date: '', area: '', remarks: '' });
-        setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
+        setBillFormData({ po_id: '', project_id: '', bill_number: '', gross_amount: '', advance_amount: '', bill_date: '', area: '', remarks: '' });
+        setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0, deduction_amount: 0 }]);
     };
 
     const handleOpenCreateBill = () => {
@@ -442,7 +405,7 @@ export default function ClientDetails() {
             project_id: b.project_id || '',
             bill_number: b.bill_number || '',
             gross_amount: b.gross_amount ? b.gross_amount.toString() : '',
-            advance_deduction: b.advance_deduction ? b.advance_deduction.toString() : '0',
+            advance_amount: b.advance_amount ? b.advance_amount.toString() : '0',
             bill_date: b.bill_date ? new Date(b.bill_date).toISOString().split('T')[0] : '',
             area: b.area || '',
             remarks: b.remarks || ''
@@ -458,10 +421,11 @@ export default function ClientDetails() {
                 percentage: s.percentage !== null ? s.percentage.toString() : '',
                 expected_amount: s.expected_amount.toString(),
                 due_date: s.due_date ? new Date(s.due_date).toISOString().split('T')[0] : '',
-                received_amount: Number(s.received_amount) || 0
-            })) : [{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
+                received_amount: Number(s.received_amount) || 0,
+                deduction_amount: Number(s.deduction_amount) || 0
+            })) : [{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0, deduction_amount: 0 }]);
         } catch {
-            setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0 }]);
+            setSchedules([{ installment_label: 'Full Payment (100%)', percentage: '100', expected_amount: '', due_date: '', received_amount: 0, deduction_amount: 0 }]);
         }
 
         setIsBillModalOpen(true);
@@ -519,7 +483,7 @@ export default function ClientDetails() {
 
             if (!hasPaidRows) {
                 payload.gross_amount = parseFloat(billFormData.gross_amount);
-                payload.advance_deduction = parseFloat(billFormData.advance_deduction) || 0;
+                payload.advance_amount = parseFloat(billFormData.advance_amount) || 0;
             }
 
             const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -547,145 +511,113 @@ export default function ClientDetails() {
     const getScheduleStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'PAID': return 'bg-emerald-50 text-emerald-700 border border-emerald-250';
-            case 'DUE':
+            case 'PENDING':
             default: return 'bg-amber-50 text-amber-700 border border-amber-250';
         }
     };
 
-    const handleOpenMilestones = async (b: ClientBill) => {
-        setMilestonesBill(b);
-        setIsMilestonesModalOpen(true);
-        setMilestonesLoading(true);
+    const fetchMilestoneSchedules = async (billId: string) => {
+        setMilestonesLoadingByBill((prev) => ({ ...prev, [billId]: true }));
         try {
-            const res = await fetch(`/api/client-bill-schedules?bill_id=${b.id}`);
-            setMilestoneSchedules(res.ok ? await res.json() : []);
+            const res = await fetch(`/api/client-bill-schedules?bill_id=${billId}`);
+            const data = res.ok ? await res.json() : [];
+            setMilestonesByBill((prev) => ({ ...prev, [billId]: data }));
         } finally {
-            setMilestonesLoading(false);
+            setMilestonesLoadingByBill((prev) => ({ ...prev, [billId]: false }));
         }
     };
 
-    const handleCloseMilestones = () => {
-        setIsMilestonesModalOpen(false);
-        setMilestonesBill(null);
-        setMilestoneSchedules([]);
-    };
-
-    const handleRecordPaymentForSchedule = (s: ClientBillSchedule) => {
-        handleCloseMilestones();
-        const outstanding = (Number(s.expected_amount) || 0) - (Number(s.received_amount) || 0);
-        setEditingPaymentId(null);
-        setPaymentFormData({
-            bill_id: s.bill_id,
-            schedule_id: s.id,
-            amount: outstanding > 0 ? outstanding.toFixed(2) : '',
-            payment_date: '', bank_name: '', advice_reference_number: '', remarks: ''
+    const toggleBillExpand = (b: ClientBill) => {
+        setExpandedBillIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(b.id)) {
+                next.delete(b.id);
+            } else {
+                next.add(b.id);
+                fetchMilestoneSchedules(b.id);
+            }
+            return next;
         });
-        setPaymentScheduleOptions(milestoneSchedules);
-        setIsPaymentModalOpen(true);
+        setRecordingReceiptFor(null);
     };
 
-    // ---------------- Payments ----------------
+    // ---------------- Milestone Receipts (milestone = payment) ----------------
 
-    const loadSchedulesForBill = async (billId: string) => {
-        if (!billId) {
-            setPaymentScheduleOptions([]);
-            return;
+    const handleOpenReceiptForm = (s: ClientBillSchedule) => {
+        setRecordingReceiptFor(s.id);
+        const hasReceipt = Number(s.received_amount) > 0 || Number(s.deduction_amount) > 0;
+        const outstanding = (Number(s.expected_amount) || 0) - (Number(s.received_amount) || 0) - (Number(s.deduction_amount) || 0);
+        setReceiptFormData({
+            received_amount: hasReceipt ? String(s.received_amount) : (outstanding > 0 ? outstanding.toFixed(2) : ''),
+            deduction_amount: hasReceipt ? String(s.deduction_amount) : '',
+            payment_date: s.payment_date ? new Date(s.payment_date).toISOString().split('T')[0] : '',
+            bank_name: s.bank_name || '',
+            advice_reference_number: s.advice_reference_number || '',
+            remarks: s.remarks || ''
+        });
+    };
+
+    const handleCloseReceiptForm = () => {
+        setRecordingReceiptFor(null);
+        setReceiptFormData({ received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: '' });
+    };
+
+    const submitReceipt = async (scheduleId: string, body: Record<string, any>) => {
+        const res = await fetch(`/api/client-bill-schedules/${scheduleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to save receipt');
+        if (data.bill_id) await fetchMilestoneSchedules(data.bill_id);
+        refreshBills();
+        fetchClientData();
+        return data;
+    };
+
+    const handleReceiptSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!recordingReceiptFor) return;
+        try {
+            setSubmittingReceipt(true);
+            await submitReceipt(recordingReceiptFor, {
+                received_amount: receiptFormData.received_amount ? parseFloat(receiptFormData.received_amount) : 0,
+                deduction_amount: receiptFormData.deduction_amount ? parseFloat(receiptFormData.deduction_amount) : 0,
+                payment_date: receiptFormData.payment_date || null,
+                bank_name: receiptFormData.bank_name || null,
+                advice_reference_number: receiptFormData.advice_reference_number || null,
+                remarks: receiptFormData.remarks || null
+            });
+            setSubmittingReceipt(false);
+            handleCloseReceiptForm();
+            await Promise.race([
+                showSuccess('Receipt Recorded', 'The milestone receipt has been saved.'),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
+        } catch (err: any) {
+            setSubmittingReceipt(false);
+            await Promise.race([
+                showError('Operation Failed', err.message || 'Unable to save this receipt. Please try again.'),
+                new Promise((resolve) => setTimeout(resolve, 1000))
+            ]);
         }
-        const res = await fetch(`/api/client-bill-schedules?bill_id=${billId}`);
-        setPaymentScheduleOptions(res.ok ? await res.json() : []);
     };
 
-    const handleOpenCreatePayment = () => {
-        setEditingPaymentId(null);
-        setPaymentFormData({ bill_id: '', schedule_id: '', amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: '' });
-        setPaymentScheduleOptions([]);
-        setIsPaymentModalOpen(true);
-    };
-
-    const handleClosePaymentModal = () => {
-        setIsPaymentModalOpen(false);
-        setEditingPaymentId(null);
-        setPaymentFormData({ bill_id: '', schedule_id: '', amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: '' });
-        setPaymentScheduleOptions([]);
-    };
-
-    const handleEditPayment = async (p: ClientPayment) => {
-        setEditingPaymentId(p.id);
-        setPaymentFormData({
-            bill_id: p.bill_id || '',
-            schedule_id: p.schedule_id || '',
-            amount: p.amount ? p.amount.toString() : '',
-            payment_date: p.payment_date ? new Date(p.payment_date).toISOString().split('T')[0] : '',
-            bank_name: p.bank_name || '',
-            advice_reference_number: p.advice_reference_number || '',
-            remarks: p.remarks || ''
-        });
-        if (p.bill_id) await loadSchedulesForBill(p.bill_id);
-        setIsPaymentModalOpen(true);
-    };
-
-    const handleDeletePayment = async (paymentId: string) => {
-        const confirmed = await confirmDelete('Delete Payment Record?', 'Are you sure you want to remove this payment record? This action is irreversible.');
+    const handleClearReceipt = async (s: ClientBillSchedule) => {
+        const confirmed = await confirmDelete('Clear Receipt?', 'This clears the received/deduction amounts and receipt details recorded on this milestone. This action is irreversible.');
         if (!confirmed) return;
         try {
-            const res = await fetch(`/api/client-payments/${paymentId}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to delete payment');
-            refreshPayments();
-            fetchClientData();
-            await Promise.race([
-                showSuccess('Payment Deleted', 'Payment has been deleted successfully.'),
-                new Promise((resolve) => setTimeout(resolve, 1000))
-            ]);
-        } catch (err: any) {
-            await Promise.race([
-                showError('Deletion Failed', err.message || 'Unable to delete this payment. Please try again.'),
-                new Promise((resolve) => setTimeout(resolve, 1000))
-            ]);
-        }
-    };
-
-    const handlePaymentSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!id || !paymentFormData.bill_id || !paymentFormData.amount.trim()) return;
-        const isEditing = Boolean(editingPaymentId);
-
-        try {
-            setSubmittingPayment(true);
-            const url = editingPaymentId ? `/api/client-payments/${editingPaymentId}` : '/api/client-payments';
-            const method = editingPaymentId ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    client_id: id,
-                    bill_id: paymentFormData.bill_id,
-                    schedule_id: paymentFormData.schedule_id || null,
-                    amount: parseFloat(paymentFormData.amount),
-                    payment_date: paymentFormData.payment_date || null,
-                    bank_name: paymentFormData.bank_name || null,
-                    advice_reference_number: paymentFormData.advice_reference_number || null,
-                    remarks: paymentFormData.remarks || null
-                })
+            await submitReceipt(s.id, {
+                received_amount: 0, deduction_amount: 0, payment_date: null, bank_name: null, advice_reference_number: null, remarks: null
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} payment`);
-
-            handleClosePaymentModal();
-            setSubmittingPayment(false);
-            refreshPayments();
-            refreshBills();
-            fetchClientData();
-
             await Promise.race([
-                showSuccess(isEditing ? 'Payment Updated' : 'Payment Recorded', isEditing ? 'Payment has been updated successfully.' : 'Payment has been recorded successfully.'),
+                showSuccess('Receipt Cleared', 'The milestone receipt has been cleared.'),
                 new Promise((resolve) => setTimeout(resolve, 1000))
             ]);
         } catch (err: any) {
-            setSubmittingPayment(false);
             await Promise.race([
-                showError('Operation Failed', err.message || 'Unable to store changes. Please try again.'),
+                showError('Operation Failed', err.message || 'Unable to clear this receipt. Please try again.'),
                 new Promise((resolve) => setTimeout(resolve, 1000))
             ]);
         }
@@ -732,8 +664,8 @@ export default function ClientDetails() {
         {
             header: 'Actions', key: 'actions', render: (b: ClientBill) => (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => handleOpenMilestones(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title="View milestones">
-                        <ListChecks size={14} />
+                    <button onClick={() => toggleBillExpand(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title={expandedBillIds.has(b.id) ? 'Hide milestones' : 'Show milestones'}>
+                        <ChevronDown size={14} className={`transition-transform ${expandedBillIds.has(b.id) ? 'rotate-180' : ''}`} />
                     </button>
                     <button onClick={() => handleEditBill(b)} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Edit bill">
                         <Pencil size={14} />
@@ -773,8 +705,8 @@ export default function ClientDetails() {
             )
         },
         {
-            header: 'Advance/Deduction', key: 'advance_deduction', align: 'right' as const, sortable: true, render: (b: ClientBill) => {
-                const adv = Number(b.advance_deduction) || 0;
+            header: 'Advance', key: 'advance_amount', align: 'right' as const, sortable: true, render: (b: ClientBill) => {
+                const adv = Number(b.advance_amount) || 0;
                 return adv > 0
                     ? <span className="font-semibold text-green-600">{formatCurrency(adv)}</span>
                     : <span className="text-slate-400 text-xs italic">None</span>;
@@ -787,51 +719,107 @@ export default function ClientDetails() {
         }
     ];
 
-    const columnsForPayments = [
-        {
-            header: 'Actions', key: 'actions', render: (p: ClientPayment) => (
-                <div className="flex items-center gap-2">
-                    <button onClick={() => handleEditPayment(p)} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Edit payment">
-                        <Pencil size={14} />
-                    </button>
-                    {isAdmin && (
-                        <button onClick={() => handleDeletePayment(p.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded transition-colors" title="Delete payment">
-                            <Trash2 size={14} />
-                        </button>
-                    )}
+    // Milestones panel shown inline below a bill row when expanded — a milestone row
+    // IS the payment record, so this doubles as the receipt-recording surface.
+    const renderMilestonesPanel = (b: ClientBill) => {
+        const isLoading = !!milestonesLoadingByBill[b.id];
+        const scheds = milestonesByBill[b.id] || [];
+        return (
+            <div className="p-4 sm:p-5">
+                <div className="mb-3">
+                    <h4 className="text-sm font-bold text-slate-800">Milestones</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        {b.bill_number || 'Bill'} &middot; Gross {formatCurrency(b.gross_amount)}
+                        {Number(b.advance_amount) > 0 && <> &middot; Advance {formatCurrency(b.advance_amount)}</>}
+                        &middot; Net Receivable {formatCurrency(b.net_payable)}
+                    </p>
                 </div>
-            )
-        },
-        {
-            header: 'Bank / Advice Ref', key: 'advice_reference_number', sortable: true, render: (p: ClientPayment) => (
-                <div className="text-xs space-y-0.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                        <Landmark size={13} className="text-slate-400 shrink-0" />
-                        {p.bank_name || <span className="text-slate-400 italic">N/A</span>}
+
+                {isLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" size={24} /></div>
+                ) : scheds.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 text-sm">No milestones found for this bill.</div>
+                ) : (
+                    <div className="space-y-3">
+                        {scheds.map((s) => {
+                            const received = Number(s.received_amount) || 0;
+                            const deduction = Number(s.deduction_amount) || 0;
+                            const outstanding = (Number(s.expected_amount) || 0) - received - deduction;
+                            const hasReceipt = received > 0 || deduction > 0;
+                            const isRecording = recordingReceiptFor === s.id;
+                            return (
+                                <div key={s.id} className="border border-slate-200 bg-white rounded-xl px-3.5 py-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                            <span className="font-semibold text-slate-900 text-sm">{s.installment_label}</span>
+                                            <span className="text-xs text-slate-500">Expected <b className="text-slate-800">{formatCurrency(s.expected_amount)}</b></span>
+                                            <span className="text-xs text-slate-500">Received <b className="text-emerald-700">{formatCurrency(s.received_amount)}</b></span>
+                                            {deduction > 0 && <span className="text-xs text-slate-500">Deduction <b className="text-rose-600">{formatCurrency(deduction)}</b></span>}
+                                            {outstanding > 0 && <span className="text-xs text-slate-500">Outstanding <b className="text-amber-700">{formatCurrency(outstanding)}</b></span>}
+                                            {s.due_date && <span className="text-xs text-slate-500">Due <b className="text-slate-800">{formatDate(s.due_date)}</b></span>}
+                                        </div>
+                                        <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg shrink-0 ${getScheduleStatusBadgeClass(s.status)}`}>{s.status}</span>
+                                    </div>
+
+                                    {(s.payment_date || s.bank_name || s.advice_reference_number) && (
+                                        <div className="text-xs text-slate-400 mt-1">
+                                            {s.payment_date && <>Paid {formatDate(s.payment_date)}</>}
+                                            {s.bank_name && <> &middot; {s.bank_name}</>}
+                                            {s.advice_reference_number && <> &middot; {s.advice_reference_number}</>}
+                                        </div>
+                                    )}
+
+                                    {!isRecording ? (
+                                        <div className="flex items-center gap-2 mt-2.5">
+                                            <button onClick={() => handleOpenReceiptForm(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-primary/30 text-primary hover:bg-primary/5 transition-colors">
+                                                <Wallet size={13} /> {hasReceipt ? 'Edit Receipt' : 'Record Receipt'}
+                                            </button>
+                                            {isAdmin && hasReceipt && (
+                                                <button onClick={() => handleClearReceipt(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
+                                                    <Trash2 size={13} /> Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleReceiptSubmit} className="mt-2.5 pt-2.5 border-t border-slate-100 w-full">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full items-end">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Received</label>
+                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, received_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Deduction</label>
+                                                    <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, deduction_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date</label>
+                                                    <input type="date" value={receiptFormData.payment_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, payment_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Bank Name</label>
+                                                    <input type="text" value={receiptFormData.bank_name} onChange={(e) => setReceiptFormData({ ...receiptFormData, bank_name: e.target.value })} placeholder="e.g. HSBC" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Advice Ref. No.</label>
+                                                    <input type="text" value={receiptFormData.advice_reference_number} onChange={(e) => setReceiptFormData({ ...receiptFormData, advice_reference_number: e.target.value })} placeholder="Optional" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                </div>
+                                                <div className="flex gap-2 justify-end">
+                                                    <button type="button" onClick={handleCloseReceiptForm} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
+                                                    <button type="submit" disabled={submittingReceipt} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition-all disabled:opacity-50">
+                                                        {submittingReceipt ? <Loader2 size={13} className="animate-spin" /> : 'Save'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
-                    <div className="font-mono text-slate-500">{p.advice_reference_number || '—'}</div>
-                </div>
-            )
-        },
-        {
-            header: 'Bill / Milestone', key: 'bill_number', sortable: true, render: (p: ClientPayment) => (
-                <div className="text-xs space-y-0.5">
-                    <div className="font-medium text-slate-700">{p.bill_number || 'N/A'}</div>
-                    <div className="text-slate-400">{p.installment_label || 'General'}</div>
-                </div>
-            )
-        },
-        {
-            header: 'Payment Date', key: 'payment_date', sortable: true, render: (p: ClientPayment) => (
-                <span className="font-medium text-slate-600 font-mono">{formatDate(p.payment_date)}</span>
-            )
-        },
-        {
-            header: 'Amount', key: 'amount', align: 'right' as const, sortable: true, render: (p: ClientPayment) => (
-                <span className="font-semibold text-emerald-700">{formatCurrency(p.amount)}</span>
-            )
-        }
-    ];
+                )}
+            </div>
+        );
+    };
 
     if (loading) {
         return (
@@ -888,7 +876,7 @@ export default function ClientDetails() {
                             </div>
                         </div>
 
-                        <div className="min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full">
+                        <div className="min-w-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full">
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
                                 <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
                                     <FileText size={14} className="shrink-0" /><span className="truncate">Billed</span>
@@ -897,9 +885,15 @@ export default function ClientDetails() {
                             </div>
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
                                 <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
-                                    <MinusCircle size={14} className="shrink-0" /><span className="truncate">Advance/Deduction</span>
+                                    <PiggyBank size={14} className="shrink-0" /><span className="truncate">Advance</span>
                                 </div>
-                                <div className="text-sm sm:text-base lg:text-md font-bold text-slate-900 break-all leading-tight">{formatCurrency(client.total_advance_deduction)}</div>
+                                <div className="text-sm sm:text-base lg:text-md font-bold text-slate-900 break-all leading-tight">{formatCurrency(client.total_advance)}</div>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
+                                <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
+                                    <MinusCircle size={14} className="shrink-0" /><span className="truncate">Deduction</span>
+                                </div>
+                                <div className="text-sm sm:text-base lg:text-md font-bold text-slate-900 break-all leading-tight">{formatCurrency(client.total_deduction)}</div>
                             </div>
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
                                 <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
@@ -958,28 +952,8 @@ export default function ClientDetails() {
                         searchPlaceholder="Search by bill number, PO or area"
                         keyExtractor={(b) => b.id}
                         emptyMessage="No bills found for this client."
-                    />
-                </div>
-
-                {/* Payments */}
-                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 mt-5">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                        <h2 className="text-lg font-bold text-slate-900">Payments Received Ledger</h2>
-                        <button onClick={handleOpenCreatePayment} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                            <Wallet size={18} /> New Payment
-                        </button>
-                    </div>
-                    <Table
-                        data={payments}
-                        columns={columnsForPayments}
-                        lazy
-                        totalRecords={totalPaymentRecords}
-                        loading={paymentsTableLoading}
-                        onLazyLoad={(params) => setPaymentsLazyParams(params)}
-                        initialItemsPerPage={5}
-                        searchPlaceholder="Search by bank, advice ref, or bill"
-                        keyExtractor={(p) => p.id}
-                        emptyMessage="No payments recorded for this client."
+                        renderExpanded={renderMilestonesPanel}
+                        isRowExpanded={(b) => expandedBillIds.has(b.id)}
                     />
                 </div>
             </div>
@@ -1039,7 +1013,7 @@ export default function ClientDetails() {
                             {hasPaidRows && (
                                 <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold px-3 py-2 rounded-xl">
                                     <Lock size={14} className="shrink-0" />
-                                    Payments already recorded — billed amount is locked, and milestones with payments can no longer have their percentage/amount changed or be removed (due date can still be corrected).
+                                    A receipt is already recorded — billed amount is locked, and milestones with a receipt can no longer have their percentage/amount changed or be removed (due date can still be corrected).
                                 </div>
                             )}
 
@@ -1091,8 +1065,8 @@ export default function ClientDetails() {
                                         <input type="number" step="0.01" min="0.01" required disabled={hasPaidRows} value={billFormData.gross_amount} onChange={(e) => handleGrossChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Advance / Deduction</label>
-                                        <input type="number" step="0.01" min="0" disabled={hasPaidRows} value={billFormData.advance_deduction} onChange={(e) => handleAdvanceChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
+                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Advance Payment</label>
+                                        <input type="number" step="0.01" min="0" disabled={hasPaidRows} value={billFormData.advance_amount} onChange={(e) => handleAdvanceChange(e.target.value)} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900 disabled:opacity-60" />
                                     </div>
                                 </div>
 
@@ -1126,7 +1100,7 @@ export default function ClientDetails() {
 
                                     <div className="space-y-2">
                                         {schedules.map((row, idx) => {
-                                            const rowLocked = row.received_amount > 0;
+                                            const rowLocked = row.received_amount > 0 || row.deduction_amount > 0;
                                             return (
                                                 <div key={row.id || idx} className="grid grid-cols-12 gap-2 items-center">
                                                     <input
@@ -1153,7 +1127,7 @@ export default function ClientDetails() {
                                                     />
                                                     <div className="col-span-1 flex justify-center">
                                                         {rowLocked ? (
-                                                            <span title="Payments recorded against this milestone — cannot be removed" className="p-1 text-slate-300">
+                                                            <span title="A receipt has been recorded against this milestone — cannot be removed" className="p-1 text-slate-300">
                                                                 <Lock size={13} />
                                                             </span>
                                                         ) : (
@@ -1184,160 +1158,6 @@ export default function ClientDetails() {
                                     <button type="button" onClick={handleCloseBillModal} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
                                     <button type="submit" disabled={submittingBill || !isBalanced} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50">
                                         {submittingBill ? <Loader2 size={16} className="animate-spin" /> : editingBillId ? 'Save Changes' : 'Submit'}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Milestones View Modal */}
-            <AnimatePresence>
-                {isMilestonesModalOpen && milestonesBill && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleCloseMilestones} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-900">Milestones</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        {milestonesBill.bill_number || 'Bill'} &middot; Gross {formatCurrency(milestonesBill.gross_amount)}
-                                        {Number(milestonesBill.advance_deduction) > 0 && <> &middot; Advance/Deduction - {formatCurrency(milestonesBill.advance_deduction)}</>}
-                                        &middot; Net Receivable {formatCurrency(milestonesBill.net_payable)}
-                                    </p>
-                                </div>
-                                <button onClick={handleCloseMilestones} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"><X size={20} /></button>
-                            </div>
-
-                            {milestonesLoading ? (
-                                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" size={28} /></div>
-                            ) : milestoneSchedules.length === 0 ? (
-                                <div className="text-center py-10 text-slate-400 text-sm">No milestones found for this bill.</div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {milestoneSchedules.map((s) => {
-                                        const outstanding = (Number(s.expected_amount) || 0) - (Number(s.received_amount) || 0);
-                                        return (
-                                            <div key={s.id} className="border border-slate-200 rounded-xl p-3.5">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-semibold text-slate-900 text-sm">{s.installment_label}</span>
-                                                    <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg ${getScheduleStatusBadgeClass(s.status)}`}>{s.status}</span>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2 mt-2.5 text-xs">
-                                                    <div>
-                                                        <div className="text-slate-400 uppercase font-semibold text-[10px]">Expected</div>
-                                                        <div className="font-bold text-slate-800">{formatCurrency(s.expected_amount)}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-slate-400 uppercase font-semibold text-[10px]">Received</div>
-                                                        <div className="font-bold text-emerald-700">{formatCurrency(s.received_amount)}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-slate-400 uppercase font-semibold text-[10px]">Due Date</div>
-                                                        <div className="font-bold text-slate-800">{formatDate(s.due_date)}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-3">
-                                                    {s.status !== 'PAID' && outstanding > 0 && (
-                                                        <button onClick={() => handleRecordPaymentForSchedule(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-primary/30 text-primary hover:bg-primary/5 transition-colors">
-                                                            <Wallet size={13} /> New Payment ({formatCurrency(outstanding)} due)
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Create/Edit Payment Modal */}
-            <AnimatePresence>
-                {isPaymentModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleClosePaymentModal} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100 max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-slate-900">{editingPaymentId ? 'Edit Payment' : 'New Payment'}</h3>
-                                <button onClick={handleClosePaymentModal} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"><X size={20} /></button>
-                            </div>
-
-                            <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Client</label>
-                                    <div className="relative">
-                                        <select required value={client?.id} disabled className="w-full appearance-none px-3 pr-9 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900">
-                                            <option value={client?.id}>{client?.name}</option>
-                                        </select>
-                                        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Bill <span className='text-red-600'>*</span></label>
-                                    <Dropdown
-                                        options={billsForDropdown.map((b) => ({ value: b.id, label: `${b.bill_number || 'N/A'} (${formatCurrency(b.net_payable)})` }))}
-                                        value={paymentFormData.bill_id}
-                                        onChange={(v) => { setPaymentFormData({ ...paymentFormData, bill_id: v, schedule_id: '' }); loadSchedulesForBill(v); }}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Milestone (Optional)</label>
-                                    <Dropdown
-                                        options={[
-                                            { value: '', label: '-- General / No Milestone Link --' },
-                                            ...paymentScheduleOptions.map((s) => ({
-                                                value: s.id,
-                                                label: `${s.installment_label} — ${s.status} (${formatCurrency((Number(s.expected_amount) || 0) - (Number(s.received_amount) || 0))} due)`
-                                            }))
-                                        ]}
-                                        value={paymentFormData.schedule_id}
-                                        onChange={(v) => {
-                                            const selected = paymentScheduleOptions.find((s) => s.id === v);
-                                            const outstanding = selected ? (Number(selected.expected_amount) || 0) - (Number(selected.received_amount) || 0) : null;
-                                            setPaymentFormData({ ...paymentFormData, schedule_id: v, amount: outstanding && outstanding > 0 ? outstanding.toFixed(2) : paymentFormData.amount });
-                                        }}
-                                        disabled={!paymentFormData.bill_id}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Bank Name</label>
-                                        <input type="text" value={paymentFormData.bank_name} onChange={(e) => setPaymentFormData({ ...paymentFormData, bank_name: e.target.value })} placeholder="e.g. HSBC" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Advice Ref. No.</label>
-                                        <input type="text" value={paymentFormData.advice_reference_number} onChange={(e) => setPaymentFormData({ ...paymentFormData, advice_reference_number: e.target.value })} placeholder="e.g. HSBC-ADV-2201" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Payment Date</label>
-                                        <input type="date" value={paymentFormData.payment_date} onChange={(e) => setPaymentFormData({ ...paymentFormData, payment_date: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Amount <span className='text-red-600'>*</span></label>
-                                        <input type="number" step="0.01" min="0.01" required value={paymentFormData.amount} onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: e.target.value })} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900" />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Remarks</label>
-                                    <input type="text" value={paymentFormData.remarks} onChange={(e) => setPaymentFormData({ ...paymentFormData, remarks: e.target.value })} placeholder="Optional note" className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900" />
-                                </div>
-
-                                <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
-                                    <button type="button" onClick={handleClosePaymentModal} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
-                                    <button type="submit" disabled={submittingPayment} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10 disabled:opacity-50">
-                                        {submittingPayment ? <Loader2 size={16} className="animate-spin" /> : editingPaymentId ? 'Save Changes' : 'Submit'}
                                     </button>
                                 </div>
                             </form>

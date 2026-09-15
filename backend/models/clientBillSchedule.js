@@ -18,6 +18,28 @@ const ClientBillSchedule = {
 
     const { rows } = await db.query(queryText, params);
     return rows;
+  },
+
+  getById: async (id) => {
+    const { rows } = await db.query('SELECT * FROM client_bill_schedules WHERE id = $1 AND deleted = false', [id]);
+    return rows[0];
+  },
+
+  // The milestone row IS the payment record (single-shot receipt) — this fills in the
+  // receipt fields directly. Triggers cascade the client/status updates within the
+  // same statement, so no explicit transaction is needed here.
+  recordReceipt: async (id, receiptData, updatedBy) => {
+    const { received_amount, deduction_amount, payment_date, bank_name, advice_reference_number, remarks } = receiptData;
+    const { rows } = await db.query(
+      `UPDATE client_bill_schedules
+       SET received_amount = $1, deduction_amount = $2, payment_date = $3, bank_name = $4,
+           advice_reference_number = $5, remarks = $6, updated_by = $7, updated_at = NOW()
+       WHERE id = $8 AND deleted = false
+       RETURNING *`,
+      [received_amount || 0, deduction_amount || 0, payment_date || null, bank_name || null,
+        advice_reference_number || null, remarks || null, updatedBy, id]
+    );
+    return rows[0];
   }
 };
 

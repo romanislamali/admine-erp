@@ -152,6 +152,8 @@ const initDb = async () => {
     // database that ran db.sql before this was added, so CREATE TABLE IF NOT EXISTS
     // performs the initial create here; CREATE OR REPLACE FUNCTION + DROP/CREATE TRIGGER
     // keep the trigger logic patchable on every future boot, same as the block above.
+    // client_payments is intentionally absent here — milestones are now the payment
+    // record directly (see the cutover block below for databases that still have it).
     await pool.query(`
       CREATE TABLE IF NOT EXISTS clients (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -160,7 +162,8 @@ const initDb = async () => {
           email VARCHAR(100),
           address TEXT,
           total_billed NUMERIC DEFAULT 0.00,
-          total_advance_deduction NUMERIC DEFAULT 0.00,
+          total_advance NUMERIC DEFAULT 0.00,
+          total_deduction NUMERIC DEFAULT 0.00,
           total_received NUMERIC DEFAULT 0.00,
           total_due NUMERIC DEFAULT 0.00,
           deleted BOOLEAN DEFAULT false,
@@ -192,7 +195,7 @@ const initDb = async () => {
           project_id UUID REFERENCES projects(id),
           bill_number VARCHAR(50),
           gross_amount NUMERIC NOT NULL,
-          advance_deduction NUMERIC DEFAULT 0.00,
+          advance_amount NUMERIC DEFAULT 0.00,
           net_payable NUMERIC NOT NULL,
           bill_date DATE,
           area VARCHAR(100),
@@ -212,22 +215,9 @@ const initDb = async () => {
           percentage NUMERIC,
           expected_amount NUMERIC NOT NULL,
           received_amount NUMERIC DEFAULT 0.00,
-          status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
+          deduction_amount NUMERIC DEFAULT 0.00,
+          status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID')),
           due_date DATE,
-          remarks TEXT,
-          deleted BOOLEAN DEFAULT false,
-          created_by VARCHAR(100),
-          updated_by VARCHAR(100),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS client_payments (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          client_id UUID REFERENCES clients(id),
-          bill_id UUID REFERENCES client_bills(id),
-          schedule_id UUID REFERENCES client_bill_schedules(id),
-          amount NUMERIC NOT NULL,
           payment_date DATE,
           bank_name VARCHAR(100),
           advice_reference_number VARCHAR(100),
@@ -251,31 +241,102 @@ const initDb = async () => {
 
       CREATE INDEX IF NOT EXISTS idx_client_bill_schedules_bill_id ON client_bill_schedules (bill_id);
       CREATE INDEX IF NOT EXISTS idx_client_bill_schedules_deleted_created_at ON client_bill_schedules (deleted, created_at DESC);
-
-      CREATE INDEX IF NOT EXISTS idx_client_payments_client_id ON client_payments (client_id);
-      CREATE INDEX IF NOT EXISTS idx_client_payments_bill_id ON client_payments (bill_id);
-      CREATE INDEX IF NOT EXISTS idx_client_payments_schedule_id ON client_payments (schedule_id);
-      CREATE INDEX IF NOT EXISTS idx_client_payments_deleted_created_at ON client_payments (deleted, created_at DESC);
     `);
 
-    // total_advance_deduction didn't exist when clients was first created on any
-    // database that already ran the block above, so patch it in directly and backfill
-    // it from the bills that already exist (the trigger below only maintains it for
-    // bill changes going forward — it can't retroactively cover rows inserted before
-    // this column existed). Also re-backfill total_billed: it used to track net_payable
-    // (gross less advance/deduction) which read as a mysteriously-short "Billed" figure
-    // next to a real invoice value — it now tracks gross_amount, the actual billed
-    // amount, so re-derive it from source on every boot the same way.
+    // Patch columns onto any client_bills/client_bill_schedules/clients created by an
+    // older version of the block above (pre-dating the milestone/payment merge and the
+    // advance/deduction split).
     await pool.query(`
-      ALTER TABLE clients ADD COLUMN IF NOT EXISTS total_advance_deduction NUMERIC DEFAULT 0.00;
+      ALTER TABLE clients ADD COLUMN IF NOT EXISTS total_advance NUMERIC DEFAULT 0.00;
+      ALTER TABLE clients ADD COLUMN IF NOT EXISTS total_deduction NUMERIC DEFAULT 0.00;
+      ALTER TABLE client_bills ADD COLUMN IF NOT EXISTS advance_amount NUMERIC DEFAULT 0.00;
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS deduction_amount NUMERIC DEFAULT 0.00;
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS advice_reference_number VARCHAR(100);
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS payment_date DATE;
+    `);
 
+    // One-time cutover for any database still on the old schema: merges milestones and
+    // payments into one record, splits advance from deduction, and archives (renames,
+    // doesn't drop — this is real production billing data) client_payments. Gated on
+    // client_bills.advance_deduction still existing, so this only ever runs once per
+    // database — every later boot finds the column gone and skips straight past.
+    const { rows: preCutoverCol } = await pool.query(`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'client_bills' AND column_name = 'advance_deduction'
+    `);
+    if (preCutoverCol.length > 0) {
+      logger.info('Running one-time client-billing cutover (merge milestones/payments, split advance/deduction)...');
+
+      await pool.query(`UPDATE client_bills SET advance_amount = advance_deduction`);
+
+      const { rows: paymentsTableExists } = await pool.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_name = 'client_payments'
+      `);
+      if (paymentsTableExists.length > 0) {
+        // received_amount is already correct (the old payment triggers kept it in sync).
+        // Bank/reference/date/remarks can only carry over from the single latest payment
+        // per schedule — lossy for any milestone that historically received more than
+        // one partial payment, but there's no equivalent single-row home for a history.
+        await pool.query(`
+          UPDATE client_bill_schedules s
+          SET bank_name = lp.bank_name,
+              advice_reference_number = lp.advice_reference_number,
+              payment_date = lp.payment_date,
+              remarks = COALESCE(lp.remarks, s.remarks)
+          FROM (
+            SELECT DISTINCT ON (schedule_id) schedule_id, bank_name, advice_reference_number, payment_date, remarks
+            FROM client_payments
+            WHERE schedule_id IS NOT NULL AND deleted = false
+            ORDER BY schedule_id, created_at DESC
+          ) lp
+          WHERE s.id = lp.schedule_id;
+        `);
+      }
+
+      await pool.query(`
+        ALTER TABLE client_bill_schedules DROP CONSTRAINT IF EXISTS client_bill_schedules_status_check;
+        UPDATE client_bill_schedules SET status = 'PENDING' WHERE status = 'DUE';
+        ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('PENDING', 'PAID'));
+      `);
+
+      await pool.query(`
+        DROP TRIGGER IF EXISTS trg_client_payments_sync ON client_payments;
+        DROP TRIGGER IF EXISTS trg_client_payments_schedule_sync ON client_payments;
+        DROP FUNCTION IF EXISTS trg_fn_sync_client_payments();
+        DROP FUNCTION IF EXISTS trg_fn_sync_schedule_on_payment();
+        ALTER TABLE client_bills DROP COLUMN advance_deduction;
+        ALTER TABLE clients DROP COLUMN IF EXISTS total_advance_deduction;
+        ALTER TABLE IF EXISTS client_payments RENAME TO client_payments_archived;
+      `);
+
+      logger.info('Client-billing cutover complete — client_payments archived as client_payments_archived.');
+    }
+
+    // Full recompute of the cached client aggregates from source, every boot — cheap at
+    // this scale and self-healing (matches how total_billed was already unconditionally
+    // re-derived here before this refactor). Safe pre- and post-cutover alike, since it
+    // only ever reads the current client_bills/client_bill_schedules columns.
+    await pool.query(`
       UPDATE clients c
-      SET total_advance_deduction = COALESCE((
-            SELECT SUM(cb.advance_deduction) FROM client_bills cb WHERE cb.client_id = c.id AND cb.deleted = false
-          ), 0),
-          total_billed = COALESCE((
+      SET total_billed = COALESCE((
             SELECT SUM(cb.gross_amount) FROM client_bills cb WHERE cb.client_id = c.id AND cb.deleted = false
+          ), 0),
+          total_advance = COALESCE((
+            SELECT SUM(cb.advance_amount) FROM client_bills cb WHERE cb.client_id = c.id AND cb.deleted = false
+          ), 0),
+          total_received = COALESCE((
+            SELECT SUM(s.received_amount) FROM client_bill_schedules s
+            JOIN client_bills cb ON s.bill_id = cb.id
+            WHERE cb.client_id = c.id AND cb.deleted = false AND s.deleted = false
+          ), 0),
+          total_deduction = COALESCE((
+            SELECT SUM(s.deduction_amount) FROM client_bill_schedules s
+            JOIN client_bills cb ON s.bill_id = cb.id
+            WHERE cb.client_id = c.id AND cb.deleted = false AND s.deleted = false
           ), 0);
+
+      UPDATE clients SET total_due = total_billed - total_advance - total_deduction - total_received;
     `);
 
     await pool.query(`
@@ -286,7 +347,7 @@ const initDb = async () => {
               IF (NEW.deleted = false) THEN
                   UPDATE clients
                   SET total_billed = total_billed + NEW.gross_amount,
-                      total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                      total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                       total_due = total_due + NEW.net_payable
                   WHERE id = NEW.client_id;
               END IF;
@@ -294,25 +355,25 @@ const initDb = async () => {
               IF (OLD.deleted = false AND NEW.deleted = false) THEN
                   UPDATE clients
                   SET total_billed = total_billed - OLD.gross_amount,
-                      total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                      total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                       total_due = total_due - OLD.net_payable
                   WHERE id = OLD.client_id;
 
                   UPDATE clients
                   SET total_billed = total_billed + NEW.gross_amount,
-                      total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                      total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                       total_due = total_due + NEW.net_payable
                   WHERE id = NEW.client_id;
               ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
                   UPDATE clients
                   SET total_billed = total_billed - OLD.gross_amount,
-                      total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                      total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                       total_due = total_due - OLD.net_payable
                   WHERE id = OLD.client_id;
               ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
                   UPDATE clients
                   SET total_billed = total_billed + NEW.gross_amount,
-                      total_advance_deduction = total_advance_deduction + COALESCE(NEW.advance_deduction, 0),
+                      total_advance = total_advance + COALESCE(NEW.advance_amount, 0),
                       total_due = total_due + NEW.net_payable
                   WHERE id = NEW.client_id;
               END IF;
@@ -320,7 +381,7 @@ const initDb = async () => {
               IF (OLD.deleted = false) THEN
                   UPDATE clients
                   SET total_billed = total_billed - OLD.gross_amount,
-                      total_advance_deduction = total_advance_deduction - COALESCE(OLD.advance_deduction, 0),
+                      total_advance = total_advance - COALESCE(OLD.advance_amount, 0),
                       total_due = total_due - OLD.net_payable
                   WHERE id = OLD.client_id;
               END IF;
@@ -329,89 +390,59 @@ const initDb = async () => {
       END;
       $$ LANGUAGE plpgsql;
 
-      CREATE OR REPLACE FUNCTION trg_fn_sync_client_payments()
+      CREATE OR REPLACE FUNCTION trg_fn_sync_client_schedule_receipts()
       RETURNS TRIGGER AS $$
+      DECLARE
+          v_old_client_id UUID;
+          v_new_client_id UUID;
       BEGIN
           IF (TG_OP = 'INSERT') THEN
               IF (NEW.deleted = false) THEN
+                  SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
                   UPDATE clients
-                  SET total_received = total_received + NEW.amount,
-                      total_due = total_due - NEW.amount
-                  WHERE id = NEW.client_id;
+                  SET total_received = total_received + NEW.received_amount,
+                      total_deduction = total_deduction + NEW.deduction_amount,
+                      total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+                  WHERE id = v_new_client_id;
               END IF;
           ELSIF (TG_OP = 'UPDATE') THEN
               IF (OLD.deleted = false AND NEW.deleted = false) THEN
+                  SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
                   UPDATE clients
-                  SET total_received = total_received - OLD.amount,
-                      total_due = total_due + OLD.amount
-                  WHERE id = OLD.client_id;
+                  SET total_received = total_received - OLD.received_amount,
+                      total_deduction = total_deduction - OLD.deduction_amount,
+                      total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+                  WHERE id = v_old_client_id;
 
+                  SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
                   UPDATE clients
-                  SET total_received = total_received + NEW.amount,
-                      total_due = total_due - NEW.amount
-                  WHERE id = NEW.client_id;
+                  SET total_received = total_received + NEW.received_amount,
+                      total_deduction = total_deduction + NEW.deduction_amount,
+                      total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+                  WHERE id = v_new_client_id;
               ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
+                  SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
                   UPDATE clients
-                  SET total_received = total_received - OLD.amount,
-                      total_due = total_due + OLD.amount
-                  WHERE id = OLD.client_id;
+                  SET total_received = total_received - OLD.received_amount,
+                      total_deduction = total_deduction - OLD.deduction_amount,
+                      total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+                  WHERE id = v_old_client_id;
               ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
+                  SELECT client_id INTO v_new_client_id FROM client_bills WHERE id = NEW.bill_id;
                   UPDATE clients
-                  SET total_received = total_received + NEW.amount,
-                      total_due = total_due - NEW.amount
-                  WHERE id = NEW.client_id;
+                  SET total_received = total_received + NEW.received_amount,
+                      total_deduction = total_deduction + NEW.deduction_amount,
+                      total_due = total_due - (NEW.received_amount + NEW.deduction_amount)
+                  WHERE id = v_new_client_id;
               END IF;
           ELSIF (TG_OP = 'DELETE') THEN
               IF (OLD.deleted = false) THEN
+                  SELECT client_id INTO v_old_client_id FROM client_bills WHERE id = OLD.bill_id;
                   UPDATE clients
-                  SET total_received = total_received - OLD.amount,
-                      total_due = total_due + OLD.amount
-                  WHERE id = OLD.client_id;
-              END IF;
-          END IF;
-          RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      CREATE OR REPLACE FUNCTION trg_fn_sync_schedule_on_payment()
-      RETURNS TRIGGER AS $$
-      BEGIN
-          IF (TG_OP = 'INSERT') THEN
-              IF (NEW.deleted = false AND NEW.schedule_id IS NOT NULL) THEN
-                  UPDATE client_bill_schedules
-                  SET received_amount = received_amount + NEW.amount
-                  WHERE id = NEW.schedule_id;
-              END IF;
-          ELSIF (TG_OP = 'UPDATE') THEN
-              IF (OLD.deleted = false AND NEW.deleted = false) THEN
-                  IF (OLD.schedule_id IS NOT NULL) THEN
-                      UPDATE client_bill_schedules
-                      SET received_amount = received_amount - OLD.amount
-                      WHERE id = OLD.schedule_id;
-                  END IF;
-                  IF (NEW.schedule_id IS NOT NULL) THEN
-                      UPDATE client_bill_schedules
-                      SET received_amount = received_amount + NEW.amount
-                      WHERE id = NEW.schedule_id;
-                  END IF;
-              ELSIF (OLD.deleted = false AND NEW.deleted = true) THEN
-                  IF (OLD.schedule_id IS NOT NULL) THEN
-                      UPDATE client_bill_schedules
-                      SET received_amount = received_amount - OLD.amount
-                      WHERE id = OLD.schedule_id;
-                  END IF;
-              ELSIF (OLD.deleted = true AND NEW.deleted = false) THEN
-                  IF (NEW.schedule_id IS NOT NULL) THEN
-                      UPDATE client_bill_schedules
-                      SET received_amount = received_amount + NEW.amount
-                      WHERE id = NEW.schedule_id;
-                  END IF;
-              END IF;
-          ELSIF (TG_OP = 'DELETE') THEN
-              IF (OLD.deleted = false AND OLD.schedule_id IS NOT NULL) THEN
-                  UPDATE client_bill_schedules
-                  SET received_amount = received_amount - OLD.amount
-                  WHERE id = OLD.schedule_id;
+                  SET total_received = total_received - OLD.received_amount,
+                      total_deduction = total_deduction - OLD.deduction_amount,
+                      total_due = total_due + (OLD.received_amount + OLD.deduction_amount)
+                  WHERE id = v_old_client_id;
               END IF;
           END IF;
           RETURN NEW;
@@ -421,10 +452,10 @@ const initDb = async () => {
       CREATE OR REPLACE FUNCTION trg_fn_set_schedule_status()
       RETURNS TRIGGER AS $$
       BEGIN
-          IF (NEW.expected_amount > 0 AND NEW.received_amount >= NEW.expected_amount) THEN
+          IF (NEW.expected_amount > 0 AND (NEW.received_amount + NEW.deduction_amount) >= NEW.expected_amount) THEN
               NEW.status := 'PAID';
-          ELSIF (TG_OP = 'UPDATE' AND OLD.status = 'PAID' AND NEW.received_amount < NEW.expected_amount) THEN
-              NEW.status := 'DUE';
+          ELSE
+              NEW.status := 'PENDING';
           END IF;
           RETURN NEW;
       END;
@@ -466,21 +497,15 @@ const initDb = async () => {
       FOR EACH ROW
       EXECUTE FUNCTION trg_fn_sync_client_bills();
 
-      DROP TRIGGER IF EXISTS trg_client_payments_sync ON client_payments;
-      CREATE TRIGGER trg_client_payments_sync
-      AFTER INSERT OR UPDATE OR DELETE ON client_payments
+      DROP TRIGGER IF EXISTS trg_client_bill_schedules_receipts_sync ON client_bill_schedules;
+      CREATE TRIGGER trg_client_bill_schedules_receipts_sync
+      AFTER INSERT OR UPDATE OR DELETE ON client_bill_schedules
       FOR EACH ROW
-      EXECUTE FUNCTION trg_fn_sync_client_payments();
-
-      DROP TRIGGER IF EXISTS trg_client_payments_schedule_sync ON client_payments;
-      CREATE TRIGGER trg_client_payments_schedule_sync
-      AFTER INSERT OR UPDATE OR DELETE ON client_payments
-      FOR EACH ROW
-      EXECUTE FUNCTION trg_fn_sync_schedule_on_payment();
+      EXECUTE FUNCTION trg_fn_sync_client_schedule_receipts();
 
       DROP TRIGGER IF EXISTS trg_client_bill_schedules_status ON client_bill_schedules;
       CREATE TRIGGER trg_client_bill_schedules_status
-      BEFORE INSERT OR UPDATE OF received_amount ON client_bill_schedules
+      BEFORE INSERT OR UPDATE OF received_amount, deduction_amount ON client_bill_schedules
       FOR EACH ROW
       EXECUTE FUNCTION trg_fn_set_schedule_status();
 
