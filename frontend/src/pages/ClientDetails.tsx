@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -726,95 +726,111 @@ export default function ClientDetails() {
         const scheds = milestonesByBill[b.id] || [];
         return (
             <div className="p-4 sm:p-5">
-                <div className="mb-3">
-                    <h4 className="text-sm font-bold text-slate-800">Milestones</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                        {b.bill_number || 'Bill'} &middot; Gross {formatCurrency(b.gross_amount)}
-                        {Number(b.advance_amount) > 0 && <> &middot; Advance {formatCurrency(b.advance_amount)}</>}
-                        &middot; Net Receivable {formatCurrency(b.net_payable)}
-                    </p>
-                </div>
-
                 {isLoading ? (
                     <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" size={24} /></div>
                 ) : scheds.length === 0 ? (
                     <div className="text-center py-8 text-slate-400 text-sm">No milestones found for this bill.</div>
                 ) : (
-                    <div className="space-y-3">
-                        {scheds.map((s) => {
-                            const received = Number(s.received_amount) || 0;
-                            const deduction = Number(s.deduction_amount) || 0;
-                            const outstanding = (Number(s.expected_amount) || 0) - received - deduction;
-                            const hasReceipt = received > 0 || deduction > 0;
-                            const isRecording = recordingReceiptFor === s.id;
-                            return (
-                                <div key={s.id} className="border border-slate-200 bg-white rounded-xl px-3.5 py-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                            <span className="font-semibold text-slate-900 text-sm">{s.installment_label}</span>
-                                            <span className="text-xs text-slate-500">Expected <b className="text-slate-800">{formatCurrency(s.expected_amount)}</b></span>
-                                            <span className="text-xs text-slate-500">Received <b className="text-emerald-700">{formatCurrency(s.received_amount)}</b></span>
-                                            {deduction > 0 && <span className="text-xs text-slate-500">Deduction <b className="text-rose-600">{formatCurrency(deduction)}</b></span>}
-                                            {outstanding > 0 && <span className="text-xs text-slate-500">Outstanding <b className="text-amber-700">{formatCurrency(outstanding)}</b></span>}
-                                            {s.due_date && <span className="text-xs text-slate-500">Due <b className="text-slate-800">{formatDate(s.due_date)}</b></span>}
-                                        </div>
-                                        <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg shrink-0 ${getScheduleStatusBadgeClass(s.status)}`}>{s.status}</span>
-                                    </div>
-
-                                    {(s.payment_date || s.bank_name || s.advice_reference_number) && (
-                                        <div className="text-xs text-slate-400 mt-1">
-                                            {s.payment_date && <>Paid {formatDate(s.payment_date)}</>}
-                                            {s.bank_name && <> &middot; {s.bank_name}</>}
-                                            {s.advice_reference_number && <> &middot; {s.advice_reference_number}</>}
-                                        </div>
-                                    )}
-
-                                    {!isRecording ? (
-                                        <div className="flex items-center gap-2 mt-2.5">
-                                            <button onClick={() => handleOpenReceiptForm(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-primary/30 text-primary hover:bg-primary/5 transition-colors">
-                                                <Wallet size={13} /> {hasReceipt ? 'Edit Receipt' : 'Record Receipt'}
-                                            </button>
-                                            {isAdmin && hasReceipt && (
-                                                <button onClick={() => handleClearReceipt(s)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
-                                                    <Trash2 size={13} /> Clear
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <form onSubmit={handleReceiptSubmit} className="mt-2.5 pt-2.5 border-t border-slate-100 w-full">
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full items-end">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Received</label>
-                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, received_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Deduction</label>
-                                                    <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, deduction_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date</label>
-                                                    <input type="date" value={receiptFormData.payment_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, payment_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Bank Name</label>
-                                                    <input type="text" value={receiptFormData.bank_name} onChange={(e) => setReceiptFormData({ ...receiptFormData, bank_name: e.target.value })} placeholder="e.g. HSBC" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Advice Ref. No.</label>
-                                                    <input type="text" value={receiptFormData.advice_reference_number} onChange={(e) => setReceiptFormData({ ...receiptFormData, advice_reference_number: e.target.value })} placeholder="Optional" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-primary text-slate-900" />
-                                                </div>
-                                                <div className="flex gap-2 justify-end">
-                                                    <button type="button" onClick={handleCloseReceiptForm} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-50 transition-colors">Cancel</button>
-                                                    <button type="submit" disabled={submittingReceipt} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition-all disabled:opacity-50">
-                                                        {submittingReceipt ? <Loader2 size={13} className="animate-spin" /> : 'Save'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="border border-slate-200 bg-white rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 text-[11px] font-extrabold uppercase tracking-wider">
+                                        <th className="px-4 py-3">Installment</th>
+                                        <th className="px-4 py-3 text-right">Expected</th>
+                                        <th className="px-4 py-3 text-right">Received</th>
+                                        <th className="px-4 py-3 text-right">Deduction</th>
+                                        <th className="px-4 py-3 text-right">Outstanding</th>
+                                        <th className="px-4 py-3">Due Date</th>
+                                        <th className="px-4 py-3 text-center">Status</th>
+                                        <th className="px-4 py-3 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {scheds.map((s) => {
+                                        const received = Number(s.received_amount) || 0;
+                                        const deduction = Number(s.deduction_amount) || 0;
+                                        const outstanding = (Number(s.expected_amount) || 0) - received - deduction;
+                                        const hasReceipt = received > 0 || deduction > 0;
+                                        const isRecording = recordingReceiptFor === s.id;
+                                        return (
+                                            <Fragment key={s.id}>
+                                                <tr className="border-b border-slate-200 hover:bg-slate-50/60 transition-colors">
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-semibold text-slate-900">{s.installment_label}</div>
+                                                        {(s.payment_date || s.bank_name || s.advice_reference_number) && (
+                                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                                {s.payment_date && <>Paid {formatDate(s.payment_date)}</>}
+                                                                {s.bank_name && <> &middot; {s.bank_name}</>}
+                                                                {s.advice_reference_number && <> &middot; {s.advice_reference_number}</>}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-semibold text-slate-700">{formatCurrency(s.expected_amount)}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold text-emerald-700">{formatCurrency(s.received_amount)}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold">
+                                                        {deduction > 0 ? <span className="text-rose-600">{formatCurrency(deduction)}</span> : <span className="text-slate-300">—</span>}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-semibold">
+                                                        {outstanding > 0 ? <span className="text-amber-700">{formatCurrency(outstanding)}</span> : <span className="text-slate-300">—</span>}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">{formatDate(s.due_date)}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg ${getScheduleStatusBadgeClass(s.status)}`}>{s.status}</span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button onClick={() => (isRecording ? handleCloseReceiptForm() : handleOpenReceiptForm(s))} title={hasReceipt ? 'Edit Receipt' : 'Record Receipt'} className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors">
+                                                                <Wallet size={14} />
+                                                            </button>
+                                                            {isAdmin && hasReceipt && (
+                                                                <button onClick={() => handleClearReceipt(s)} title="Clear Receipt" className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors">
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {isRecording && (
+                                                    <tr className="bg-slate-50/60">
+                                                        <td colSpan={8} className="px-4 py-3">
+                                                            <form onSubmit={handleReceiptSubmit} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Received</label>
+                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, received_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Deduction</label>
+                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, deduction_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date</label>
+                                                                    <input type="date" value={receiptFormData.payment_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, payment_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Bank Name</label>
+                                                                    <input type="text" value={receiptFormData.bank_name} onChange={(e) => setReceiptFormData({ ...receiptFormData, bank_name: e.target.value })} placeholder="e.g. HSBC" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Advice Ref. No.</label>
+                                                                    <input type="text" value={receiptFormData.advice_reference_number} onChange={(e) => setReceiptFormData({ ...receiptFormData, advice_reference_number: e.target.value })} placeholder="Optional" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex gap-2 justify-end">
+                                                                    <button type="button" onClick={handleCloseReceiptForm} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg hover:bg-white transition-colors">Cancel</button>
+                                                                    <button type="submit" disabled={submittingReceipt} className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition-all disabled:opacity-50">
+                                                                        {submittingReceipt ? <Loader2 size={13} className="animate-spin" /> : 'Save'}
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
