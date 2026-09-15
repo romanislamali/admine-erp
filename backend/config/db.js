@@ -493,8 +493,8 @@ const initDb = async () => {
     `);
 
     // Website CMS module: public marketing-site content (clients/partners,
-    // portfolio projects, image galleries), namespaced `cms_` to avoid
-    // colliding with the existing clients/projects billing tables above.
+    // portfolio projects), namespaced `cms_` to avoid colliding with the
+    // existing clients/projects billing tables above.
     // Mirrors db.sql — CREATE TABLE IF NOT EXISTS patches any database that
     // ran an older db.sql without these tables.
     await pool.query(`
@@ -536,25 +536,10 @@ const initDb = async () => {
       -- any database that already ran the block above without this column.
       ALTER TABLE cms_projects ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false;
 
-      CREATE TABLE IF NOT EXISTS cms_project_images (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id UUID REFERENCES cms_projects(id),
-          image_path VARCHAR(255) NOT NULL,
-          alt_text VARCHAR(150),
-          display_order INTEGER NOT NULL DEFAULT 0,
-          is_primary BOOLEAN NOT NULL DEFAULT false,
-          deleted BOOLEAN DEFAULT false,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
       CREATE INDEX IF NOT EXISTS idx_cms_clients_active_deleted_order ON cms_clients (is_active, deleted, display_order);
 
       CREATE INDEX IF NOT EXISTS idx_cms_projects_client_id ON cms_projects (client_id);
       CREATE INDEX IF NOT EXISTS idx_cms_projects_active_deleted_order ON cms_projects (is_active, deleted, display_order);
-
-      CREATE INDEX IF NOT EXISTS idx_cms_project_images_project_id ON cms_project_images (project_id);
-      CREATE INDEX IF NOT EXISTS idx_cms_project_images_deleted_order ON cms_project_images (deleted, display_order);
     `);
 
     // Backfill: is_featured is a new column, so every client's projects

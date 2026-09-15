@@ -290,9 +290,9 @@ export default function CmsClients() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-              Website Clients / Partners
+              Web Clients Management
             </h1>
-            <p className="text-slate-500 mt-1">Manage the client logos shown on the public website's Partners section.</p>
+            <p className="text-slate-500 mt-1">Manage the client logos/image shown on the public website's Partners section.</p>
           </div>
           <button
             onClick={() => {

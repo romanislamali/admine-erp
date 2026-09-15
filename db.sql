@@ -602,7 +602,6 @@ CREATE TABLE cms_projects (
     is_active BOOLEAN NOT NULL DEFAULT true,
     -- The one project per client shown in the site-wide "Our Projects"
     -- showcase (falls back to lowest display_order if none is marked yet).
-    -- Mirrors cms_project_images.is_primary below.
     is_featured BOOLEAN NOT NULL DEFAULT false,
     deleted BOOLEAN DEFAULT false,
     created_by VARCHAR(100),
@@ -611,25 +610,7 @@ CREATE TABLE cms_projects (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- No created_by/updated_by/is_active here: gallery images are managed purely
--- through their parent project (visibility follows cms_projects.is_active),
--- so there's nothing for those columns to track beyond the project itself.
-CREATE TABLE cms_project_images (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID REFERENCES cms_projects(id),
-    image_path VARCHAR(255) NOT NULL,
-    alt_text VARCHAR(150),
-    display_order INTEGER NOT NULL DEFAULT 0,
-    is_primary BOOLEAN NOT NULL DEFAULT false,
-    deleted BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE INDEX IF NOT EXISTS idx_cms_clients_active_deleted_order ON cms_clients (is_active, deleted, display_order);
 
 CREATE INDEX IF NOT EXISTS idx_cms_projects_client_id ON cms_projects (client_id);
 CREATE INDEX IF NOT EXISTS idx_cms_projects_active_deleted_order ON cms_projects (is_active, deleted, display_order);
-
-CREATE INDEX IF NOT EXISTS idx_cms_project_images_project_id ON cms_project_images (project_id);
-CREATE INDEX IF NOT EXISTS idx_cms_project_images_deleted_order ON cms_project_images (deleted, display_order);

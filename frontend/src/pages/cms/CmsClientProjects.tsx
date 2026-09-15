@@ -159,7 +159,7 @@ export default function CmsClientProjects() {
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Remove Project?',
-      'This will remove the project and its gallery from the public website.'
+      'This will remove the project and its image from the public website.'
     );
     if (!confirmed) return;
 
@@ -195,6 +195,10 @@ export default function CmsClientProjects() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !clientId) return;
+    if (!thumbnailFile && !editingThumbnailPath) {
+      await showError('Image Required', 'Please upload an image for the project.');
+      return;
+    }
 
     const currentName = formData.name;
     const isEditing = Boolean(editId);
@@ -353,7 +357,7 @@ export default function CmsClientProjects() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600">
-                  {client ? `${client.name} — Projects` : 'Projects'}
+                  {client ? `${client.name} — Web Projects Management` : 'Projects'}
                 </h1>
                 <p className="text-slate-500 mt-1">Manage the portfolio projects shown for this client on the public website.</p>
               </div>
@@ -420,8 +424,6 @@ export default function CmsClientProjects() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <ImageUpload label="Thumbnail" currentImageUrl={editingThumbnailPath} onFileSelect={setThumbnailFile} />
-
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
                       Project Name <span className="text-red-600">*</span>
@@ -435,6 +437,7 @@ export default function CmsClientProjects() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     />
                   </div>
+                  <ImageUpload label="Image" required currentImageUrl={editingThumbnailPath} onFileSelect={setThumbnailFile} />
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
