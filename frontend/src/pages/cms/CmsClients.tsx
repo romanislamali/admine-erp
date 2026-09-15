@@ -160,6 +160,10 @@ export default function CmsClients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
+    if (!logoFile && !editingLogoPath) {
+      await showError('Image Required', 'Please upload an image for the client.');
+      return;
+    }
 
     const currentName = formData.name;
     const isEditing = Boolean(editId);
@@ -351,8 +355,6 @@ export default function CmsClients() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <ImageUpload label="Logo" currentImageUrl={editingLogoPath} onFileSelect={setLogoFile} />
-
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
                       Client Name <span className="text-red-600">*</span>
@@ -366,6 +368,8 @@ export default function CmsClients() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     />
                   </div>
+
+                  <ImageUpload label="Image" required currentImageUrl={editingLogoPath} onFileSelect={setLogoFile} />
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Short Description</label>
@@ -393,8 +397,12 @@ export default function CmsClients() {
                     <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Display Order</label>
                     <input
                       type="number"
-                      value={formData.display_order}
-                      onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value, 10) || 0 })}
+                      value={formData.display_order === 0 ? '' : formData.display_order}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({ ...formData, display_order: val === '' ? 0 : parseInt(val, 10) || 0 });
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
                       placeholder="0"
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary text-sm bg-slate-50 focus:bg-white transition-all text-slate-900"
                     />

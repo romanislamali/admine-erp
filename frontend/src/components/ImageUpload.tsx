@@ -3,6 +3,7 @@ import { UploadCloud, ImageOff } from 'lucide-react';
 
 interface ImageUploadProps {
   label?: string;
+  required?: boolean;
   currentImageUrl?: string | null;
   onFileSelect: (file: File) => void;
   disabled?: boolean;
@@ -11,7 +12,7 @@ interface ImageUploadProps {
 // Drag-drop + click-to-browse image picker with a live preview. First upload
 // component in this codebase — no existing pattern to reuse, so kept minimal
 // and Tailwind-styled to match Table.tsx/Dropdown.tsx conventions.
-export default function ImageUpload({ label = 'Image', currentImageUrl, onFileSelect, disabled }: ImageUploadProps) {
+export default function ImageUpload({ label = 'Image', required, currentImageUrl, onFileSelect, disabled }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -26,7 +27,11 @@ export default function ImageUpload({ label = 'Image', currentImageUrl, onFileSe
 
   return (
     <div>
-      {label && <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">{label}</label>}
+      {label && (
+        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
+          {label} {required && <span className="text-red-600">*</span>}
+        </label>
+      )}
       <div
         onClick={() => !disabled && inputRef.current?.click()}
         onDragOver={(e) => {
