@@ -72,7 +72,10 @@
   });
 
   async function fetchJson(url) {
-    const res = await fetch(url);
+    // no-store: always hit the network, never the browser's HTTP cache —
+    // this data is polled for freshness (see startAutoRefresh below), so a
+    // cached response would defeat the whole point of polling.
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('Request failed: ' + url);
     return res.json();
   }
@@ -128,9 +131,19 @@
     }
   }
 
+  // Signatures of the last-rendered data, so the periodic refresh (see
+  // startAutoRefresh) can skip re-rendering — and the layout shift that would
+  // cause for anyone currently looking at the page — when nothing changed.
+  let clientsSignature = null;
+  let projectsSignature = null;
+
   async function loadClients() {
     try {
       const clients = await fetchJson(`${API_BASE}/clients`);
+      const signature = JSON.stringify(clients);
+      if (signature === clientsSignature) return;
+      clientsSignature = signature;
+
       if (clients.length === 0) {
         clientsContainer.innerHTML = '<p class="cms-empty">No partners to display yet.</p>';
         return;
@@ -160,6 +173,10 @@
       // One project per client (its lowest display_order) for this site-wide
       // showcase — a client's full project list still shows in its modal.
       const projects = await fetchJson(`${API_BASE}/projects?featured=true`);
+      const signature = JSON.stringify(projects);
+      if (signature === projectsSignature) return;
+      projectsSignature = signature;
+
       if (projects.length === 0) {
         projectsContainer.innerHTML = '<p class="cms-empty">No projects to display yet.</p>';
         return;
@@ -189,9 +206,29 @@
     }
   }
 
+  // Keeps the page in sync with CMS edits without a manual reload: re-fetch
+  // on an interval, plus immediately whenever the tab regains focus (covers
+  // an admin who edited content in another tab and switches back). Each
+  // load is a no-op re-render when the signature hasn't changed, so this is
+  // cheap and doesn't disturb anyone currently reading the page.
+  const REFRESH_INTERVAL_MS = 30000;
+
+  function refreshAll() {
+    loadClients();
+    loadProjects();
+  }
+
+  function startAutoRefresh() {
+    setInterval(refreshAll, REFRESH_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refreshAll();
+    });
+  }
+
   (async function init() {
     await resolveApiBase();
     loadClients();
     loadProjects();
+    startAutoRefresh();
   })();
 })();
