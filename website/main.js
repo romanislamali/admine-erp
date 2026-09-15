@@ -232,3 +232,33 @@
     startAutoRefresh();
   })();
 })();
+
+// Contact form: build the mailto: link from the submitted fields (the plain
+// action="mailto:..." form only ever opened a blank, subject/body-less
+// compose window) and open it via window.open(..., '_blank') instead of
+// navigating the page to it. A bare mailto: navigation hands off to
+// whatever the OS/browser has registered as the mail handler, which can
+// spawn a whole separate browser window; window.open with _blank is the
+// standard way to ask for a new tab in the current window instead. Final
+// say still belongs to the browser/OS handler and its own settings, so this
+// is best-effort, not a guarantee.
+(function () {
+  const contactForm = document.querySelector('.contact-form');
+  if (!contactForm) return;
+
+  const mailTo = contactForm.getAttribute('action').replace(/^mailto:/, '');
+
+  contactForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+
+    const subject = `Website enquiry from ${name || 'website visitor'}`;
+    const body = `${message}\n\n—\n${name}\n${email}`;
+    const mailtoUrl = `mailto:${mailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    window.open(mailtoUrl, '_blank');
+  });
+})();

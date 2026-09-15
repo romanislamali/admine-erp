@@ -578,7 +578,37 @@
         }
 
         .pane-card {
-            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1.1rem;
+            margin-bottom: 1.25rem;
+            padding: 1.4rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .pane-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(238, 34, 3, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .pane-icon {
+            flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(238, 34, 3, 0.1);
+            color: rgb(238, 34, 3);
+        }
+
+        .pane-text {
+            min-width: 0;
         }
 
         .pane-card h4 {
@@ -590,9 +620,10 @@
         }
 
         .pane-card p {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--text-main);
+            overflow-wrap: break-word;
         }
 
         .contact-form {
@@ -605,6 +636,16 @@
 
         .form-block {
             margin-bottom: 1.5rem;
+        }
+
+        .form-block label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
         }
 
         .form-block input, .form-block textarea {
@@ -879,7 +920,7 @@
     <!-- Hero Infrastructure -->
     <header id="home" class="hero">
         <h1>Enterprise Outdoor <span>Branding Services</span></h1>
-        <p>Engineered visibility arrays for Heavy Industries. Delivering unmatched structural billboard footprints, multi-acre boundary painting, and high-durability tower wall media wrappers.</p>
+        <p>We deliver professional, high-quality and cost-effective advertising & branding solutions tailored to every client’s needs. Our commitment to quality, creativity and customer satisfaction ensures efficient execution and impactful results.</p>
         <a href="#contact" class="btn">Contact Us</a>
     </header>
 
@@ -887,12 +928,12 @@
     <section class="section" style="padding-top: 0; padding-bottom: 0;">
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>450k+</h3>
+                <h3>2 Million+</h3>
                 <p>Sq. Ft. Painted</p>
             </div>
             <div class="stat-card">
-                <h3>120+</h3>
-                <p>Mega Billboard Hubs</p>
+                <h3>500+</h3>
+                <p>High Wall</p>
             </div>
             <div class="stat-card">
                 <h3>100%</h3>
@@ -909,33 +950,33 @@
     <section id="capabilities" class="section">
         <div class="section-header">
             <h2>Industrial <span>Core Competencies</span></h2>
-            <p class="section-subtitle">Heavy structural out-of-home visibility options custom configured to weather environments and capture cross-country transit corridors.</p>
+            <p class="section-subtitle">Weatherproof, large-format media engineered for maximum visibility along the highways and transit corridors your audience travels every day.</p>
         </div>
         <div class="grid-layout">
             <div class="service-card">
                 <div class="step-num">01</div>
                 <h3>Highwall Painting</h3>
-                <p>Large-format wall media wrapped across elevated highway-facing structures, engineered for maximum sightline capture at arterial speed and long-haul transit corridors.</p>
+                <p>Large-format brand murals hand-painted onto elevated highway-facing walls, engineered to command attention from fast-moving traffic along major arterial and long-haul corridors.</p>
             </div>
             <div class="service-card">
                 <div class="step-num">02</div>
                 <h3>Land Wall Painting</h3>
-                <p>Full-perimeter compound and boundary wall branding across multi-acre land holdings, converting idle plot frontage into continuous corporate visibility footprint.</p>
+                <p>Full-perimeter boundary wall branding across multi-acre land holdings, transforming idle plot frontage into a continuous, high-visibility corporate presence.</p>
             </div>
             <div class="service-card">
                 <div class="step-num">03</div>
                 <h3>Shop Painting</h3>
-                <p>Standardized dealer and retail storefront branding rolled out across distributed shop networks, maintaining stencil-accurate identity consistency at every outlet.</p>
+                <p>Consistent, brand-accurate storefront painting rolled out across dealer and retail networks, keeping every outlet true to a single trusted identity.</p>
             </div>
             <div class="service-card">
                 <div class="step-num">04</div>
                 <h3>Mega Highway Billboards</h3>
-                <p>End-to-end structural site configuration, permit blueprints, and ultra-high gauge foundation arrays engineered for high wind zones and absolute visibility.</p>
+                <p>Fully engineered billboard structures — from permitting to wind-rated foundations — built for premium highway placements and maximum audience reach.</p>
             </div>
             <div class="service-card">
                 <div class="step-num">05</div>
                 <h3>Signboard</h3>
-                <p>Precision-fabricated directional and identity signage engineered for high-frequency local touchpoints and dense urban and semi-urban placement zones.</p>
+                <p>Precision-fabricated directional and identity signage built for high-frequency visibility across dense urban and semi-urban touchpoints.</p>
             </div>
         </div>
     </section>
@@ -944,7 +985,7 @@
     <section id="partners" class="section bg-surface">
         <div class="section-header">
             <h2>Enterprise <span>Partnerships</span></h2>
-            <p class="section-subtitle">Architecting the physical outdoor market presence for heavy manufacturers, energy producers, and national steel grids.</p>
+            <p class="section-subtitle">Delivering structural outdoor branding infrastructure for leading commercial and retail networks across the region.</p>
         </div>
         <div class="logo-wrapper" id="clients-container">
             <p class="cms-loading">Loading partners…</p>
@@ -955,45 +996,74 @@
     <section id="work" class="section bg-surface">
         <div class="section-header">
             <h2>Our <span>Projects</span></h2>
-            <p class="section-subtitle">Real architectural proofing executed flawlessly across major distribution pathways.</p>
+            <p class="section-subtitle">A portfolio of structural outdoor branding delivered end-to-end, from highway walls and billboards to retail storefronts nationwide.</p>
         </div>
         <div class="grid-layout" id="projects-container">
             <p class="cms-loading">Loading projects…</p>
         </div>
     </section>
 
-    <!-- Feasibility Form & Contact Infrastructure -->
+    <!-- Contact Section -->
     <section id="contact" class="section">
         <div class="contact-layout">
             <div class="info-pane">
-                <h2>Engineer <span>Your Domination</span></h2>
-                <p style="color: var(--text-muted); margin-bottom: 3rem;">Connect directly with our corporate logistics office to schedule raw asset structural briefings and geographic lane scheduling availability models.</p>
-                
+                <h2>Contact <span>Us</span></h2>
+                <p style="color: var(--text-muted); margin-bottom: 3rem;">Have a location in mind or a campaign to plan? Reach out and our team will get back to you with a tailored outdoor branding proposal.</p>
+
                 <div class="pane-card">
-                    <h4>Direct Logistics Line</h4>
-                    <p>+880 1911-096390,  +8801710-661972</p>
+                    <div class="pane-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </div>
+                    <div class="pane-text">
+                        <h4>Call Us</h4>
+                        <p>+880 1911-096390, +8801710-661972</p>
+                    </div>
                 </div>
                 <div class="pane-card">
-                    <h4>Operations Dispatch</h4>
-                    <p>info.addmineadvert@gmail.com</p>
+                    <div class="pane-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                    </div>
+                    <div class="pane-text">
+                        <h4>Email Us</h4>
+                        <p>info.addmineadvert@gmail.com</p>
+                    </div>
                 </div>
                 <div class="pane-card">
-                    <h4>Central Office Hub</h4>
-                    <p>148/01, West Dholaipar, Dhaka-1204</p>
+                    <div class="pane-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                    </div>
+                    <div class="pane-text">
+                        <h4>Visit Us</h4>
+                        <p>148/01, West Dholaipar, Dhaka-1204</p>
+                    </div>
                 </div>
             </div>
 
             <form class="contact-form" action="mailto:info.addmineadvert@gmail.com">
                 <div class="form-block">
-                    <input type="text" placeholder="Enterprise / Corporate Entity Name" required>
+                    <label for="contact-name">Full Name</label>
+                    <input type="text" id="contact-name" placeholder="Your name" required>
                 </div>
                 <div class="form-block">
-                    <input type="email" placeholder="Corporate Contact Email" required>
+                    <label for="contact-email">Email Address</label>
+                    <input type="email" id="contact-email" placeholder="you@company.com" required>
                 </div>
                 <div class="form-block">
-                    <textarea rows="4" placeholder="Campaign specifications (e.g., Target Corridor, Wall Scale, Structural Typology)" required></textarea>
+                    <label for="contact-message">Tell Us About Your Project</label>
+                    <textarea id="contact-message" rows="4" placeholder="Location, wall or billboard size, timeline — anything that helps us scope your campaign." required></textarea>
                 </div>
-                <button type="submit" class="submit-btn">Submit</button>
+                <button type="submit" class="submit-btn">Send Message</button>
             </form>
         </div>
     </section>
