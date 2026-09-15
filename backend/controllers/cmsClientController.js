@@ -107,8 +107,12 @@ const uploadClientLogo = async (req, res) => {
 
 const deleteClient = async (req, res) => {
   try {
-    const client = await CmsClient.delete(req.params.id);
-    if (!client) return res.status(404).json({ message: 'Client not found' });
+    const result = await CmsClient.delete(req.params.id);
+    if (!result) return res.status(404).json({ message: 'Client not found' });
+
+    deleteImage(result.client.logo_path);
+    result.projects.forEach((project) => deleteImage(project.thumbnail_path));
+
     res.json({ message: 'Client deleted successfully' });
   } catch (error) {
     logger.error(`Failed to delete CMS client ${req.params.id}`, error);

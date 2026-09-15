@@ -99,9 +99,33 @@ const CmsClient = {
     return rows[0];
   },
 
+  // Hard delete: removes the client and, since projects only exist in
+  // relation to their client, cascades to permanently delete all of that
+  // client's projects too. Both deletes (and the image paths returned for
+  // the caller to remove from disk) happen in one transaction so a project
+  // is never left orphaned by a client that no longer exists.
   delete: async (id) => {
-    const { rows } = await db.query('UPDATE cms_clients SET deleted = true WHERE id = $1 RETURNING *', [id]);
-    return rows[0];
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const { rows: projectRows } = await client.query(
+        'DELETE FROM cms_projects WHERE client_id = $1 RETURNING *',
+        [id]
+      );
+      const { rows: clientRows } = await client.query(
+        'DELETE FROM cms_clients WHERE id = $1 RETURNING *',
+        [id]
+      );
+
+      await client.query('COMMIT');
+      return clientRows[0] ? { client: clientRows[0], projects: projectRows } : null;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 };
 

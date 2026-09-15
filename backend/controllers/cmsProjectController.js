@@ -133,6 +133,9 @@ const deleteProject = async (req, res) => {
   try {
     const project = await CmsProject.delete(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
+
+    deleteImage(project.thumbnail_path);
+
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
     logger.error(`Failed to delete CMS project ${req.params.id}`, error);

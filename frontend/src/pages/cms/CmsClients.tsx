@@ -124,7 +124,7 @@ export default function CmsClients() {
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDelete(
       'Remove Client?',
-      'This will remove the client and its logo from the public website.'
+      'This will permanently delete the client and its logo, along with all of its projects and their images. This cannot be undone.'
     );
     if (!confirmed) return;
 

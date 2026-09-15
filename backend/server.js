@@ -15,7 +15,7 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Uploaded/optimized CMS images (logos, thumbnails, gallery photos).
+// Uploaded/optimized CMS images (client logos, project thumbnails).
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Log every request once it finishes, with the status code and how long it took.

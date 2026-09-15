@@ -203,7 +203,7 @@ const CmsProject = {
   },
 
   delete: async (id) => {
-    const { rows } = await db.query('UPDATE cms_projects SET deleted = true WHERE id = $1 RETURNING *', [id]);
+    const { rows } = await db.query('DELETE FROM cms_projects WHERE id = $1 RETURNING *', [id]);
     const deleted = rows[0];
 
     // Maintain the "always exactly one featured, if any remain" invariant:
