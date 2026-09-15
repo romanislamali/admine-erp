@@ -294,11 +294,18 @@ const initDb = async () => {
         `);
       }
 
-      await pool.query(`
-        ALTER TABLE client_bill_schedules DROP CONSTRAINT IF EXISTS client_bill_schedules_status_check;
-        UPDATE client_bill_schedules SET status = 'PENDING' WHERE status = 'DUE';
-        ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('PENDING', 'PAID'));
-      `);
+      // Each statement runs as its own round trip (own implicit transaction) rather than
+      // one batched call: the UPDATE fires client_bill_schedules' DEFERRABLE INITIALLY
+      // DEFERRED constraint trigger (trg_fn_validate_bill_schedule_total), which stays
+      // "pending" until its transaction commits — and Postgres refuses to ALTER TABLE a
+      // relation that still has pending trigger events in the same transaction. Splitting
+      // these lets the UPDATE's deferred trigger commit before the ADD CONSTRAINT begins.
+      await pool.query(`ALTER TABLE client_bill_schedules DROP CONSTRAINT IF EXISTS client_bill_schedules_status_check`);
+      // Not just 'DUE' -> 'PENDING': coerce any value the new CHECK wouldn't accept
+      // (stray/legacy statuses included) to 'PENDING' rather than assuming 'DUE' is the
+      // only one that can exist.
+      await pool.query(`UPDATE client_bill_schedules SET status = 'PENDING' WHERE status NOT IN ('PENDING', 'PAID')`);
+      await pool.query(`ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('PENDING', 'PAID'))`);
 
       await pool.query(`
         DROP TRIGGER IF EXISTS trg_client_payments_sync ON client_payments;
