@@ -61,17 +61,6 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Role-Guard Component for the Website CMS module (ADMIN and MANAGER)
-function CmsRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-
-  if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-}
-
 function AppContent() {
   return (
     <Routes>
@@ -97,9 +86,9 @@ function AppContent() {
       <Route path="/clients" element={<ProtectedLayout><Clients /></ProtectedLayout>} />
       <Route path="/client-details/:id" element={<ProtectedLayout><ClientDetails /></ProtectedLayout>} />
 
-      {/* Website CMS (ADMIN + MANAGER only) */}
-      <Route path="/cms/clients" element={<ProtectedLayout><CmsRoute><CmsClients /></CmsRoute></ProtectedLayout>} />
-      <Route path="/cms/clients/:clientId/projects" element={<ProtectedLayout><CmsRoute><CmsClientProjects /></CmsRoute></ProtectedLayout>} />
+      {/* Website CMS */}
+      <Route path="/cms/clients" element={<ProtectedLayout><CmsClients /></ProtectedLayout>} />
+      <Route path="/cms/clients/:clientId/projects" element={<ProtectedLayout><CmsClientProjects /></ProtectedLayout>} />
 
       {/* Admin-only restricted route */}
       <Route

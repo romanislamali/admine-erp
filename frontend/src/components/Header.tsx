@@ -162,16 +162,14 @@ export default function Header() {
                         User Management
                       </Link>
                     )}
-                    {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
-                      <Link
-                        to="/cms/clients"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left font-semibold"
-                      >
-                        <Globe size={16} />
-                        Manage Website
-                      </Link>
-                    )}
+                    <Link
+                      to="/cms/clients"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left font-semibold"
+                    >
+                      <Globe size={16} />
+                      Manage Website
+                    </Link>
                     <button
                       type="button"
                       onClick={async () => {

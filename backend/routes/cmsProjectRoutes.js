@@ -11,24 +11,22 @@ const {
   uploadProjectThumbnail,
   deleteProject
 } = require('../controllers/cmsProjectController');
-const { authenticateToken, requireRole } = require('../middlewares/auth');
+const { authenticateToken } = require('../middlewares/auth');
 const { upload } = require('../utils/imageUpload');
-
-const requireCmsManager = requireRole(['ADMIN', 'MANAGER']);
 
 // Public: active projects, optionally filtered by ?clientId= (used for both
 // a client's project modal and the site-wide featured/portfolio section).
 router.get('/', getActiveProjects);
 
-// Admin: paginated list (all statuses) for the CMS management table.
-router.get('/admin', authenticateToken, requireCmsManager, getAllProjects);
+// Any authenticated user: paginated list (all statuses) for the CMS management table.
+router.get('/admin', authenticateToken, getAllProjects);
 
-router.get('/:id', authenticateToken, requireCmsManager, getProjectById);
-router.post('/', authenticateToken, requireCmsManager, createProject);
-router.put('/:id', authenticateToken, requireCmsManager, updateProject);
-router.patch('/:id/status', authenticateToken, requireCmsManager, updateProjectStatus);
-router.patch('/:id/featured', authenticateToken, requireCmsManager, setFeaturedProject);
-router.post('/:id/thumbnail', authenticateToken, requireCmsManager, upload.single('thumbnail'), uploadProjectThumbnail);
-router.delete('/:id', authenticateToken, requireCmsManager, deleteProject);
+router.get('/:id', authenticateToken, getProjectById);
+router.post('/', authenticateToken, createProject);
+router.put('/:id', authenticateToken, updateProject);
+router.patch('/:id/status', authenticateToken, updateProjectStatus);
+router.patch('/:id/featured', authenticateToken, setFeaturedProject);
+router.post('/:id/thumbnail', authenticateToken, upload.single('thumbnail'), uploadProjectThumbnail);
+router.delete('/:id', authenticateToken, deleteProject);
 
 module.exports = router;
