@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Building2, Globe, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Globe, type LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../public/logo.png';
 import { useAuth } from '../context/AuthContext';
