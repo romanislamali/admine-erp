@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X,
     Wallet, ReceiptText, Pencil, Trash2, ShoppingCart, ChevronDown, Plus,
-    CheckCircle2, Lock, MinusCircle, PiggyBank
+    CheckCircle2, Lock, MinusCircle
 } from 'lucide-react';
 import Table from '../components/Table';
 import Dropdown from '../components/Dropdown';
@@ -901,7 +901,7 @@ export default function ClientDetails() {
                             </div>
                             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col justify-between min-w-0">
                                 <div className="text-[14px] font-semibold uppercase text-slate-400 flex items-center gap-1.5 mb-2">
-                                    <PiggyBank size={14} className="shrink-0" /><span className="truncate">Advance</span>
+                                    <Wallet size={14} className="shrink-0" /><span className="truncate">Advance</span>
                                 </div>
                                 <div className="text-sm sm:text-base lg:text-md font-bold text-slate-900 break-all leading-tight">{formatCurrency(client.total_advance)}</div>
                             </div>
