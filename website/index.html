@@ -151,6 +151,15 @@
             margin-bottom: 3rem;
         }
 
+        /* Real <img>, only used on mobile (see media query below) so the
+           banner can render at its own aspect ratio full-width with zero
+           cropping — a CSS background-size can't do that once the hero
+           box's own height (padding + text) stops matching the image's
+           aspect ratio. */
+        .hero-banner-img {
+            display: none;
+        }
+
         /* Interactive Dynamic Button */
         .btn {
             display: inline-block;
@@ -816,8 +825,21 @@
             }
 
             .hero {
-                padding: 8rem 5% 6rem 5%;
+                /* No fixed min-height / background image here — the real
+                   <img> below drives the height at its own aspect ratio,
+                   so the banner is always fully visible with no cropping
+                   and no leftover blank space on any side. */
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 40%, rgba(0, 102, 204, 0.1));
+                min-height: 0;
+                padding: 0 5% 6rem 5%;
                 text-align: center;
+            }
+
+            .hero-banner-img {
+                display: block;
+                width: 100vw;
+                margin-left: calc(50% - 50vw);
+                margin-bottom: 2rem;
             }
 
             .hero h1 { font-size: 2.5rem; }
@@ -920,6 +942,7 @@
 
     <!-- Hero Infrastructure -->
     <header id="home" class="hero">
+        <img src="banner.png" alt="" class="hero-banner-img">
         <h1>Enterprise Outdoor <span>Branding Services</span></h1>
         <p><b>We deliver professional, high-quality and cost-effective advertising & branding solutions tailored to every client’s needs. Our commitment to quality, creativity and customer satisfaction ensures efficient execution and impactful results.</b></p>
         <a href="#contact" class="btn">Contact Us</a>
