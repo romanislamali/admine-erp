@@ -195,7 +195,16 @@
             <p></p>
           </div>
         `;
-        card.querySelector('.tag').textContent = project.client_name || '';
+        const tagEl = card.querySelector('.tag');
+        if (project.client_logo_path) {
+          tagEl.classList.add('tag-logo');
+          const logoImg = document.createElement('img');
+          logoImg.src = resolveImageUrl(project.client_logo_path);
+          logoImg.alt = project.client_name || '';
+          tagEl.appendChild(logoImg);
+        } else {
+          tagEl.textContent = project.client_name || '';
+        }
         card.querySelector('h3').textContent = project.name || '';
         card.querySelector('.project-info p').textContent = project.short_description || '';
         card.addEventListener('click', () => openProject(project));

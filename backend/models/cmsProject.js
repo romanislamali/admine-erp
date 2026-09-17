@@ -3,7 +3,7 @@ const db = require('../config/db');
 const CmsProject = {
   getAllActive: async ({ clientId } = {}) => {
     let queryText = `
-      SELECT p.*, c.name AS client_name
+      SELECT p.*, c.name AS client_name, c.logo_path AS client_logo_path
       FROM cms_projects p
       LEFT JOIN cms_clients c ON p.client_id = c.id
       WHERE p.is_active = true AND p.deleted = false
@@ -27,7 +27,7 @@ const CmsProject = {
   getFeaturedActive: async () => {
     const { rows } = await db.query(`
       SELECT * FROM (
-        SELECT DISTINCT ON (p.client_id) p.*, c.name AS client_name
+        SELECT DISTINCT ON (p.client_id) p.*, c.name AS client_name, c.logo_path AS client_logo_path
         FROM cms_projects p
         LEFT JOIN cms_clients c ON p.client_id = c.id
         WHERE p.is_active = true AND p.deleted = false
@@ -54,7 +54,7 @@ const CmsProject = {
 
   getPaginated: async ({ limit, offset, search, sortField, sortOrder, clientId }) => {
     let queryText = `
-      SELECT p.*, c.name AS client_name
+      SELECT p.*, c.name AS client_name, c.logo_path AS client_logo_path
       FROM cms_projects p
       LEFT JOIN cms_clients c ON p.client_id = c.id
       WHERE p.deleted = false
@@ -106,7 +106,7 @@ const CmsProject = {
 
   getById: async (id) => {
     const { rows } = await db.query(
-      `SELECT p.*, c.name AS client_name
+      `SELECT p.*, c.name AS client_name, c.logo_path AS client_logo_path
        FROM cms_projects p
        LEFT JOIN cms_clients c ON p.client_id = c.id
        WHERE p.id = $1 AND p.deleted = false`,
@@ -117,7 +117,7 @@ const CmsProject = {
 
   getActiveById: async (id) => {
     const { rows } = await db.query(
-      `SELECT p.*, c.name AS client_name
+      `SELECT p.*, c.name AS client_name, c.logo_path AS client_logo_path
        FROM cms_projects p
        LEFT JOIN cms_clients c ON p.client_id = c.id
        WHERE p.id = $1 AND p.is_active = true AND p.deleted = false`,

@@ -383,6 +383,28 @@
             border-radius: 2px;
         }
 
+        /* Shown instead of the plain text tag when the project's client has
+           a logo image, so the card badge displays the client's logo
+           rather than their name. */
+        .tag.tag-logo {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1px 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .tag.tag-logo img {
+            display: block;
+            max-width: 40px;
+            max-height: 40px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
         .project-info {
             padding: 2rem;
         }
@@ -925,6 +947,11 @@
             #work .tag {
                 font-size: 0.6rem;
                 padding: 0.25rem 0.6rem;
+            }
+
+            #work .tag.tag-logo img {
+                max-width: 20px;
+                max-height: 20px;
             }
 
             .contact-layout { grid-template-columns: 1fr; }
