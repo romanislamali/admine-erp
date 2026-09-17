@@ -35,7 +35,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 50px;
+            padding: 6px 40px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -50,15 +50,15 @@
             align-items: center;
             gap: 10px;
             font-weight: 800;
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-main);
         }
         .logo img {
-            width: 150px;
-            height: 30px;
-            margin-right: 10px;
+            width: 120px;
+            height: 24px;
+            margin-right: 8px;
         }
 
         .logo span.logo-sub-text{
@@ -72,7 +72,7 @@
         nav ul {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 22px;
             align-items: center;
         }
 
@@ -85,7 +85,7 @@
             text-decoration: none;
             color: var(--text-main);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             transition: color 0.3s ease, transform 0.2s ease;
             display: inline-block;
         }
@@ -131,7 +131,7 @@
         }
 
         .hero h1 {
-            font-size: 4rem;
+            font-size: 3rem;
             font-weight: 900;
             line-height: 1.1;
             margin-bottom: 1.5rem;
@@ -145,7 +145,7 @@
         }
 
         .hero p {
-            font-size: 1.3rem;
+            font-size: 1.05rem;
             color: var(--text-muted);
             max-width: 680px;
             margin-bottom: 3rem;
@@ -160,6 +160,14 @@
             display: none;
         }
 
+        /* Wraps the hero text/button so it can be overlaid on the banner
+           <img> on mobile. On desktop it's a no-op: display:contents drops
+           the box entirely so h1/p/a keep behaving as direct flex children
+           of .hero, unchanged. */
+        .hero-content {
+            display: contents;
+        }
+
         /* Interactive Dynamic Button */
         .btn {
             display: inline-block;
@@ -170,7 +178,7 @@
             font-weight: 700;
             border-radius: 4px;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             letter-spacing: 1px;
             transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
             box-shadow: 0 4px 20px rgba(0, 102, 204, 0.2);
@@ -198,7 +206,7 @@
         }
 
         .section h2 {
-            font-size: 2.8rem;
+            font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 1rem;
             letter-spacing: -1px;
@@ -211,7 +219,7 @@
 
         .section-subtitle {
             color: var(--text-muted);
-            font-size: 1.15rem;
+            font-size: 0.98rem;
         }
 
         /* Stats Section */
@@ -231,7 +239,7 @@
         }
 
         .stat-card h3 {
-            font-size: 3rem;
+            font-size: 2.4rem;
             font-weight: 800;
             color: var(--text-main);
             margin-bottom: 0.5rem;
@@ -240,7 +248,7 @@
         .stat-card p {
             color: var(--text-muted);
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             letter-spacing: 1px;
         }
 
@@ -288,14 +296,14 @@
         }
 
         .service-card h3 {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             margin-bottom: 1rem;
             color: var(--text-main);
         }
 
         .service-card p {
             color: var(--text-muted);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         /* Partners / Logo Strip */
@@ -371,7 +379,7 @@
             background: rgb(238, 34, 3);
             color: #ffffff;
             padding: 0.3rem 0.8rem;
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
             border-radius: 2px;
@@ -382,7 +390,7 @@
         }
 
         .sector-badge {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: rgb(238, 34, 3);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -392,7 +400,7 @@
         }
 
         .project-info h3 {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             margin-bottom: 0.5rem;
             color: var(--text-main);
             overflow-wrap: break-word;
@@ -401,7 +409,7 @@
 
         .project-info p {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             overflow-wrap: break-word;
             word-break: break-word;
         }
@@ -490,7 +498,7 @@
         }
 
         .cms-modal h2 {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             margin-bottom: 0.5rem;
             color: var(--text-main);
             padding-right: 2rem;
@@ -503,7 +511,7 @@
             gap: 1.5rem;
             flex-wrap: wrap;
             margin-bottom: 1rem;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
             overflow-wrap: break-word;
             word-break: break-word;
@@ -558,7 +566,7 @@
         }
 
         .cms-client-project-card h4 {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             margin-bottom: 0.3rem;
             color: var(--text-main);
             overflow-wrap: break-word;
@@ -566,7 +574,7 @@
         }
 
         .cms-client-project-card p {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             overflow-wrap: break-word;
             word-break: break-word;
@@ -624,13 +632,13 @@
         .pane-card h4 {
             color: var(--text-muted);
             text-transform: uppercase;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             letter-spacing: 1px;
             margin-bottom: 0.4rem;
         }
 
         .pane-card p {
-            font-size: 1.1rem;
+            font-size: 0.98rem;
             font-weight: 700;
             color: var(--text-main);
             overflow-wrap: break-word;
@@ -650,7 +658,7 @@
 
         .form-block label {
             display: block;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -667,7 +675,7 @@
             border-radius: 4px;
             outline: none;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             transition: border-color 0.3s;
         }
 
@@ -704,7 +712,7 @@
 
         .footer-text {
             color: #94a3b8;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             max-width: 600px;
             margin: 0 auto 2rem auto;
         }
@@ -731,7 +739,7 @@
         }
 
         .footer-copyright {
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: #64748b;
             border-top: 1px solid #1e293b;
             padding-top: 1.5rem;
@@ -739,7 +747,7 @@
 
         /* Mobile and Tablet Responsiveness */
         @media (max-width: 1024px) {
-            .hero h1 { font-size: 3.2rem; }
+            .hero h1 { font-size: 2.6rem; }
             .section { padding: 5rem 6%; }
             .contact-layout { gap: 40px; }
         }
@@ -747,7 +755,7 @@
         /* Responsive Breakpoint for Mobile Layout Styles */
         @media (max-width: 992px) {
             nav {
-                padding: 1.2rem 5%;
+                padding: 0.7rem 5%;
             }
 
             /* HIDES ONLY THE TEXT TITLE FROM THE NAVBAR ROW */
@@ -778,7 +786,7 @@
                 padding: 0.5rem 1.5rem 1.5rem 1.5rem;
                 margin-bottom: 1rem;
                 border-bottom: 1px solid var(--border);
-                font-size: 1rem;
+                font-size: 0.9rem;
                 font-weight: 800;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
@@ -818,47 +826,81 @@
             }
 
             nav ul li a {
-                font-size: 1rem;
+                font-size: 0.9rem;
                 padding: 0.7rem 1.5rem;
                 width: 100%;
                 display: block;
             }
 
             .hero {
-                /* No fixed min-height / background image here — the real
-                   <img> below drives the height at its own aspect ratio,
-                   so the banner is always fully visible with no cropping
-                   and no leftover blank space on any side. */
-                background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 40%, rgba(0, 102, 204, 0.1));
+                /* The banner <img> below sets the hero's height at its own
+                   aspect ratio (full banner, no crop, no letterboxing). At
+                   mobile widths that box is short (the source banner is
+                   ~16:9), too short to fit the heading/paragraph/button as a
+                   true full-bleed overlay without spilling upward into the
+                   sticky nav above. .hero-content instead flows normally
+                   right after the image and is pulled up over just its
+                   bottom edge with a small, fixed negative margin — an
+                   overlapping caption card, not a full-box overlay, so it
+                   can never reach past the image's own top edge. */
+                position: relative;
+                background: none;
                 min-height: 0;
-                padding: 0 5% 6rem 5%;
+                padding: 0;
                 text-align: center;
             }
 
             .hero-banner-img {
                 display: block;
-                width: 100vw;
-                margin-left: calc(50% - 50vw);
-                margin-bottom: 2rem;
+                width: 100%;
+                height: auto;
             }
 
-            .hero h1 { font-size: 2.5rem; }
-            .hero p { margin-left: auto; margin-right: auto; }
+            .hero-content {
+                display: block;
+                position: relative;
+                z-index: 2;
+                margin-top: -48px;
+                padding: 1.5rem 6% 2rem 6%;
+                background: rgba(255, 255, 255, 0.94);
+                border-radius: 16px 16px 0 0;
+                box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.06);
+            }
+
+            .hero h1 { font-size: 1.8rem; }
+            .hero p { font-size: 0.9rem; margin-left: auto; margin-right: auto; }
             .btn { align-self: center; }
 
             .stats-grid {
                 margin-top: 0;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+                padding: 1.5rem 0.75rem;
             }
 
-            .section h2 { font-size: 2.2rem; }
+            .stat-card h3 {
+                font-size: 1.3rem;
+                margin-bottom: 0.2rem;
+            }
+
+            .stat-card p {
+                font-size: 0.55rem;
+                letter-spacing: 0.3px;
+            }
+
+            .section h2 { font-size: 1.8rem; }
             .contact-layout { grid-template-columns: 1fr; }
             .contact-form { padding: 2rem; }
         }
 
         @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr; }
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 6px;
+                padding: 1.25rem 0.5rem;
+            }
+            .stat-card h3 { font-size: 1.05rem; }
+            .stat-card p { font-size: 0.48rem; letter-spacing: 0.2px; }
             .section { padding: 4rem 4%; }
 
             .logo-wrapper {
@@ -943,9 +985,11 @@
     <!-- Hero Infrastructure -->
     <header id="home" class="hero">
         <img src="banner.png" alt="" class="hero-banner-img">
-        <h1>Enterprise Outdoor <span>Branding Services</span></h1>
-        <p><b>We deliver professional, high-quality and cost-effective advertising & branding solutions tailored to every client’s needs. Our commitment to quality, creativity and customer satisfaction ensures efficient execution and impactful results.</b></p>
-        <a href="#contact" class="btn">Contact Us</a>
+        <div class="hero-content">
+            <h1>Enterprise Outdoor <span>Branding Services</span></h1>
+            <p><b>We deliver professional, high-quality and cost-effective advertising & branding solutions tailored to every client’s needs. Our commitment to quality, creativity and customer satisfaction ensures efficient execution and impactful results.</b></p>
+            <a href="#contact" class="btn">Contact Us</a>
+        </div>
     </header>
 
     <!-- Stats Highlight Ribbon -->
