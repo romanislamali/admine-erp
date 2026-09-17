@@ -192,7 +192,7 @@
 
         /* Sections Structure */
         .section {
-            padding: 7rem 8%;
+            padding: 2rem 8%;
         }
 
         .bg-surface {
@@ -202,7 +202,7 @@
         .section-header {
             text-align: center;
             max-width: 700px;
-            margin: 0 auto 5rem auto;
+            margin: 0 auto 2rem auto;
         }
 
         .section h2 {
@@ -311,15 +311,14 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            gap: 40px;
+            gap: 30px;
             flex-wrap: wrap;
-            padding: 3rem;
             border-radius: 8px;
         }
 
         .client-logo {
-            max-width: 240px;
-            min-height: 240px; 
+            max-width: 200px;
+            min-height: 200px; 
             border: 1px solid var(--border);
             box-shadow: 0 5px 5px gray;
             transition: all 0.3s ease;
@@ -595,6 +594,14 @@
             justify-content: center;
         }
 
+        /* Wraps the three pane-cards so they can be merged into one card on
+           mobile. On desktop it's a no-op: display:contents drops the box
+           entirely so the pane-cards keep behaving as direct children of
+           .info-pane, unchanged. */
+        .pane-group {
+            display: contents;
+        }
+
         .pane-card {
             display: flex;
             align-items: flex-start;
@@ -748,7 +755,7 @@
         /* Mobile and Tablet Responsiveness */
         @media (max-width: 1024px) {
             .hero h1 { font-size: 2.6rem; }
-            .section { padding: 5rem 6%; }
+            .section { padding: 3.5rem 6%; }
             .contact-layout { gap: 40px; }
         }
 
@@ -889,8 +896,70 @@
             }
 
             .section h2 { font-size: 1.8rem; }
+
+            /* Scoped to #work: the project cards go 2-up on mobile, unlike
+               the general .grid-layout used elsewhere (capabilities stays
+               single-column below 300px). */
+            #work .grid-layout {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            #work .img-container {
+                height: 140px;
+            }
+
+            #work .project-info {
+                padding: 1.1rem;
+            }
+
+            #work .project-info h3 {
+                font-size: 1rem;
+            }
+
+            #work .project-info p {
+                font-size: 0.8rem;
+            }
+
+            #work .sector-badge {
+                font-size: 0.65rem;
+            }
+
+            #work .tag {
+                font-size: 0.6rem;
+                padding: 0.25rem 0.6rem;
+            }
+
             .contact-layout { grid-template-columns: 1fr; }
             .contact-form { padding: 2rem; }
+
+            /* Merge Call Us / Email Us / Visit Us into a single card. */
+            .pane-group {
+                display: flex;
+                flex-direction: column;
+                background: var(--bg-surface);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 1.5rem;
+            }
+
+            .pane-group .pane-card {
+                background: none;
+                border: none;
+                border-radius: 0;
+                margin-bottom: 0;
+            }
+
+            .pane-group .pane-card:hover {
+                transform: none;
+                box-shadow: none;
+                background: var(--bg-surface-light);
+            }
+
+            .pane-group .pane-card + .pane-card {
+                border-top: 1px solid var(--border);
+            }
         }
 
         @media (max-width: 480px) {
@@ -901,13 +970,13 @@
             }
             .stat-card h3 { font-size: 1.05rem; }
             .stat-card p { font-size: 0.48rem; letter-spacing: 0.2px; }
-            .section { padding: 4rem 4%; }
+            .section { padding: 1rem 4%; }
 
             .logo-wrapper {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 gap: 12px;
-                padding: 1.5rem 0.5rem;
+                padding: 0 0.5rem;
             }
 
             .client-logo {
@@ -975,9 +1044,9 @@
             <div class="mobile-menu-header">Admine <span>Advertising</span></div>
             
             <li><a href="#home">Home</a></li>
-            <li><a href="#capabilities">Capabilities</a></li>
             <li><a href="#partners">Partners</a></li>
             <li><a href="#work">Projects</a></li>
+            <li><a href="#capabilities">Capabilities</a></li>
             <li><a href="#contact">Contact</a></li>
         </ul>
     </nav>
@@ -1014,6 +1083,28 @@
         </div>
     </section>
 
+    <!-- Partners Network Strip -->
+    <section id="partners" class="section bg-surface">
+        <div class="section-header">
+            <h2>Enterprise <span>Partnerships</span></h2>
+            <p class="section-subtitle">Delivering structural outdoor branding infrastructure for leading commercial and retail networks across the region.</p>
+        </div>
+        <div class="logo-wrapper" id="clients-container">
+            <p class="cms-loading">Loading partners…</p>
+        </div>
+    </section>
+
+    <!-- Campaigns Showcase -->
+    <section id="work" class="section bg-surface">
+        <div class="section-header">
+            <h2>Our <span>Projects</span></h2>
+            <p class="section-subtitle">A portfolio of structural outdoor branding delivered end-to-end, from highway walls and billboards to retail storefronts nationwide.</p>
+        </div>
+        <div class="grid-layout" id="projects-container">
+            <p class="cms-loading">Loading projects…</p>
+        </div>
+    </section>
+    
     <!-- Capabilities / Services -->
     <section id="capabilities" class="section">
         <div class="section-header">
@@ -1049,28 +1140,6 @@
         </div>
     </section>
 
-    <!-- Partners Network Strip -->
-    <section id="partners" class="section bg-surface">
-        <div class="section-header">
-            <h2>Enterprise <span>Partnerships</span></h2>
-            <p class="section-subtitle">Delivering structural outdoor branding infrastructure for leading commercial and retail networks across the region.</p>
-        </div>
-        <div class="logo-wrapper" id="clients-container">
-            <p class="cms-loading">Loading partners…</p>
-        </div>
-    </section>
-
-    <!-- Campaigns Showcase -->
-    <section id="work" class="section bg-surface">
-        <div class="section-header">
-            <h2>Our <span>Projects</span></h2>
-            <p class="section-subtitle">A portfolio of structural outdoor branding delivered end-to-end, from highway walls and billboards to retail storefronts nationwide.</p>
-        </div>
-        <div class="grid-layout" id="projects-container">
-            <p class="cms-loading">Loading projects…</p>
-        </div>
-    </section>
-
     <!-- Contact Section -->
     <section id="contact" class="section">
         <div class="contact-layout">
@@ -1078,42 +1147,44 @@
                 <h2>Contact <span>Us</span></h2>
                 <p style="color: var(--text-muted); margin-bottom: 3rem;">Have a location in mind or a campaign to plan? Reach out and our team will get back to you with a tailored outdoor branding proposal.</p>
 
-                <div class="pane-card">
-                    <div class="pane-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                        </svg>
+                <div class="pane-group">
+                    <div class="pane-card">
+                        <div class="pane-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </div>
+                        <div class="pane-text">
+                            <h4>Call Us</h4>
+                            <p>+880 1911-096390, +8801710-661972</p>
+                        </div>
                     </div>
-                    <div class="pane-text">
-                        <h4>Call Us</h4>
-                        <p>+880 1911-096390, +8801710-661972</p>
+                    <div class="pane-card">
+                        <div class="pane-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                            </svg>
+                        </div>
+                        <div class="pane-text">
+                            <h4>Email Us</h4>
+                            <p>info.addmineadvert@gmail.com</p>
+                        </div>
                     </div>
-                </div>
-                <div class="pane-card">
-                    <div class="pane-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                        </svg>
-                    </div>
-                    <div class="pane-text">
-                        <h4>Email Us</h4>
-                        <p>info.addmineadvert@gmail.com</p>
-                    </div>
-                </div>
-                <div class="pane-card">
-                    <div class="pane-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                    </div>
-                    <div class="pane-text">
-                        <h4>Visit Us</h4>
-                        <p>148/01, West Dholaipar, Dhaka-1204</p>
+                    <div class="pane-card">
+                        <div class="pane-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div class="pane-text">
+                            <h4>Visit Us</h4>
+                            <p>148/01, West Dholaipar, Dhaka-1204</p>
+                        </div>
                     </div>
                 </div>
             </div>
