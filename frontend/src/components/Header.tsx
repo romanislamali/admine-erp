@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Globe, type LucideIcon, Building2 } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, UserCog, ReceiptText, BarChart3, LogOut, Menu, X, Globe, type LucideIcon, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../public/logo.png';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,7 @@ const navigation: NavItem[] = [
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Billing', href: '/billing', icon: ReceiptText },
   { name: 'Payment', href: '/payment', icon: BarChart3 },
+  { name: 'Users', href: '/users', icon: UserCog, roles: ['ADMIN'] },
 ];
 
 export default function Header() {
@@ -152,16 +153,6 @@ export default function Header() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-0.5">
-                    {user.role === 'ADMIN' && (
-                      <Link
-                        to="/users"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left font-semibold"
-                      >
-                        <Users size={16} />
-                        User Management
-                      </Link>
-                    )}
                     <Link
                       to="/cms/clients"
                       onClick={() => setIsDropdownOpen(false)}
