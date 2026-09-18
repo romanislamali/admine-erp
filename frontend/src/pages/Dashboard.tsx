@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, FolderKanban, ReceiptText, Wallet, Loader2, ArrowRight } from 'lucide-react';
+import { ArrowUpRight, FolderKanban, ReceiptText, Wallet, Coins, MinusCircle, CreditCard, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Contractor {
@@ -29,12 +29,42 @@ interface Project {
   status: string;
 }
 
+interface Client {
+  id: string;
+  name: string;
+  total_billed: string | number;
+  total_advance: string | number;
+  total_deduction: string | number;
+  total_received: string | number;
+  total_due: string | number;
+}
+
+interface ClientBill {
+  id: string;
+  client_name: string;
+  gross_amount: string | number;
+  bill_number: string | null;
+  bill_date: string;
+}
+
+interface ClientBillSchedule {
+  id: string;
+  client_id: string;
+  installment_label: string;
+  received_amount: string | number;
+  deduction_amount: string | number;
+  payment_date: string | null;
+}
+
 export default function Dashboard() {
   const [data, setData] = useState({
     contractors: [] as Contractor[],
     bills: [] as Bill[],
     payments: [] as Payment[],
     projects: [] as Project[],
+    clients: [] as Client[],
+    clientBills: [] as ClientBill[],
+    clientSchedules: [] as ClientBillSchedule[],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,14 +72,17 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [contRes, billRes, payRes, projRes] = await Promise.all([
+      const [contRes, billRes, payRes, projRes, clientRes, clientBillRes, clientSchedRes] = await Promise.all([
         fetch('/api/contractors'),
         fetch('/api/bills'),
         fetch('/api/payments'),
-        fetch('/api/projects')
+        fetch('/api/projects'),
+        fetch('/api/clients'),
+        fetch('/api/client-bills'),
+        fetch('/api/client-bill-schedules')
       ]);
 
-      if (!contRes.ok || !billRes.ok || !payRes.ok || !projRes.ok) {
+      if (!contRes.ok || !billRes.ok || !payRes.ok || !projRes.ok || !clientRes.ok || !clientBillRes.ok || !clientSchedRes.ok) {
         throw new Error('Failed to load dashboard parameters');
       }
 
@@ -58,6 +91,9 @@ export default function Dashboard() {
         bills: await billRes.json(),
         payments: await payRes.json(),
         projects: await projRes.json(),
+        clients: await clientRes.json(),
+        clientBills: await clientBillRes.json(),
+        clientSchedules: await clientSchedRes.json(),
       });
     } catch (err: any) {
       setError(err.message || 'An error occurred fetching dashboard metrics');
@@ -151,6 +187,46 @@ export default function Dashboard() {
     },
     { name: 'Active Projects', value: `${activeProjectsCount} / ${totalProjectsCount}`, icon: FolderKanban, color: 'text-sky-700 border-sky-700', iconBg: '' }
   ];
+
+  // ---------------- Client-side figures (mirrors the contractor block above) ----------------
+  const clientTotalBilled = data.clients.reduce((sum, c) => sum + (Number(c.total_billed) || 0), 0);
+  const clientTotalAdvance = data.clients.reduce((sum, c) => sum + (Number(c.total_advance) || 0), 0);
+  const clientTotalDeduction = data.clients.reduce((sum, c) => sum + (Number(c.total_deduction) || 0), 0);
+  const clientTotalReceived = data.clients.reduce((sum, c) => sum + (Number(c.total_received) || 0), 0);
+  const clientTotalDue = data.clients.reduce((sum, c) => sum + (Number(c.total_due) || 0), 0);
+
+  const clientStats = [
+    { name: 'Total Billed', value: formatCurrency(clientTotalBilled), icon: ReceiptText, color: 'text-amber-700 border-amber-700' },
+    { name: 'Total Advance', value: formatCurrency(clientTotalAdvance), icon: Wallet, color: 'text-sky-700 border-sky-700' },
+    { name: 'Total Deduction', value: formatCurrency(clientTotalDeduction), icon: MinusCircle, color: 'text-rose-700 border-rose-700' },
+    { name: 'Total Received', value: formatCurrency(clientTotalReceived), icon: Coins, color: 'text-green-600 border-green-600' },
+    {
+      name: 'Outstanding Due',
+      value: clientTotalDue > 0 ? `${formatCurrency(clientTotalDue)} (DUE)` : formatCurrency(0),
+      icon: CreditCard,
+      color: clientTotalDue > 0 ? 'text-rose-800 border-rose-800' : 'text-slate-800 border-slate-800'
+    }
+  ];
+
+  const clientsById = new Map(data.clients.map((c) => [c.id, c.name]));
+  const clientActivities = [
+    ...data.clientBills.map(b => ({
+      id: `clbill-${b.id}`,
+      type: 'Bill Raised',
+      title: `${b.client_name} billed ${formatCurrency(Number(b.gross_amount))}`,
+      ref: b.bill_number || `BILL-${b.id.slice(0, 8)}`,
+      date: new Date(b.bill_date),
+    })),
+    ...data.clientSchedules
+      .filter((s) => (Number(s.received_amount) || 0) > 0 || (Number(s.deduction_amount) || 0) > 0)
+      .map((s) => ({
+        id: `clrcpt-${s.id}`,
+        type: 'Receipt Collected',
+        title: `Received ${formatCurrency(Number(s.received_amount))} from ${clientsById.get(s.client_id) || 'a client'}`,
+        ref: s.installment_label,
+        date: new Date(s.payment_date || 0),
+      }))
+  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
 
   return (
     <motion.div
@@ -265,6 +341,111 @@ export default function Dashboard() {
           </div>
 
         </div>
+
+        {/* ---------------- Client module (added alongside the contractor module above) ---------------- */}
+        <div className="mt-10 pt-8 border-t border-slate-100">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Client Overview</h2>
+            <p className="text-slate-500 text-sm mt-1">Real-time status updates and client outstanding balances.</p>
+          </div>
+
+          {/* Client stats row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-4">
+            {clientStats.map((item) => (
+              <div key={item.name} className="glass-card flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${item.color}`}>
+                  <item.icon size={26} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.name}</p>
+                  <div className={`text-md font-bold mt-1 ${item.color}`}>{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Client main content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+
+            {/* Client summaries */}
+            <div className="lg:col-span-2 glass-card flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-lg">Client Ledgers</h3>
+                    <p className="text-slate-500 text-xs mt-0.5">Quick lookup of outstanding client receivables.</p>
+                  </div>
+                  <Link to="/clients" className="flex items-center gap-1.5 text-xs text-primary font-bold hover:underline">
+                    View Directory <ArrowRight size={14} />
+                  </Link>
+                </div>
+                {data.clients.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-450 text-sm border border-dashed rounded-xl">
+                    <p className="text-slate-450">No clients available yet.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 overflow-hidden">
+                    {[...data.clients]
+                      .sort((a, b) => (Number(b.total_due) || 0) - (Number(a.total_due) || 0))
+                      .slice(0, 5)
+                      .map(c => {
+                        const due = Number(c.total_due) || 0;
+                        return (
+                          <div key={c.id} className="py-3.5 flex justify-between items-center hover:bg-slate-50/30 px-2 rounded-lg transition-colors">
+                            <div>
+                              <div className="font-bold text-slate-800">{c.name}</div>
+                            </div>
+                            <div className={`text-sm font-extrabold ${due < 0 ? 'text-green-700' : due > 0 ? 'text-rose-800' : 'text-slate-500'
+                              }`}>
+                              {due < 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-green-50 mr-1.5 border border-green-500/50">CREDIT</span>
+                                : due > 0 ? <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-red-50 mr-1.5 border border-red-500/50">DUE</span>
+                                  : <span></span>}
+                              {formatCurrency(Math.abs(due))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Client activity logs */}
+            <div className="glass-card flex flex-col">
+              <div className="mb-6">
+                <h3 className="font-bold text-slate-900 text-lg">Client Event Stream</h3>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  Chronological bills & receipts.
+                </p>
+              </div>
+              <div className="space-y-4 flex-1">
+                {clientActivities.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-450 text-sm border border-dashed rounded-xl">
+                    <p>No bills or receipts logged.</p>
+                  </div>
+                ) : (
+                  clientActivities.map(act => (
+                    <div key={act.id} className="flex gap-3 text-xs p-3 rounded-xl border border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-slate-300 ${act.type.includes('Bill') ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                        }`}>
+                        <span className="font-bold text-[10px] uppercase">{act.type.includes('Bill') ? 'INV' : 'PAY'}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-slate-800 font-semibold leading-normal">{act.title}</p>
+                        <div className="flex justify-between items-center mt-1 text-[10px] text-slate-400 font-mono">
+                          <span>Ref: {act.ref}</span>
+                          <span>{new Date(act.date).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </motion.div>
   );
