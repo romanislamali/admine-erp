@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Globe, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, ReceiptText, BarChart3, LogOut, Menu, X, Globe, type LucideIcon, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../public/logo.png';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  // { name: 'Clients', href: '/clients', icon: Building2 },
+  { name: 'Clients', href: '/clients', icon: Building2 },
   { name: 'Contractors', href: '/contractors', icon: Users },
   { name: 'Projects', href: '/projects', icon: FolderKanban },
   { name: 'Billing', href: '/billing', icon: ReceiptText },
