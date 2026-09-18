@@ -216,11 +216,13 @@ const initDb = async () => {
           expected_amount NUMERIC NOT NULL,
           received_amount NUMERIC DEFAULT 0.00,
           deduction_amount NUMERIC DEFAULT 0.00,
-          status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID')),
+          status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
           due_date DATE,
           payment_date DATE,
           bank_name VARCHAR(100),
           advice_reference_number VARCHAR(100),
+          check_no VARCHAR(100),
+          check_date DATE,
           remarks TEXT,
           deleted BOOLEAN DEFAULT false,
           created_by VARCHAR(100),
@@ -254,7 +256,31 @@ const initDb = async () => {
       ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
       ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS advice_reference_number VARCHAR(100);
       ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS payment_date DATE;
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS sequence_number INTEGER;
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS check_no VARCHAR(100);
+      ALTER TABLE client_bill_schedules ADD COLUMN IF NOT EXISTS check_date DATE;
     `);
+
+    // Backfill/self-heal sequence_number for rows predating that column. The frontend's
+    // installment_label field is disabled/auto-computed ("1st Installment", "2nd
+    // Installment", ...), so its leading ordinal is the one value that always reflects
+    // true installment order — unlike due_date or created_at, which don't reliably
+    // track it (that mismatch is exactly what scrambled the display order before).
+    // Runs on every boot (not gated on IS NULL) so it also repairs rows an earlier,
+    // due_date-based version of this backfill already got wrong.
+    await pool.query(`
+      UPDATE client_bill_schedules
+      SET sequence_number = (substring(installment_label FROM '^(\\d+)'))::int
+      WHERE installment_label ~ '^[0-9]+(st|nd|rd|th) ';
+    `);
+
+    // Rename the client_bill_schedules 'PENDING' status to 'DUE'. Same split-statement
+    // reasoning as the status-check ALTER below in the old-schema cutover: the deferred
+    // total-validation trigger must commit before ALTER TABLE can run. Idempotent —
+    // DROP/ADD CONSTRAINT IF EXISTS and an empty UPDATE are both no-ops once migrated.
+    await pool.query(`ALTER TABLE client_bill_schedules DROP CONSTRAINT IF EXISTS client_bill_schedules_status_check`);
+    await pool.query(`UPDATE client_bill_schedules SET status = 'DUE' WHERE status = 'PENDING'`);
+    await pool.query(`ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('DUE', 'PAID'))`);
 
     // One-time cutover for any database still on the old schema: merges milestones and
     // payments into one record, splits advance from deduction, and archives (renames,
@@ -301,11 +327,11 @@ const initDb = async () => {
       // relation that still has pending trigger events in the same transaction. Splitting
       // these lets the UPDATE's deferred trigger commit before the ADD CONSTRAINT begins.
       await pool.query(`ALTER TABLE client_bill_schedules DROP CONSTRAINT IF EXISTS client_bill_schedules_status_check`);
-      // Not just 'DUE' -> 'PENDING': coerce any value the new CHECK wouldn't accept
-      // (stray/legacy statuses included) to 'PENDING' rather than assuming 'DUE' is the
-      // only one that can exist.
-      await pool.query(`UPDATE client_bill_schedules SET status = 'PENDING' WHERE status NOT IN ('PENDING', 'PAID')`);
-      await pool.query(`ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('PENDING', 'PAID'))`);
+      // Coerce any value the new CHECK wouldn't accept (stray/legacy statuses included,
+      // not just the old 'PENDING') to 'DUE' rather than assuming 'PENDING' is the only
+      // one that can exist.
+      await pool.query(`UPDATE client_bill_schedules SET status = 'DUE' WHERE status NOT IN ('DUE', 'PAID')`);
+      await pool.query(`ALTER TABLE client_bill_schedules ADD CONSTRAINT client_bill_schedules_status_check CHECK (status IN ('DUE', 'PAID'))`);
 
       await pool.query(`
         DROP TRIGGER IF EXISTS trg_client_payments_sync ON client_payments;
@@ -462,7 +488,7 @@ const initDb = async () => {
           IF (NEW.expected_amount > 0 AND (NEW.received_amount + NEW.deduction_amount) >= NEW.expected_amount) THEN
               NEW.status := 'PAID';
           ELSE
-              NEW.status := 'PENDING';
+              NEW.status := 'DUE';
           END IF;
           RETURN NEW;
       END;

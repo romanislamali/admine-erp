@@ -260,7 +260,7 @@ export default function ContractorDetails() {
         setBillFormData({
             contractor_id: b.contractor_id ? b.contractor_id.toString() : (id || ''),
             project_id: b.project_id ? b.project_id.toString() : '',
-            amount: b.amount ? b.amount.toString() : '',
+            amount: b.amount ? String(Number(b.amount)) : '',
             invoice_number: b.invoice_number || '',
             bill_date: b.bill_date ? new Date(b.bill_date).toISOString().split('T')[0] : ''
         });
@@ -402,7 +402,7 @@ export default function ContractorDetails() {
             contractor_id: p.contractor_id ? p.contractor_id.toString() : (id || ''),
             project_id: p.project_id ? p.project_id.toString() : '',
             bill_id: p.bill_id ? p.bill_id.toString() : '',
-            amount: p.amount ? p.amount.toString() : '',
+            amount: p.amount ? String(Number(p.amount)) : '',
             payment_date: p.payment_date ? new Date(p.payment_date).toISOString().split('T')[0] : ''
         });
         setIsPaymentModalOpen(true);

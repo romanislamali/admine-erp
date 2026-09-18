@@ -49,6 +49,8 @@ interface ClientBill {
     gross_amount: string | number;
     advance_amount: string | number;
     net_payable: string | number;
+    total_received: string | number;
+    total_deduction: string | number;
     bill_date: string;
     area: string | null;
     remarks: string | null;
@@ -64,11 +66,13 @@ interface ClientBillSchedule {
     expected_amount: string | number;
     received_amount: string | number;
     deduction_amount: string | number;
-    status: 'PENDING' | 'PAID';
+    status: 'DUE' | 'PAID';
     due_date: string | null;
     payment_date: string | null;
     bank_name: string | null;
     advice_reference_number: string | null;
+    check_no: string | null;
+    check_date: string | null;
     remarks: string | null;
 }
 
@@ -140,14 +144,14 @@ export default function ClientDetails() {
     // Milestones — shown inline below each bill row (expand/collapse), also the
     // payment-recording surface. Keyed by bill id so any number of bills can be
     // expanded independently.
-    const [expandedBillIds, setExpandedBillIds] = useState<Set<string>>(new Set());
+    const [expandedBillId, setExpandedBillId] = useState<string | null>(null);
     const [milestonesByBill, setMilestonesByBill] = useState<Record<string, ClientBillSchedule[]>>({});
     const [milestonesLoadingByBill, setMilestonesLoadingByBill] = useState<Record<string, boolean>>({});
 
     // Receipt recording (inline within a milestone row)
     const [recordingReceiptFor, setRecordingReceiptFor] = useState<string | null>(null);
     const [receiptFormData, setReceiptFormData] = useState({
-        received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: ''
+        received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', check_no: '', check_date: '', remarks: ''
     });
     const [submittingReceipt, setSubmittingReceipt] = useState(false);
 
@@ -227,6 +231,15 @@ export default function ClientDetails() {
         return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(num);
     };
 
+    // For populating an editable number input from a DB value: strips the insignificant
+    // trailing zeros Postgres NUMERIC adds (e.g. "343434.00" -> "343434") without
+    // rounding away a real fraction (e.g. "555.340" -> "555.34").
+    const cleanNum = (val: string | number | null | undefined) => {
+        if (val === null || val === undefined || val === '') return '';
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        return isNaN(num) ? '' : String(num);
+    };
+
     const formatDate = (dateStr: string | null | undefined) => {
         if (!dateStr) return 'N/A';
         return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -251,7 +264,7 @@ export default function ClientDetails() {
         setPOFormData({
             po_number: po.po_number || '',
             po_date: po.po_date ? new Date(po.po_date).toISOString().split('T')[0] : '',
-            po_amount: po.po_amount ? po.po_amount.toString() : '',
+            po_amount: cleanNum(po.po_amount),
             description: po.description || ''
         });
         setIsPOModalOpen(true);
@@ -329,7 +342,7 @@ export default function ClientDetails() {
         rows.map((r) => {
             const pct = parseFloat(r.percentage);
             if (isNaN(pct)) return r;
-            return { ...r, expected_amount: newNet > 0 ? (newNet * pct / 100).toFixed(2) : '' };
+            return { ...r, expected_amount: newNet > 0 ? String(Number((newNet * pct / 100).toFixed(2))) : '' };
         });
 
     const handleGrossChange = (value: string) => {
@@ -356,7 +369,7 @@ export default function ClientDetails() {
         setSchedules(splits.map((pct, i) => ({
             installment_label: splits.length === 1 ? 'Full Payment (100%)' : computeLabel(i, String(pct)),
             percentage: String(pct),
-            expected_amount: netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : '',
+            expected_amount: netPayable > 0 ? String(Number((netPayable * pct / 100).toFixed(2))) : '',
             due_date: '',
             received_amount: 0,
             deduction_amount: 0
@@ -369,7 +382,7 @@ export default function ClientDetails() {
             if (r.received_amount > 0 || r.deduction_amount > 0) return field === 'due_date' ? { ...r, due_date: value } : r;
             if (field === 'percentage') {
                 const pct = parseFloat(value);
-                return { ...r, percentage: value, installment_label: computeLabel(idx, value), expected_amount: !isNaN(pct) && netPayable > 0 ? (netPayable * pct / 100).toFixed(2) : r.expected_amount };
+                return { ...r, percentage: value, installment_label: computeLabel(idx, value), expected_amount: !isNaN(pct) && netPayable > 0 ? String(Number((netPayable * pct / 100).toFixed(2))) : r.expected_amount };
             }
             return { ...r, [field]: value };
         }));
@@ -404,8 +417,8 @@ export default function ClientDetails() {
             po_id: b.po_id || '',
             project_id: b.project_id || '',
             bill_number: b.bill_number || '',
-            gross_amount: b.gross_amount ? b.gross_amount.toString() : '',
-            advance_amount: b.advance_amount ? b.advance_amount.toString() : '0',
+            gross_amount: cleanNum(b.gross_amount),
+            advance_amount: b.advance_amount ? cleanNum(b.advance_amount) : '0',
             bill_date: b.bill_date ? new Date(b.bill_date).toISOString().split('T')[0] : '',
             area: b.area || '',
             remarks: b.remarks || ''
@@ -418,8 +431,8 @@ export default function ClientDetails() {
             setSchedules(schedulesData.length > 0 ? schedulesData.map((s) => ({
                 id: s.id,
                 installment_label: s.installment_label,
-                percentage: s.percentage !== null ? s.percentage.toString() : '',
-                expected_amount: s.expected_amount.toString(),
+                percentage: s.percentage !== null ? cleanNum(s.percentage) : '',
+                expected_amount: cleanNum(s.expected_amount),
                 due_date: s.due_date ? new Date(s.due_date).toISOString().split('T')[0] : '',
                 received_amount: Number(s.received_amount) || 0,
                 deduction_amount: Number(s.deduction_amount) || 0
@@ -511,7 +524,7 @@ export default function ClientDetails() {
     const getScheduleStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'PAID': return 'bg-emerald-50 text-emerald-700 border border-emerald-250';
-            case 'PENDING':
+            case 'DUE':
             default: return 'bg-amber-50 text-amber-700 border border-amber-250';
         }
     };
@@ -528,15 +541,10 @@ export default function ClientDetails() {
     };
 
     const toggleBillExpand = (b: ClientBill) => {
-        setExpandedBillIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(b.id)) {
-                next.delete(b.id);
-            } else {
-                next.add(b.id);
-                fetchMilestoneSchedules(b.id);
-            }
-            return next;
+        setExpandedBillId((prev) => {
+            if (prev === b.id) return null;
+            fetchMilestoneSchedules(b.id);
+            return b.id;
         });
         setRecordingReceiptFor(null);
     };
@@ -548,18 +556,20 @@ export default function ClientDetails() {
         const hasReceipt = Number(s.received_amount) > 0 || Number(s.deduction_amount) > 0;
         const outstanding = (Number(s.expected_amount) || 0) - (Number(s.received_amount) || 0) - (Number(s.deduction_amount) || 0);
         setReceiptFormData({
-            received_amount: hasReceipt ? String(s.received_amount) : (outstanding > 0 ? outstanding.toFixed(2) : ''),
-            deduction_amount: hasReceipt ? String(s.deduction_amount) : '',
+            received_amount: hasReceipt ? cleanNum(s.received_amount) : (outstanding > 0 ? String(Number(outstanding.toFixed(2))) : ''),
+            deduction_amount: hasReceipt ? cleanNum(s.deduction_amount) : '',
             payment_date: s.payment_date ? new Date(s.payment_date).toISOString().split('T')[0] : '',
             bank_name: s.bank_name || '',
             advice_reference_number: s.advice_reference_number || '',
+            check_no: s.check_no || '',
+            check_date: s.check_date ? new Date(s.check_date).toISOString().split('T')[0] : '',
             remarks: s.remarks || ''
         });
     };
 
     const handleCloseReceiptForm = () => {
         setRecordingReceiptFor(null);
-        setReceiptFormData({ received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', remarks: '' });
+        setReceiptFormData({ received_amount: '', deduction_amount: '', payment_date: '', bank_name: '', advice_reference_number: '', check_no: '', check_date: '', remarks: '' });
     };
 
     const submitReceipt = async (scheduleId: string, body: Record<string, any>) => {
@@ -587,6 +597,8 @@ export default function ClientDetails() {
                 payment_date: receiptFormData.payment_date || null,
                 bank_name: receiptFormData.bank_name || null,
                 advice_reference_number: receiptFormData.advice_reference_number || null,
+                check_no: receiptFormData.check_no || null,
+                check_date: receiptFormData.check_date || null,
                 remarks: receiptFormData.remarks || null
             });
             setSubmittingReceipt(false);
@@ -609,7 +621,7 @@ export default function ClientDetails() {
         if (!confirmed) return;
         try {
             await submitReceipt(s.id, {
-                received_amount: 0, deduction_amount: 0, payment_date: null, bank_name: null, advice_reference_number: null, remarks: null
+                received_amount: 0, deduction_amount: 0, payment_date: null, bank_name: null, advice_reference_number: null, check_no: null, check_date: null, remarks: null
             });
             await Promise.race([
                 showSuccess('Receipt Cleared', 'The milestone receipt has been cleared.'),
@@ -664,8 +676,8 @@ export default function ClientDetails() {
         {
             header: 'Actions', key: 'actions', render: (b: ClientBill) => (
                 <div className="flex items-center gap-2">
-                    <button onClick={() => toggleBillExpand(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title={expandedBillIds.has(b.id) ? 'Hide milestones' : 'Show milestones'}>
-                        <ChevronDown size={14} className={`transition-transform ${expandedBillIds.has(b.id) ? 'rotate-180' : ''}`} />
+                    <button onClick={() => toggleBillExpand(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title={expandedBillId === b.id ? 'Hide milestones' : 'Show milestones'}>
+                        <ChevronDown size={14} className={`transition-transform ${expandedBillId === b.id ? 'rotate-180' : ''}`} />
                     </button>
                     <button onClick={() => handleEditBill(b)} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Edit bill">
                         <Pencil size={14} />
@@ -700,7 +712,12 @@ export default function ClientDetails() {
             )
         },
         {
-            header: 'Gross Amount', key: 'gross_amount', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
+            header: 'Deduction', key: 'total_deduction', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
+                <span className="font-semibold text-rose-600">{formatCurrency(b.total_deduction || 0)}</span>
+            )
+        },
+        {
+            header: 'Bill Amount', key: 'gross_amount', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
                 <span className="font-semibold text-slate-700">{formatCurrency(b.gross_amount)}</span>
             )
         },
@@ -709,13 +726,24 @@ export default function ClientDetails() {
                 const adv = Number(b.advance_amount) || 0;
                 return adv > 0
                     ? <span className="font-semibold text-green-600">{formatCurrency(adv)}</span>
-                    : <span className="text-slate-400 text-xs italic">None</span>;
+                    : <span className="font-semibold text-slate-400">0</span>;
             }
         },
         {
-            header: 'Net Receivable', key: 'net_payable', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
+            header: 'Receivable', key: 'net_payable', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
                 <span className="font-bold text-amber-700">{formatCurrency(b.net_payable)}</span>
             )
+        },
+        {
+            header: 'Received', key: 'total_received', align: 'right' as const, sortable: true, render: (b: ClientBill) => (
+                <span className="font-semibold text-emerald-700">{formatCurrency(b.total_received || 0)}</span>
+            )
+        },
+        {
+            header: 'Due', key: 'total_due', align: 'right' as const, render: (b: ClientBill) => {
+                const due = (Number(b.net_payable) || 0) - (Number(b.total_received) || 0) - (Number(b.total_deduction) || 0);
+                return <span className="font-bold text-rose-700">{formatCurrency(due > 0 ? due : 0)}</span>;
+            }
         }
     ];
 
@@ -725,7 +753,8 @@ export default function ClientDetails() {
         const isLoading = !!milestonesLoadingByBill[b.id];
         const scheds = milestonesByBill[b.id] || [];
         return (
-            <div className="p-4 sm:p-5">
+            <div className="border-l-4 border-primary bg-white">
+                <div className="p-4 sm:p-5">
                 {isLoading ? (
                     <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" size={24} /></div>
                 ) : scheds.length === 0 ? (
@@ -753,16 +782,49 @@ export default function ClientDetails() {
                                         const outstanding = (Number(s.expected_amount) || 0) - received - deduction;
                                         const hasReceipt = received > 0 || deduction > 0;
                                         const isRecording = recordingReceiptFor === s.id;
+                                        const expected = Number(s.expected_amount) || 0;
+                                        // Received + deduction can never exceed the milestone's expected amount.
+                                        // Two explicit auto-fill rules on top of that cap:
+                                        //  - deduction goes to 0 -> received snaps to the full expected amount
+                                        //  - received hits the full expected amount -> deduction snaps to 0
+                                        // Anything else (a genuine partial receipt) just clamps the other field
+                                        // down if the total would otherwise overflow.
+                                        const handleReceivedChange = (value: string) => {
+                                            const newReceived = parseFloat(value) || 0;
+                                            let deduction_amount = receiptFormData.deduction_amount;
+                                            if (newReceived === expected) {
+                                                deduction_amount = '0';
+                                            } else {
+                                                const currentDeduction = parseFloat(receiptFormData.deduction_amount) || 0;
+                                                const maxDeduction = Math.max(0, expected - newReceived);
+                                                if (currentDeduction > maxDeduction) deduction_amount = String(maxDeduction);
+                                            }
+                                            setReceiptFormData({ ...receiptFormData, received_amount: value, deduction_amount });
+                                        };
+                                        const handleDeductionChange = (value: string) => {
+                                            const newDeduction = parseFloat(value) || 0;
+                                            let received_amount = receiptFormData.received_amount;
+                                            if (newDeduction === 0) {
+                                                received_amount = String(expected);
+                                            } else {
+                                                const currentReceived = parseFloat(receiptFormData.received_amount) || 0;
+                                                const maxReceived = Math.max(0, expected - newDeduction);
+                                                if (currentReceived > maxReceived) received_amount = String(maxReceived);
+                                            }
+                                            setReceiptFormData({ ...receiptFormData, deduction_amount: value, received_amount });
+                                        };
                                         return (
                                             <Fragment key={s.id}>
-                                                <tr className="border-b border-slate-200 hover:bg-slate-50/60 transition-colors">
-                                                    <td className="px-4 py-3">
+                                                <tr className={`border-b border-slate-200 hover:bg-slate-50/60 transition-colors ${isRecording ? 'bg-primary/5' : ''}`}>
+                                                    <td className={`px-4 py-3 ${isRecording ? 'border-l-4 border-primary' : ''}`}>
                                                         <div className="font-semibold text-slate-900">{s.installment_label}</div>
-                                                        {(s.payment_date || s.bank_name || s.advice_reference_number) && (
+                                                        {(s.payment_date || s.bank_name || s.advice_reference_number || s.check_no || s.check_date) && (
                                                             <div className="text-[11px] text-slate-400 mt-0.5">
                                                                 {s.payment_date && <>Paid {formatDate(s.payment_date)}</>}
                                                                 {s.bank_name && <> &middot; {s.bank_name}</>}
                                                                 {s.advice_reference_number && <> &middot; {s.advice_reference_number}</>}
+                                                                {s.check_no && <> &middot; Chq #{s.check_no}</>}
+                                                                {s.check_date && <> &middot; Chq {formatDate(s.check_date)}</>}
                                                             </div>
                                                         )}
                                                     </td>
@@ -781,7 +843,7 @@ export default function ClientDetails() {
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center justify-center gap-1.5">
                                                             <button onClick={() => (isRecording ? handleCloseReceiptForm() : handleOpenReceiptForm(s))} title={hasReceipt ? 'Edit Receipt' : 'Record Receipt'} className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors">
-                                                                <Wallet size={14} />
+                                                                {hasReceipt ? <Pencil size={14} /> : <Wallet size={14} />}
                                                             </button>
                                                             {isAdmin && hasReceipt && (
                                                                 <button onClick={() => handleClearReceipt(s)} title="Clear Receipt" className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors">
@@ -792,16 +854,16 @@ export default function ClientDetails() {
                                                     </td>
                                                 </tr>
                                                 {isRecording && (
-                                                    <tr className="bg-slate-50/60">
-                                                        <td colSpan={8} className="px-4 py-3">
-                                                            <form onSubmit={handleReceiptSubmit} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+                                                    <tr className="bg-primary/5">
+                                                        <td colSpan={8} className="px-4 py-3 border-l-4 border-primary">
+                                                            <form onSubmit={handleReceiptSubmit} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Received</label>
-                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, received_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => handleReceivedChange(e.target.value)} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Deduction</label>
-                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => setReceiptFormData({ ...receiptFormData, deduction_amount: e.target.value })} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => handleDeductionChange(e.target.value)} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date</label>
@@ -814,6 +876,14 @@ export default function ClientDetails() {
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Advice Ref. No.</label>
                                                                     <input type="text" value={receiptFormData.advice_reference_number} onChange={(e) => setReceiptFormData({ ...receiptFormData, advice_reference_number: e.target.value })} placeholder="Optional" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Check No.</label>
+                                                                    <input type="text" value={receiptFormData.check_no} onChange={(e) => setReceiptFormData({ ...receiptFormData, check_no: e.target.value })} placeholder="Optional" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                </div>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Check Date</label>
+                                                                    <input type="date" value={receiptFormData.check_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, check_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex gap-2 justify-end">
                                                                     <button type="button" onClick={handleCloseReceiptForm} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-lg hover:bg-white transition-colors">Cancel</button>
@@ -833,6 +903,7 @@ export default function ClientDetails() {
                         </div>
                     </div>
                 )}
+                </div>
             </div>
         );
     };
@@ -969,7 +1040,7 @@ export default function ClientDetails() {
                         keyExtractor={(b) => b.id}
                         emptyMessage="No bills found for this client."
                         renderExpanded={renderMilestonesPanel}
-                        isRowExpanded={(b) => expandedBillIds.has(b.id)}
+                        isRowExpanded={(b) => expandedBillId === b.id}
                     />
                 </div>
             </div>

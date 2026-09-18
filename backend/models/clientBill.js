@@ -12,13 +12,14 @@ class ValidationError extends Error {
   }
 }
 
-const insertSchedules = async (client, billId, schedules, createdBy) => {
-  for (const s of schedules) {
+const insertSchedules = async (client, billId, schedules, createdBy, startIndex = 0) => {
+  for (let i = 0; i < schedules.length; i++) {
+    const s = schedules[i];
     await client.query(
       `INSERT INTO client_bill_schedules
-         (bill_id, installment_label, percentage, expected_amount, due_date, remarks, created_by, updated_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW())`,
-      [billId, s.installment_label, s.percentage || null, s.expected_amount, s.due_date || null, s.remarks || null, createdBy]
+         (bill_id, installment_label, percentage, expected_amount, due_date, remarks, created_by, updated_by, created_at, sequence_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $7, NOW(), $8)`,
+      [billId, s.installment_label, s.percentage || null, s.expected_amount, s.due_date || null, s.remarks || null, createdBy, startIndex + i]
     );
   }
 };
@@ -47,7 +48,15 @@ const ClientBill = {
 
   getPaginated: async ({ clientId, limit, offset, search, sortField, sortOrder }) => {
     let queryText = `
-      SELECT cb.*, c.name as client_name, po.po_number, p.name as project_name
+      SELECT cb.*, c.name as client_name, po.po_number, p.name as project_name,
+        COALESCE((
+          SELECT SUM(s.received_amount) FROM client_bill_schedules s
+          WHERE s.bill_id = cb.id AND s.deleted = false
+        ), 0) AS total_received,
+        COALESCE((
+          SELECT SUM(s.deduction_amount) FROM client_bill_schedules s
+          WHERE s.bill_id = cb.id AND s.deleted = false
+        ), 0) AS total_deduction
       FROM client_bills cb
       LEFT JOIN clients c ON cb.client_id = c.id
       LEFT JOIN client_pos po ON cb.po_id = po.id
@@ -86,6 +95,8 @@ const ClientBill = {
       'bill_date': 'cb.bill_date',
       'gross_amount': 'cb.gross_amount',
       'net_payable': 'cb.net_payable',
+      'total_received': 'total_received',
+      'total_deduction': 'total_deduction',
       'created_at': 'cb.created_at'
     };
 
@@ -227,7 +238,8 @@ const ClientBill = {
           }
         }
 
-        for (const s of schedules) {
+        for (let idx = 0; idx < schedules.length; idx++) {
+          const s = schedules[idx];
           const ex = s.id ? existingById.get(s.id) : null;
           const isPaid = ex && (Number(ex.received_amount) > 0 || Number(ex.deduction_amount) > 0);
 
@@ -238,17 +250,17 @@ const ClientBill = {
           if (ex) {
             if (isPaid) {
               await client.query(
-                'UPDATE client_bill_schedules SET installment_label = $1, due_date = $2, updated_by = $3, updated_at = NOW() WHERE id = $4',
-                [s.installment_label, s.due_date || null, updatedBy, s.id]
+                'UPDATE client_bill_schedules SET installment_label = $1, due_date = $2, updated_by = $3, updated_at = NOW(), sequence_number = $4 WHERE id = $5',
+                [s.installment_label, s.due_date || null, updatedBy, idx, s.id]
               );
             } else {
               await client.query(
-                'UPDATE client_bill_schedules SET installment_label = $1, percentage = $2, expected_amount = $3, due_date = $4, updated_by = $5, updated_at = NOW() WHERE id = $6',
-                [s.installment_label, s.percentage || null, s.expected_amount, s.due_date || null, updatedBy, s.id]
+                'UPDATE client_bill_schedules SET installment_label = $1, percentage = $2, expected_amount = $3, due_date = $4, updated_by = $5, updated_at = NOW(), sequence_number = $6 WHERE id = $7',
+                [s.installment_label, s.percentage || null, s.expected_amount, s.due_date || null, updatedBy, idx, s.id]
               );
             }
           } else {
-            await insertSchedules(client, id, [s], updatedBy);
+            await insertSchedules(client, id, [s], updatedBy, idx);
           }
         }
       }

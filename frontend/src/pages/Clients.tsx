@@ -296,7 +296,7 @@ export default function Clients() {
         const adv = typeof c.total_advance === 'string' ? parseFloat(c.total_advance) : c.total_advance;
         return adv > 0
           ? <span className="font-semibold text-green-600">{formatCurrency(adv)}</span>
-          : <span className="text-slate-400 text-xs italic">None</span>;
+          : <span className="font-semibold text-slate-400">0</span>;
       }
     },
     {
@@ -308,7 +308,7 @@ export default function Clients() {
         const ded = typeof c.total_deduction === 'string' ? parseFloat(c.total_deduction) : c.total_deduction;
         return ded > 0
           ? <span className="font-semibold text-rose-600">{formatCurrency(ded)}</span>
-          : <span className="text-slate-400 text-xs italic">None</span>;
+          : <span className="font-semibold text-slate-400">0</span>;
       }
     },
     {

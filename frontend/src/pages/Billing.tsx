@@ -135,7 +135,7 @@ export default function Billing() {
     setFormData({
       contractor_id: bill.contractor_id || '',
       project_id: bill.project_id || '',
-      amount: bill.amount ? bill.amount.toString() : '',
+      amount: bill.amount ? String(Number(bill.amount)) : '',
       invoice_number: bill.invoice_number || '',
       bill_date: bill.bill_date ? new Date(bill.bill_date).toISOString().split('T')[0] : ''
     });

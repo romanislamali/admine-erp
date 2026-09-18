@@ -1,6 +1,8 @@
 const ClientBillSchedule = require('../models/clientBillSchedule');
 const logger = require('../utils/logger');
 
+const AMOUNT_TOLERANCE = 0.01;
+
 const getAllSchedules = async (req, res) => {
   try {
     const { bill_id } = req.query;
@@ -34,6 +36,10 @@ const recordReceipt = async (req, res) => {
     const newTotal = received + deduction;
     if (newTotal < oldTotal && req.user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Only an admin can reduce or reverse a recorded receipt' });
+    }
+
+    if (newTotal > Number(existing.expected_amount) + AMOUNT_TOLERANCE) {
+      return res.status(400).json({ message: 'Received + deduction cannot exceed the milestone\'s expected amount' });
     }
 
     const schedule = await ClientBillSchedule.recordReceipt(id, { ...req.body, received_amount: received, deduction_amount: deduction }, req.user.name);

@@ -292,12 +292,15 @@ CREATE TABLE client_bill_schedules (
     expected_amount NUMERIC NOT NULL,
     received_amount NUMERIC DEFAULT 0.00,
     deduction_amount NUMERIC DEFAULT 0.00,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID')),
+    status VARCHAR(20) NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID')),
     due_date DATE,
     payment_date DATE,
     bank_name VARCHAR(100),
     advice_reference_number VARCHAR(100),
+    check_no VARCHAR(100),
+    check_date DATE,
     remarks TEXT,
+    sequence_number INTEGER,
     deleted BOOLEAN DEFAULT false,
     created_by VARCHAR(100),
     updated_by VARCHAR(100),
@@ -450,7 +453,7 @@ BEGIN
     IF (NEW.expected_amount > 0 AND (NEW.received_amount + NEW.deduction_amount) >= NEW.expected_amount) THEN
         NEW.status := 'PAID';
     ELSE
-        NEW.status := 'PENDING';
+        NEW.status := 'DUE';
     END IF;
     RETURN NEW;
 END;

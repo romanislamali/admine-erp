@@ -151,7 +151,7 @@ export default function Payment() {
       contractor_id: payment.contractor_id || '',
       project_id: payment.project_id || '',
       bill_id: payment.bill_id || '',
-      amount: payment.amount ? payment.amount.toString() : '',
+      amount: payment.amount ? String(Number(payment.amount)) : '',
       payment_date: payment.payment_date ? new Date(payment.payment_date).toISOString().split('T')[0] : ''
     });
     setIsModalOpen(true);

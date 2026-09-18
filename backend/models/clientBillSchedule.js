@@ -14,7 +14,7 @@ const ClientBillSchedule = {
     } else {
       queryText += ` WHERE s.deleted = false AND cb.deleted IS NOT TRUE`;
     }
-    queryText += ` ORDER BY s.due_date ASC NULLS LAST, s.created_at ASC`;
+    queryText += ` ORDER BY s.sequence_number ASC NULLS LAST, s.created_at ASC`;
 
     const { rows } = await db.query(queryText, params);
     return rows;
@@ -29,15 +29,15 @@ const ClientBillSchedule = {
   // receipt fields directly. Triggers cascade the client/status updates within the
   // same statement, so no explicit transaction is needed here.
   recordReceipt: async (id, receiptData, updatedBy) => {
-    const { received_amount, deduction_amount, payment_date, bank_name, advice_reference_number, remarks } = receiptData;
+    const { received_amount, deduction_amount, payment_date, bank_name, advice_reference_number, check_no, check_date, remarks } = receiptData;
     const { rows } = await db.query(
       `UPDATE client_bill_schedules
        SET received_amount = $1, deduction_amount = $2, payment_date = $3, bank_name = $4,
-           advice_reference_number = $5, remarks = $6, updated_by = $7, updated_at = NOW()
-       WHERE id = $8 AND deleted = false
+           advice_reference_number = $5, check_no = $6, check_date = $7, remarks = $8, updated_by = $9, updated_at = NOW()
+       WHERE id = $10 AND deleted = false
        RETURNING *`,
       [received_amount || 0, deduction_amount || 0, payment_date || null, bank_name || null,
-        advice_reference_number || null, remarks || null, updatedBy, id]
+        advice_reference_number || null, check_no || null, check_date || null, remarks || null, updatedBy, id]
     );
     return rows[0];
   }
