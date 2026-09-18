@@ -665,7 +665,7 @@ export default function ClientDetails() {
 
         autoTable(doc, {
             startY: y,
-            head: [['Payments', 'Expected', 'Received', 'Deduction', 'DUE', 'Payment Date', 'Status']],
+            head: [['Payments', 'Expected', 'Received', 'Deduction', 'Due', 'Payment Date', 'Status']],
             body: rows.map((s) => {
                 const expected = Number(s.expected_amount) || 0;
                 const received = Number(s.received_amount) || 0;
