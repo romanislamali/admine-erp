@@ -4,12 +4,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     Phone, Mail, MapPin, ArrowLeft, Loader2, FileText, CreditCard, Coins, AlertCircle, X,
     Wallet, ReceiptText, Pencil, Trash2, ShoppingCart, ChevronDown, Plus,
-    CheckCircle2, Lock, MinusCircle
+    CheckCircle2, Lock, MinusCircle, Printer
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import Table from '../components/Table';
 import Dropdown from '../components/Dropdown';
 import { useModal } from '../context/ModalContext';
 import { useAuth } from '../context/AuthContext';
+import logo from '../public/logo.png';
 
 interface Client {
     id: string;
@@ -147,6 +150,25 @@ export default function ClientDetails() {
     const [expandedBillId, setExpandedBillId] = useState<string | null>(null);
     const [milestonesByBill, setMilestonesByBill] = useState<Record<string, ClientBillSchedule[]>>({});
     const [milestonesLoadingByBill, setMilestonesLoadingByBill] = useState<Record<string, boolean>>({});
+
+    // Installment report generation (per bill, user picks all vs due-only)
+    const [reportBill, setReportBill] = useState<ClientBill | null>(null);
+    const [reportScope, setReportScope] = useState<'all' | 'due'>('all');
+    // Preloaded once as a data URL so jsPDF's addImage() has it ready synchronously —
+    // loading it inside the click handler would force an async gap before window.open(),
+    // which risks the popup blocker.
+    const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+    useEffect(() => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d')?.drawImage(img, 0, 0);
+            setLogoDataUrl(canvas.toDataURL('image/png'));
+        };
+        img.src = logo;
+    }, []);
 
     // Receipt recording (inline within a milestone row)
     const [recordingReceiptFor, setRecordingReceiptFor] = useState<string | null>(null);
@@ -549,6 +571,183 @@ export default function ClientDetails() {
         setRecordingReceiptFor(null);
     };
 
+    // ---------------- Installment Report (PDF) ----------------
+
+    const handleOpenReportModal = (b: ClientBill) => {
+        setReportBill(b);
+        setReportScope('all');
+        if (!milestonesByBill[b.id]) fetchMilestoneSchedules(b.id);
+    };
+
+    const handleCloseReportModal = () => setReportBill(null);
+
+    // Builds and shows the PDF synchronously (from already-fetched schedules) so this
+    // stays inside the button click's user-gesture — an async fetch here would risk the
+    // popup blocker eating the viewer tab.
+    const handleGenerateReport = () => {
+        if (!reportBill || !client) return;
+        const bill = reportBill;
+        const all = milestonesByBill[bill.id] || [];
+        const rows = reportScope === 'due' ? all.filter((s) => s.status !== 'PAID') : all;
+
+        const doc = new jsPDF();
+        const scopeLabel = reportScope === 'due' ? 'Due Installments' : 'All Installments';
+        const safe = (v: string) => v.replace(/[\\/:*?"<>|]+/g, '-').trim();
+        const fileName = `${safe(client.name)} - Bill ${safe(bill.bill_number || bill.id)} - ${scopeLabel} - ${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.setProperties({ title: fileName });
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        const logoHeight = 10;
+        const logoWidth = logoHeight * (1029 / 212);
+        const logoY = 10;
+        if (logoDataUrl) {
+            doc.addImage(logoDataUrl, 'PNG', 14, logoY, logoWidth, logoHeight);
+        } else {
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Admine Advertising', 14, logoY + logoHeight / 2 + 2);
+        }
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Billing and payment report', pageWidth - 14, logoY + logoHeight / 2 - 1, { align: 'right' });
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(
+            `${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`,
+            pageWidth - 14, logoY + logoHeight / 2 + 4, { align: 'right' }
+        );
+        let y = logoY + logoHeight + 4;
+        doc.setTextColor(0);
+        y += 8;
+        doc.setDrawColor(220);
+        doc.line(14, y, pageWidth - 14, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        const clientLines = [client.name, client.phone, client.email, client.address].filter(Boolean) as string[];
+        const billLines = [
+            `Bill No: ${bill.bill_number || 'N/A'}`,
+            `PO No: ${bill.po_number || 'No PO'}`,
+            `Project: ${bill.project_name || 'No Project'}`,
+            `Bill Date: ${formatDate(bill.bill_date)}`
+        ];
+        const infoStartY = y;
+        clientLines.forEach((line, i) => doc.text(line, 14, infoStartY + i * 5));
+        billLines.forEach((line, i) => doc.text(line, pageWidth / 2 + 4, infoStartY + i * 5));
+        y = infoStartY + Math.max(clientLines.length, billLines.length) * 5 + 6;
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Gross Bill Amount', 14, y);
+        doc.text('Advance', 74, y);
+        doc.text('Net Receivable', 124, y);
+        doc.text('Scope', 174, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(formatCurrency(bill.gross_amount), 14, y);
+        doc.text(formatCurrency(bill.advance_amount), 74, y);
+        doc.text(formatCurrency(bill.net_payable), 124, y);
+        doc.text(reportScope === 'due' ? 'Due Only' : 'All', 174, y);
+        y += 10;
+
+        const totals = rows.reduce((acc, s) => {
+            const expected = Number(s.expected_amount) || 0;
+            const received = Number(s.received_amount) || 0;
+            const deduction = Number(s.deduction_amount) || 0;
+            acc.expected += expected;
+            acc.received += received;
+            acc.deduction += deduction;
+            acc.outstanding += expected - received - deduction;
+            return acc;
+        }, { expected: 0, received: 0, deduction: 0, outstanding: 0 });
+
+        autoTable(doc, {
+            startY: y,
+            head: [['Payments', 'Expected', 'Received', 'Deduction', 'DUE', 'Payment Date', 'Status']],
+            body: rows.map((s) => {
+                const expected = Number(s.expected_amount) || 0;
+                const received = Number(s.received_amount) || 0;
+                const deduction = Number(s.deduction_amount) || 0;
+                const outstanding = expected - received - deduction;
+                return [
+                    s.installment_label,
+                    formatCurrency(expected),
+                    formatCurrency(received),
+                    formatCurrency(deduction),
+                    formatCurrency(outstanding > 0 ? outstanding : 0),
+                    formatDate(s.payment_date),
+                    s.status
+                ];
+            }),
+            foot: [[
+                'Total',
+                formatCurrency(totals.expected),
+                formatCurrency(totals.received),
+                formatCurrency(totals.deduction),
+                formatCurrency(totals.outstanding > 0 ? totals.outstanding : 0),
+                '', ''
+            ]],
+            theme: 'grid',
+            headStyles: { fillColor: [79, 70, 229] },
+            footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
+            styles: { fontSize: 9 },
+            columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+        });
+
+        if (rows.length === 0) {
+            doc.setFontSize(10);
+            doc.text('No installments match the selected scope.', 14, y + 10);
+        }
+
+        // A raw blob: URL's "path" is just an opaque UUID, and Chrome's built-in PDF
+        // viewer uses that (not the PDF's /Title metadata) as the Save As filename —
+        // so opening the blob URL directly always downloads as a UUID. Wrapping it in a
+        // small HTML page with our own explicitly-named download link sidesteps that.
+        const escapeHtml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const pdfUrl = URL.createObjectURL(doc.output('blob'));
+        const wrapperHtml = `<!DOCTYPE html><html><head><title>${escapeHtml(fileName)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+body { display: flex; flex-direction: column; }
+#bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 20px; background: #fff; border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+#bar .name { display: flex; align-items: center; gap: 10px; min-width: 0; color: #0f172a; font-size: 13px; font-weight: 600; }
+#bar .name svg { flex-shrink: 0; color: #4f46e5; }
+#bar .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#bar a {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
+  color: #fff; text-decoration: none; background: #4f46e5;
+  padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 13px;
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.3); transition: background 0.15s;
+}
+#bar a:hover { background: #4338ca; }
+#frame-wrap { flex: 1; min-height: 0; padding: 16px; }
+iframe { width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 12px; display: block; background: #fff; }
+</style></head><body>
+<div id="bar">
+  <div class="name">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+    <span>${escapeHtml(fileName)}</span>
+  </div>
+  <a href="${pdfUrl}" download="${escapeHtml(fileName)}">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download PDF
+  </a>
+</div>
+<div id="frame-wrap"><iframe src="${pdfUrl}"></iframe></div>
+</body></html>`;
+        const wrapperUrl = URL.createObjectURL(new Blob([wrapperHtml], { type: 'text/html' }));
+        window.open(wrapperUrl, '_blank');
+        handleCloseReportModal();
+    };
+
     // ---------------- Milestone Receipts (milestone = payment) ----------------
 
     const handleOpenReceiptForm = (s: ClientBillSchedule) => {
@@ -679,6 +878,9 @@ export default function ClientDetails() {
                     <button onClick={() => toggleBillExpand(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title={expandedBillId === b.id ? 'Hide milestones' : 'Show milestones'}>
                         <ChevronDown size={14} className={`transition-transform ${expandedBillId === b.id ? 'rotate-180' : ''}`} />
                     </button>
+                    <button onClick={() => handleOpenReportModal(b)} className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors" title="Generate installment report">
+                        <Printer size={14} />
+                    </button>
                     <button onClick={() => handleEditBill(b)} className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded transition-colors" title="Edit bill">
                         <Pencil size={14} />
                     </button>
@@ -765,14 +967,15 @@ export default function ClientDetails() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-500 text-[11px] font-extrabold uppercase tracking-wider">
+                                        <th className="px-4 py-3 text-center">Actions</th>
                                         <th className="px-4 py-3">Installment</th>
                                         <th className="px-4 py-3 text-right">Expected</th>
                                         <th className="px-4 py-3 text-right">Received</th>
                                         <th className="px-4 py-3 text-right">Deduction</th>
-                                        <th className="px-4 py-3 text-right">Outstanding</th>
+                                        <th className="px-4 py-3 text-right">Due</th>
                                         <th className="px-4 py-3">Due Date</th>
+                                        <th className="px-4 py-3">Payment Date</th>
                                         <th className="px-4 py-3 text-center">Status</th>
-                                        <th className="px-4 py-3 text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-sm">
@@ -817,6 +1020,18 @@ export default function ClientDetails() {
                                             <Fragment key={s.id}>
                                                 <tr className={`border-b border-slate-200 hover:bg-slate-50/60 transition-colors ${isRecording ? 'bg-primary/5' : ''}`}>
                                                     <td className={`px-4 py-3 ${isRecording ? 'border-l-4 border-primary' : ''}`}>
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button onClick={() => (isRecording ? handleCloseReceiptForm() : handleOpenReceiptForm(s))} title={hasReceipt ? 'Edit Receipt' : 'Record Receipt'} className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors">
+                                                                {hasReceipt ? <Pencil size={14} /> : <Wallet size={14} />}
+                                                            </button>
+                                                            {isAdmin && hasReceipt && (
+                                                                <button onClick={() => handleClearReceipt(s)} title="Clear Receipt" className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors">
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
                                                         <div className="font-semibold text-slate-900">{s.installment_label}</div>
                                                         {(s.payment_date || s.bank_name || s.advice_reference_number || s.check_no || s.check_date) && (
                                                             <div className="text-[11px] text-slate-400 mt-0.5">
@@ -837,37 +1052,26 @@ export default function ClientDetails() {
                                                         {outstanding > 0 ? <span className="text-amber-700">{formatCurrency(outstanding)}</span> : <span className="text-slate-300">—</span>}
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 font-mono text-xs">{formatDate(s.due_date)}</td>
+                                                    <td className="px-4 py-3 text-slate-600 font-mono text-xs">{formatDate(s.payment_date)}</td>
                                                     <td className="px-4 py-3 text-center">
                                                         <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg ${getScheduleStatusBadgeClass(s.status)}`}>{s.status}</span>
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex items-center justify-center gap-1.5">
-                                                            <button onClick={() => (isRecording ? handleCloseReceiptForm() : handleOpenReceiptForm(s))} title={hasReceipt ? 'Edit Receipt' : 'Record Receipt'} className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded transition-colors">
-                                                                {hasReceipt ? <Pencil size={14} /> : <Wallet size={14} />}
-                                                            </button>
-                                                            {isAdmin && hasReceipt && (
-                                                                <button onClick={() => handleClearReceipt(s)} title="Clear Receipt" className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors">
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            )}
-                                                        </div>
                                                     </td>
                                                 </tr>
                                                 {isRecording && (
                                                     <tr className="bg-primary/5">
-                                                        <td colSpan={8} className="px-4 py-3 border-l-4 border-primary">
+                                                        <td colSpan={9} className="px-4 py-3 border-l-4 border-primary">
                                                             <form onSubmit={handleReceiptSubmit} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
                                                                 <div className="flex flex-col gap-1">
-                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Received</label>
-                                                                    <input type="number" step="0.01" min="0" value={receiptFormData.received_amount} onChange={(e) => handleReceivedChange(e.target.value)} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Received <span className="text-red-600">*</span></label>
+                                                                    <input type="number" step="0.01" min="0" required value={receiptFormData.received_amount} onChange={(e) => handleReceivedChange(e.target.value)} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Deduction</label>
                                                                     <input type="number" step="0.01" min="0" value={receiptFormData.deduction_amount} onChange={(e) => handleDeductionChange(e.target.value)} placeholder="0" className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-1">
-                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date</label>
-                                                                    <input type="date" value={receiptFormData.payment_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, payment_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
+                                                                    <label className="text-[10px] font-semibold uppercase text-slate-400">Payment Date <span className="text-red-600">*</span></label>
+                                                                    <input type="date" required value={receiptFormData.payment_date} onChange={(e) => setReceiptFormData({ ...receiptFormData, payment_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary text-slate-900" />
                                                                 </div>
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-[10px] font-semibold uppercase text-slate-400">Bank Name</label>
@@ -1081,6 +1285,58 @@ export default function ClientDetails() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {reportBill && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleCloseReportModal} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white w-full max-w-md p-6 rounded-2xl shadow-xl z-10 border border-slate-100">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-xl font-bold text-slate-900">Installment Report</h3>
+                                <button onClick={handleCloseReportModal} className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"><X size={20} /></button>
+                            </div>
+                            <p className="text-sm text-slate-500 mb-5">Bill {reportBill.bill_number || 'N/A'} &middot; choose which installments to include.</p>
+
+                            {milestonesLoadingByBill[reportBill.id] ? (
+                                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" size={24} /></div>
+                            ) : (
+                                <>
+                                    <div className="space-y-2 mb-6">
+                                        {(() => {
+                                            const all = milestonesByBill[reportBill.id] || [];
+                                            const dueCount = all.filter((s) => s.status !== 'PAID').length;
+                                            return (
+                                                <>
+                                                    <label className={`flex items-center gap-3 px-4 py-3 border rounded-xl cursor-pointer transition-colors ${reportScope === 'all' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                        <input type="radio" name="reportScope" checked={reportScope === 'all'} onChange={() => setReportScope('all')} className="accent-primary" />
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-slate-800">All Installments</div>
+                                                            <div className="text-xs text-slate-400">{all.length} installment{all.length === 1 ? '' : 's'}</div>
+                                                        </div>
+                                                    </label>
+                                                    <label className={`flex items-center gap-3 px-4 py-3 border rounded-xl cursor-pointer transition-colors ${reportScope === 'due' ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                        <input type="radio" name="reportScope" checked={reportScope === 'due'} onChange={() => setReportScope('due')} className="accent-primary" />
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-slate-800">Due Installments Only</div>
+                                                            <div className="text-xs text-slate-400">{dueCount} installment{dueCount === 1 ? '' : 's'}</div>
+                                                        </div>
+                                                    </label>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                                        <button type="button" onClick={handleCloseReportModal} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
+                                        <button type="button" onClick={handleGenerateReport} className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-primary/10">
+                                            <Printer size={16} /> Generate Report
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </motion.div>
                     </div>
                 )}
